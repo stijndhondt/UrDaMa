@@ -25,10 +25,10 @@ Everything is checked against the reference house (the user's own home).
 - **Skills:** grilling tickets call `grilling` + `domain-modeling`; record hard-to-reverse choices as ADRs in `docs/adr/`.
 - **Planning only.** This map produces decisions, not code. The build is handed off after the Slice 1 spec.
 - **Standing preferences:**
-  - Browser-first, with a desktop wrapper later (Tauri/Electron). The core (model, geometry, calculations) is plain TypeScript, UI-free.
+  - Browser-first, with a desktop app later (Electron, which keeps Angular). The core (model, geometry, calculations) has no DOM and no UI; it may use Angular signals only (ADR 0003).
   - TypeScript + Angular is the working assumption. No React; no hand-written C/C++ (any WASM-compiled C++ library must be flagged as a trade-off).
-  - Licence: GPL-family (GPL-3.0 or AGPL-3.0); every dependency must be licence-compatible.
-  - Metric first, with unit conversion possible later. UI strings in JSON translation files from day one.
+  - Licence: AGPL-3.0-or-later (ADR 0006); every dependency must be compatible.
+  - Metric first, with unit conversion possible later. UI strings in JSON translation files from day one (ngx-translate).
   - The user is used to Angular and C#. Target users: homeowners/DIY first; the model must be able to grow to professionals.
   - Wall and Slab thickness come from project Presets and can be overridden per element.
   - Drawing, Rayon-inspired: click the first point, then drag. Snap to earlier boxes; type length and rotation (degrees) by hand.
@@ -47,11 +47,14 @@ Everything is checked against the reference house (the user's own home).
 - [Domain model v1](issues/07-domain-model-v1.md): Walls = Baseline + side + thickness, joined by stored Wall connections (ADR 0001); Rooms = Seed point + derived outline (ADR 0002); Presets followed live unless overridden, thickness changes push the plan to keep Room sizes; Level elevation = finished floor level; Slab, Floor build-up, Ceiling and derived Ceiling void; mm floats, typed IDs.
 - [Box-drawing interaction](issues/09-box-drawing-interaction.md): two tools: a Room tool (drag the tape inside size, Walls grow outward, shared Walls reused) as the main one, and a Wall tool (drag, or click then type a locked length and rotate; S = side, typed angle) for odd walls; snaps create Wall connections. Prototype on branch `prototype/box-drawing`.
 - [Wall joins and room detection strategy](issues/08-wall-joins-and-room-detection.md): Rooms = holes in the merged footprint of room-bounding Walls (Net outline directly), cut by Room separators, picked by Seed point; enclosure is geometric, joins need connections; mitred corners, T = butt on the host face, X = run-through + two Ts; overlaps prevented while drawing; broken Rooms flagged ("not enclosed", "sharing one area"), never stale.
+- [Dependency and recalculation engine](issues/10-dependency-engine.md): lazy, cached, self-tracking named Derived values (ADR 0003, amended: Angular signals inside `core` behind a thin wrapper, no DOM); per-element and per-Level granularity; 2D always exact, 3D may lag; warnings are Derived values; live recalculation while dragging (< 16 ms target); v1 shows old → new values after each edit.
+- [Commands, undo/redo and project file format](issues/11-commands-undo-file-format.md): commands are pure functions recorded as forward/reverse patches; one user action = one all-or-nothing undo step with invariant checks; 200-step in-memory history; file = flat sorted collections with prefixed IDs (ADR 0004), deterministic output, pure migrations; IndexedDB working copy autosaved, explicit save to `.lakudemis.json`.
+- [Stack, licence and repository layout](issues/12-stack-licence-repo-layout.md): Angular CLI monorepo under `projects/` with pnpm (ADR 0005); AGPL-3.0-or-later (ADR 0006); Canvas2D plan editor (prototyped: 60 fps vs ~45 for PixiJS); three.js + manifold-3d; clipper2-ts; Angular signals in `core` (ADR 0003 amended); ngx-translate (prototyped vs Transloco); Node ≥ 24.15 via Volta.
 
 ## Not yet specified
 
 - **Units & display settings:** how display units and precision are configured and stored.
-- **Translation files:** the JSON translation structure and key naming.
+- **Translation files:** the JSON file structure and key naming, beyond the top-level-prefix-per-feature rule.
 - **Assemblies:** layered Walls, Slabs and Floor build-ups (brick / insulation / screed / plaster), and how they replace the single thickness number. Includes butt joints with "which Wall wins" priority instead of v1 mitres.
 - **Multiple Buildings:** more than one Building per Project (the user's detached garage).
 - **Locked dimensions:** storing measured inside dimensions as constraints kept true by a solver, beyond the v1 push command.
@@ -60,9 +63,11 @@ Everything is checked against the reference house (the user's own home).
 - **Vertical connections:** stairs, floor openings (voids in Slabs), Walls that span several Levels, the roof slab over the top Level.
 - **Reference house, upper Levels:** capture the first floor, plus exact wall and opening sizes (by tape; Rayon exports are unreliable), once multi-Level work needs a real test case.
 - **Roofs & attics:** sloped roofs, knee walls, area rules under low ceilings.
-- **Desktop wrapper:** Tauri vs Electron, local file access.
+- **Desktop app:** Electron (chosen in principle to keep Angular); packaging and local file access.
 - **Projected views:** the top/side/front/bottom view system (sections, elevations).
 - **Furnishings:** the parameter model for Furnishings and a catalogue.
+- **Named versions:** saved snapshots of a project ("before the renovation"), built on the command patches.
+- **Consequence inspector:** a "what depends on this?" view for any selected element. The prototype showed that walking the graph is too coarse at per-Level granularity, so it should build on comparing values before and after an edit.
 - **Quantities & materials:** paint, plaster and flooring quantities beyond areas.
 
 ## Out of scope

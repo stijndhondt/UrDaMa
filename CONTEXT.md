@@ -66,6 +66,16 @@ _Avoid_: Room marker, tag
 A line with no physical form that divides an open area into separate Rooms, such as between a kitchen and a living area.
 _Avoid_: Virtual wall, room boundary line
 
+### Model
+
+**Source data**:
+What the user states about the building, such as a Wall's Baseline, a thickness override or a Room height. It is the only thing a project file stores.
+_Avoid_: Input, parameters, properties (for the category)
+
+**Derived value**:
+Anything calculated from Source data, such as a Room outline, an area or a warning. It is never stored, always reproducible, and carries a readable name such as "Keuken · Net floor area".
+_Avoid_: Computed property, cached value, result
+
 ### Measurements
 
 **Net area**:

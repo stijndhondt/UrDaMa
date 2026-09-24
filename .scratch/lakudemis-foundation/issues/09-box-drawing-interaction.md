@@ -35,6 +35,15 @@ Verdict from the user (2026-09-24): **two drawing tools. "Drag a room" (variant 
 - **Both tools:**
   - Snapping to a Wall end or face creates a stored Wall connection (ADR 0001). The editor shows corner, face and **unconnected** ends distinctly.
   - Each face shows its length.
+  - **Drag increments with modifier keys** (decided 2026-09-24 in the dependency-engine session). They apply to every dragged value (Walls, Room rectangles, later moves):
+
+    | While dragging | Length / position | Angle |
+    |---|---|---|
+    | no modifier | snaps to 10 mm | snaps to 15° when close |
+    | **Shift** (coarse) | 100 mm | always 45° steps |
+    | **Ctrl** (fine) | 1 mm | free, 1° |
+
+    Snapping to Walls always takes priority, and typed values are always exact.
 - **Confirmed by the smoke test:** Keuken 2.67 × 3.73 and Achterhal 2.67 × 3.94 came out at exactly the tape sizes (9.96 / 10.52 m²), sharing one Wall.
 
 Open for [Slice 1 spec](13-slice-1-spec.md):
