@@ -1,0 +1,91 @@
+# Lakudemis
+
+A connected, semantic model of a home: every part of the building is one entity in one model, and 2D plans, 3D views and calculations are views and consumers of that model.
+
+## Language
+
+### Building structure
+
+**Level**:
+A storey of the building, such as basement, ground floor, first floor or attic. Its elevation is its finished floor level.
+_Avoid_: Floor, storey, verdieping
+
+**Slab**:
+The structural horizontal element that separates or carries Levels.
+_Avoid_: Floor, deck
+
+**Ceiling**:
+The finished underside that closes a Room at its Room height (plaster, plasterboard, suspended ceiling). It is a separate element from the Slab above it.
+_Avoid_: Plafond, Slab (for the finished underside)
+
+**Ceiling void**:
+The space between the top of a Room's Ceiling and the underside of the Slab above; it carries cables, ducts and beams.
+_Avoid_: Plenum, cavity, spouwe
+
+**Floor build-up**:
+Everything between the top of the Slab and the finished floor of a Room, such as insulation, screed and the Floor finish.
+_Avoid_: Floor, floor package, dekvloer (for the whole)
+
+**Floor finish**:
+The top layer of a Floor build-up, the surface walked on, such as tiles, laminate or parquet.
+_Avoid_: Floor, flooring (as a noun for the element)
+
+**Wall**:
+A vertical building element with a length, a thickness and a Wall height, standing on a Level. It either bounds Rooms or is free-standing (such as a half-height wall or a kitchen island) and bounds nothing.
+_Avoid_: Partition (as a separate kind)
+
+**Baseline**:
+The line a Wall is drawn along, from its start point to its end point. The Wall's thickness sits to the left of it, centred on it or to the right of it.
+_Avoid_: Axis, centreline (unless the Wall is centred), location line
+
+**Wall connection**:
+A stored attachment of one Wall's end to another Wall: either to its end (a corner) or to its face at a given distance (a T). Connected Walls move together; unconnected Walls never join, however close they are.
+_Avoid_: Snap, join (for the stored relationship; "join" is the computed geometry)
+
+**Wall height**:
+The height of a Wall itself. Usually greater than the Room height of the Rooms it bounds; a partial-height wall (divider, bar wall) has its own, lower Wall height.
+_Avoid_: Height (unqualified)
+
+**Room height**:
+The height of a Room measured from floor to ceiling, as a tape measure gives it. It can differ per Room on the same Level.
+_Avoid_: Clear height, ceiling height, Height (unqualified)
+
+**Preset**:
+A default value set per project, such as wall thickness or slab thickness, that new elements take unless the value is overridden on the element.
+_Avoid_: Template, default settings, style
+
+**Room**:
+An enclosed area of a Level, derived from the Walls and Room separators around it and adjustable by hand.
+_Avoid_: Space, zone, area (as the element)
+
+**Seed point**:
+A point inside a Room that identifies which enclosed area the Room is. The Room's outline is derived from the Walls and Room separators around it.
+_Avoid_: Room marker, tag
+
+**Room separator**:
+A line with no physical form that divides an open area into separate Rooms, such as between a kitchen and a living area.
+_Avoid_: Virtual wall, room boundary line
+
+### Measurements
+
+**Net area**:
+An area measured to the inner faces of the bounding elements, with openings subtracted where they apply.
+_Avoid_: Usable area, inner area
+
+**Gross area**:
+An area measured to the outer faces of the bounding elements, as used for building-envelope and energy (EPB) calculations.
+_Avoid_: Outer area, total area
+
+**Measurement rule**:
+A named rule for how a quantity is measured, such as which openings are subtracted from a wall area and above what size. It is chosen per report, never stored on elements.
+_Avoid_: Measurement preset, Preset
+
+### Contents
+
+**Furnishing**:
+A parametric object placed in a Room (table, seat, desk lamp, wall cabinets) that occupies space but has no connection to a building system and does not change Room areas.
+_Avoid_: Furniture block, object, item
+
+**Fixture**:
+An object fixed to the building and connected to a building system (wall light, sink, radiator, socket).
+_Avoid_: Furnishing, appliance
