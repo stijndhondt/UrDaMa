@@ -219,4 +219,4 @@ These are the map's **Not yet specified** items, plus:
 
 ## Hand-off
 
-Next: `/grill-me` on this spec, then split it into build tickets under `.scratch/lakudemis-slice-1/issues/`.
+Grilled on 2026-09-25 and split into 15 build tickets in [issues/](issues/), from [01 Workspace skeleton](issues/01-workspace-skeleton.md) to [15 Slice 1 acceptance run](issues/15-slice-1-acceptance.md). All are `ready-for-agent`. Work the frontier: any ticket whose blockers are all done.
