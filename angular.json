@@ -122,7 +122,8 @@
                 "input": "projects/web/public"
               }
             ],
-            "styles": ["projects/web/src/styles.css"]
+            "styles": ["projects/web/src/styles.css"],
+            "allowedCommonJsDependencies": ["@messageformat/core"]
           },
           "configurations": {
             "production": {

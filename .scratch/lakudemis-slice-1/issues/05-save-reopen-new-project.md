@@ -4,12 +4,12 @@
 
 **Blocked by:** 03 Draw one Room, see its area
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Save → open → save produces a **byte-identical** file.
-- [ ] Reloading the page restores the working copy exactly.
-- [ ] The file holds Source data only; no Derived values.
-- [ ] A file with a higher `schemaVersion` is refused with a clear message; the migration chain has a tested (no-op) v1 step.
-- [ ] The unsaved-changes marker appears after an edit and clears after saving.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] Save → open → save produces a **byte-identical** file.
+- [x] Reloading the page restores the working copy exactly.
+- [x] The file holds Source data only; no Derived values.
+- [x] A file with a higher `schemaVersion` is refused with a clear message; the migration chain has a tested (no-op) v1 step.
+- [x] The unsaved-changes marker appears after an edit and clears after saving.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.

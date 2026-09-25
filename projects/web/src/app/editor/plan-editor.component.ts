@@ -8,6 +8,7 @@ import {
   input,
   isDevMode,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
@@ -65,6 +66,14 @@ export class PlanEditorComponent {
       }
       this.tool.set(this.editor.toolName);
     });
+    // A different project: abandon what the tool was doing and show the whole plan.
+    effect(() => {
+      this.project.generation();
+      untracked(() => {
+        this.editor?.cancel();
+        this.editor?.fit();
+      });
+    });
     // Redraw whenever the model, the Level or the language changes.
     effect(() => {
       this.project.store.model();
@@ -78,6 +87,10 @@ export class PlanEditorComponent {
   setTool(name: ToolName): void {
     this.editor?.setTool(name);
     this.tool.set(this.editor?.toolName ?? null);
+  }
+
+  cancel(): void {
+    this.editor?.cancel();
   }
 
   fit(): void {

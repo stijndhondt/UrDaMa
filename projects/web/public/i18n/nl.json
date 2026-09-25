@@ -40,7 +40,21 @@
     "defaultName": "Ruimte {n}"
   },
   "project": {
-    "untitled": "Naamloos project"
+    "untitled": "Naamloos project",
+    "menu": "Project",
+    "unsaved": "niet-opgeslagen wijzigingen",
+    "open": "Openen…",
+    "save": "Opslaan",
+    "saveAs": "Opslaan als…",
+    "new": {
+      "action": "Nieuw…",
+      "title": "Nieuw project",
+      "unsavedWarning": "Het open project heeft niet-opgeslagen wijzigingen. Die gaan verloren tenzij je eerst opslaat.",
+      "name": "Naam",
+      "wallThickness": "Muurdikte (standaard)",
+      "roomHeight": "Ruimtehoogte (standaard)",
+      "create": "Aanmaken"
+    }
   },
   "levels": {
     "groundFloor": "Gelijkvloers"
@@ -63,5 +77,19 @@
   },
   "areas": {
     "noRoom": "geen ruimte"
+  },
+  "common": {
+    "cancel": "Annuleren"
+  },
+  "file": {
+    "saved": "Opgeslagen als {name}.",
+    "opened": "{name} geopend.",
+    "notJson": "Dit bestand is geen Lakudemis-project (het is geen JSON).",
+    "notAProject": "Dit bestand is geen Lakudemis-project.",
+    "newerVersion": "Dit project is opgeslagen met een nieuwere versie van Lakudemis (bestandsversie {version}; deze app leest tot {supported}).",
+    "cannotMigrate": "Bestandsversie {version} van dit project kan niet bijgewerkt worden.",
+    "broken": "Dit projectbestand is beschadigd en werd niet geopend.",
+    "writeFailed": "Het bestand kon niet geschreven worden.",
+    "accessFailed": "De browser gaf geen toegang tot het bestand."
   }
 }

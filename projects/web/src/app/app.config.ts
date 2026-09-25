@@ -9,6 +9,7 @@ import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { TranslateMessageFormatCompiler } from 'ngx-translate-messageformat-compiler';
 import { LanguageService } from './language';
+import { ProjectService } from './project/project.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -22,6 +23,12 @@ export const appConfig: ApplicationConfig = {
       loader: provideTranslateHttpLoader({ prefix: 'i18n/', suffix: '.json' }),
       compiler: TranslateMessageFormatCompiler,
     }),
-    provideAppInitializer(() => inject(LanguageService).load()),
+    // Load the chosen language first (default names are translated), then restore the working copy.
+    provideAppInitializer(async () => {
+      const language = inject(LanguageService);
+      const project = inject(ProjectService);
+      await language.load();
+      await project.restore();
+    }),
   ],
 };

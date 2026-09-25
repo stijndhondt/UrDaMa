@@ -21,3 +21,4 @@ export * from './lib/geometry/polygon';
 export * from './lib/geometry/level-geometry';
 export * from './lib/commands/add-room';
 export * from './lib/commands/seeds';
+export * from './lib/file/project-file';

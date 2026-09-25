@@ -1,9 +1,12 @@
-import { Component, HostListener, inject, viewChild } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { Component, HostListener, effect, inject, viewChild } from '@angular/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ToolName } from '@lakudemis/editor2d';
 import { PlanEditorComponent } from './editor/plan-editor.component';
 import { LANGUAGES, LanguageService } from './language';
 import { MessagesService } from './messages.service';
+import { FileService, type FileResult } from './project/file.service';
+import { NewProjectDialogComponent } from './project/new-project-dialog.component';
+import { ProjectService } from './project/project.service';
 
 interface ToolButton {
   readonly name: ToolName;
@@ -15,10 +18,32 @@ const TOOLS: readonly ToolButton[] = [{ name: 'room', key: 'R' }];
 
 @Component({
   selector: 'lk-root',
-  imports: [TranslatePipe, PlanEditorComponent],
+  imports: [TranslatePipe, PlanEditorComponent, NewProjectDialogComponent],
   template: `
     <header class="bar">
       <h1 class="brand">Lakudemis</h1>
+      <div class="project" [title]="project.fileName() ?? ''">
+        <span class="name">{{ project.name() }}</span>
+        @if (project.unsaved()) {
+          <span class="unsaved" [title]="'project.unsaved' | translate"
+            >● {{ 'project.unsaved' | translate }}</span
+          >
+        }
+      </div>
+      <nav class="menu" [attr.aria-label]="'project.menu' | translate">
+        <button type="button" (click)="newDialog().open()">
+          {{ 'project.new.action' | translate }}
+        </button>
+        <button type="button" (click)="open()" [title]="'Ctrl+O'">
+          {{ 'project.open' | translate }}
+        </button>
+        <button type="button" (click)="save()" [title]="'Ctrl+S'">
+          {{ 'project.save' | translate }}
+        </button>
+        <button type="button" (click)="saveAs()" [title]="'Ctrl+Shift+S'">
+          {{ 'project.saveAs' | translate }}
+        </button>
+      </nav>
       <nav class="tools" [attr.aria-label]="'app.tools' | translate">
         @for (t of tools; track t.name) {
           <button
@@ -64,6 +89,7 @@ const TOOLS: readonly ToolButton[] = [{ name: 'room', key: 'R' }];
         <span class="hint">{{ 'app.hint' | translate }}</span>
       }
     </footer>
+    <lk-new-project-dialog />
   `,
   styles: `
     :host {
@@ -78,15 +104,36 @@ const TOOLS: readonly ToolButton[] = [{ name: 'room', key: 'R' }];
       padding: 6px 12px;
       border-bottom: 1px solid var(--line);
       background: var(--panel);
+      flex-wrap: wrap;
     }
     .brand {
       font-size: 16px;
-      margin: 0 8px 0 0;
+      margin: 0;
     }
+    .project {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+    }
+    .project .name {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 240px;
+    }
+    .unsaved {
+      color: var(--warn);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .menu,
     .tools {
       display: flex;
       gap: 4px;
     }
+    .menu button,
     .tools button {
       display: flex;
       align-items: center;
@@ -151,26 +198,65 @@ const TOOLS: readonly ToolButton[] = [{ name: 'room', key: 'R' }];
 export class App {
   protected readonly language = inject(LanguageService);
   protected readonly messages = inject(MessagesService);
+  protected readonly project = inject(ProjectService);
+  private readonly files = inject(FileService);
+  private readonly translate = inject(TranslateService);
   protected readonly languages = LANGUAGES;
   protected readonly tools = TOOLS;
   protected readonly editor = viewChild(PlanEditorComponent);
+  protected readonly newDialog = viewChild.required(NewProjectDialogComponent);
+
+  constructor() {
+    effect(() => {
+      document.title = `${this.project.unsaved() ? '● ' : ''}${this.project.name()} — Lakudemis`;
+    });
+  }
 
   protected selectTool(name: ToolName): void {
     this.messages.clear();
     this.editor()?.setTool(name);
   }
 
+  protected async save(): Promise<void> {
+    this.report(await this.files.save(), 'file.saved');
+  }
+
+  protected async saveAs(): Promise<void> {
+    this.report(await this.files.saveAs(), 'file.saved');
+  }
+
+  protected async open(): Promise<void> {
+    this.editor()?.cancel();
+    this.report(await this.files.open(), 'file.opened');
+  }
+
+  private report(result: FileResult, done: string): void {
+    if (result.ok) this.messages.info({ key: done, params: { name: result.name } });
+    else if (result.reason) this.messages.refused(result.reason);
+  }
+
   @HostListener('window:keydown', ['$event'])
   protected onKeyDown(e: KeyboardEvent): void {
-    const target = e.target as HTMLElement | null;
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const key = e.key.toLowerCase();
+      if (key === 's') {
+        e.preventDefault();
+        void (e.shiftKey ? this.saveAs() : this.save());
+      } else if (key === 'o') {
+        e.preventDefault();
+        void this.open();
+      }
+      return;
+    }
+    const target = e.target instanceof HTMLElement ? e.target : null;
     if (
       target &&
       (target.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName))
     )
       return;
+    if (target?.closest('dialog')) return;
     const editor = this.editor();
-    if (!editor) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!editor || e.altKey) return;
     // The active tool gets the key first (typed values, S, Esc, …).
     if (editor.keyDown(e)) {
       e.preventDefault();

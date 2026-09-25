@@ -40,7 +40,21 @@
     "defaultName": "Room {n}"
   },
   "project": {
-    "untitled": "Untitled project"
+    "untitled": "Untitled project",
+    "menu": "Project",
+    "unsaved": "unsaved changes",
+    "open": "Open…",
+    "save": "Save",
+    "saveAs": "Save as…",
+    "new": {
+      "action": "New…",
+      "title": "New project",
+      "unsavedWarning": "The open project has unsaved changes. They are lost unless you save first.",
+      "name": "Name",
+      "wallThickness": "Wall thickness (Preset)",
+      "roomHeight": "Room height (Preset)",
+      "create": "Create"
+    }
   },
   "levels": {
     "groundFloor": "Ground floor"
@@ -63,5 +77,19 @@
   },
   "areas": {
     "noRoom": "no Room"
+  },
+  "common": {
+    "cancel": "Cancel"
+  },
+  "file": {
+    "saved": "Saved as {name}.",
+    "opened": "Opened {name}.",
+    "notJson": "This file is not a Lakudemis project (it is not JSON).",
+    "notAProject": "This file is not a Lakudemis project.",
+    "newerVersion": "This project was saved by a newer version of Lakudemis (file version {version}; this app reads up to {supported}).",
+    "cannotMigrate": "This project's file version {version} cannot be upgraded.",
+    "broken": "This project file is damaged and was not opened.",
+    "writeFailed": "The file could not be written.",
+    "accessFailed": "The browser did not allow access to the file."
   }
 }
