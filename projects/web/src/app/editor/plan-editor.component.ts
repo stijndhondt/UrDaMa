@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  isDevMode,
   signal,
   viewChild,
 } from '@angular/core';
@@ -57,6 +58,11 @@ export class PlanEditorComponent {
         refused: (reason, at) => this.messages.refused(reason, at),
       };
       this.editor = new PlanEditor(this.canvas().nativeElement, host);
+      // Development only: lets end-to-end checks convert between mm and screen positions.
+      if (isDevMode()) {
+        const debug = (globalThis as unknown as Record<string, object | undefined>)['__lakudemis'];
+        if (debug) Object.assign(debug, { editor: this.editor });
+      }
       this.tool.set(this.editor.toolName);
     });
     // Redraw whenever the model, the Level or the language changes.

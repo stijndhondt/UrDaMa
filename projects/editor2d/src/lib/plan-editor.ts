@@ -163,7 +163,7 @@ export class PlanEditor {
   }
 
   private onPointerDown(e: PointerEvent): void {
-    this.canvas.focus();
+    this.canvas.focus({ preventScroll: true });
     this.canvas.setPointerCapture(e.pointerId);
     if (e.button === 1 || (e.button === 0 && this.spaceHeld)) {
       this.pan = { x: e.clientX, y: e.clientY };

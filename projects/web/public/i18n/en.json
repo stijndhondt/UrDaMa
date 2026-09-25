@@ -49,11 +49,19 @@
     "drawRoom": {
       "label": "Draw room ({name})",
       "tooSmall": "A Room must be at least {min} mm wide and deep."
+    },
+    "addRoom": {
+      "label": "Add room ({name})",
+      "notEnclosed": "There is no enclosed area here.",
+      "occupied": "This area already is a Room."
     }
   },
   "invariants": {
     "missingReference": "Refused: {what} {id} does not exist.",
     "zeroLength": "Refused: wall {id} would have no length.",
     "twoCorners": "Refused: wall {wall} would get two corner connections at one end."
+  },
+  "areas": {
+    "noRoom": "no Room"
   }
 }

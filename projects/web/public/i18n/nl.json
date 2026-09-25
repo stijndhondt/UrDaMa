@@ -49,11 +49,19 @@
     "drawRoom": {
       "label": "Ruimte tekenen ({name})",
       "tooSmall": "Een ruimte moet minstens {min} mm breed en diep zijn."
+    },
+    "addRoom": {
+      "label": "Ruimte toevoegen ({name})",
+      "notEnclosed": "Hier is geen afgesloten ruimte.",
+      "occupied": "Deze ruimte bestaat al."
     }
   },
   "invariants": {
     "missingReference": "Geweigerd: {what} {id} bestaat niet.",
     "zeroLength": "Geweigerd: muur {id} zou geen lengte hebben.",
     "twoCorners": "Geweigerd: muur {wall} zou twee hoekverbindingen aan één uiteinde krijgen."
+  },
+  "areas": {
+    "noRoom": "geen ruimte"
   }
 }

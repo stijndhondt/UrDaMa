@@ -28,10 +28,13 @@ export class ProjectService {
     this.selectedLevel.set(id);
   }
 
-  /** The default name for the next Room, e.g. "Room 3" / "Ruimte 3". */
+  /** The default name for the next Room, e.g. "Room 3" / "Ruimte 3": the first number not in use. */
   nextRoomName(): string {
-    const n = Object.keys(this.store.committedModel().rooms).length + 1;
-    return this.translate.instant('rooms.defaultName', { n });
+    const used = new Set(Object.values(this.store.committedModel().rooms).map((r) => r.name));
+    for (let n = used.size + 1; ; n++) {
+      const name: string = this.translate.instant('rooms.defaultName', { n });
+      if (!used.has(name)) return name;
+    }
   }
 
   private newModel(): Model {

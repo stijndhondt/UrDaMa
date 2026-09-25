@@ -1,10 +1,26 @@
 /**
  * The Room tool (R): the main way to draw (Box-drawing interaction, spec "Editor").
  * Drag a rectangle that is the Room's inside size as measured with a tape (S: outside size),
- * or click, then type width, Tab, depth, Enter. The Room and its area show live while dragging.
+ * or click, then type width, Tab, depth, Enter. Corners snap to Wall corners and faces, so a Room
+ * started on an existing Wall's far face shares that Wall. Clicking inside an enclosed area that
+ * has no Room turns it into a Room. The Room and its area show live while dragging.
  */
-import { drawRoom, type DrawRoomArgs, type Vec } from '@lakudemis/core';
-import { increment, snapToIncrement } from '../snap';
+import {
+  addRoom,
+  drawRoom,
+  insideArea,
+  levelWallOutlines,
+  type DrawRoomArgs,
+  type Vec,
+} from '@lakudemis/core';
+import {
+  drawSnap,
+  increment,
+  snapToIncrement,
+  snapToWalls,
+  SNAP_RADIUS_PX,
+  type WallSnap,
+} from '../snap';
 import { parseLength } from '../units';
 import type { PointerInfo, Tool, ToolContext } from './tool';
 
@@ -19,6 +35,7 @@ export class RoomTool implements Tool {
   private state: State = { kind: 'idle' };
   private size: 'inside' | 'outside' = 'inside';
   private typed: { w: number | null; d: number | null } = { w: null, d: null };
+  private snapped: WallSnap | null = null;
 
   constructor(private readonly ctx: ToolContext) {}
 
@@ -34,8 +51,12 @@ export class RoomTool implements Tool {
   }
 
   pointerMove(p: PointerInfo): void {
-    if (this.state.kind === 'idle') return;
-    this.state.current = this.snap(p);
+    const point = this.snap(p);
+    if (this.state.kind === 'idle') {
+      this.ctx.invalidate(); // show the snap marker
+      return;
+    }
+    this.state.current = point;
     this.updatePreview();
   }
 
@@ -43,9 +64,10 @@ export class RoomTool implements Tool {
     if (this.state.kind !== 'dragging') return;
     this.state.current = this.snap(p);
     const { start, current } = this.state;
-    const dragged = Math.abs(current.x - start.x) > 0 || Math.abs(current.y - start.y) > 0;
+    const dragged = current.x !== start.x || current.y !== start.y;
     if (this.ctx.typed.isOpen) return; // wait for Enter
     if (!dragged) {
+      if (this.createRoomInEmptyArea(p)) return;
       // A click: the start corner is placed; type the sizes or click the opposite corner.
       this.state = { kind: 'placed', start, current };
       this.ctx.invalidate();
@@ -60,7 +82,7 @@ export class RoomTool implements Tool {
       this.updatePreview();
       return true;
     }
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && this.state.kind !== 'idle') {
       this.cancel();
       return true;
     }
@@ -99,6 +121,7 @@ export class RoomTool implements Tool {
   }
 
   drawOverlay(ctx: CanvasRenderingContext2D): void {
+    if (this.snapped) drawSnap(ctx, this.ctx.view.toScreen(this.snapped.point), this.snapped.kind);
     if (this.state.kind === 'idle') return;
     const { from, to } = this.rectangle();
     const a = this.ctx.view.toScreen(from);
@@ -126,12 +149,44 @@ export class RoomTool implements Tool {
     )}`;
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.fillStyle = '#2f6fde';
+    ctx.textAlign = 'left';
     ctx.fillText(label, Math.max(a.x, b.x) + 10, Math.max(a.y, b.y) + 16);
     ctx.restore();
   }
 
+  /** Wall corners and faces win over drag increments. */
   private snap(p: PointerInfo): Vec {
-    return snapToIncrement(p.model, increment(p));
+    // Snap to committed Walls only: never to the Room being drawn.
+    const outlines = levelWallOutlines(
+      this.ctx.host.store.committedModel(),
+      this.ctx.host.level(),
+    ).values();
+    this.snapped = snapToWalls(
+      p.model,
+      outlines,
+      SNAP_RADIUS_PX / this.ctx.view.scale,
+      increment(p),
+    );
+    return this.snapped?.point ?? snapToIncrement(p.model, increment(p));
+  }
+
+  /** A click inside an enclosed area without a Room makes it a Room. */
+  private createRoomInEmptyArea(p: PointerInfo): boolean {
+    const level = this.ctx.host.level();
+    const empty = this.ctx.host.store.values
+      .level(level)
+      .footprint()
+      .areas.find((a) => !a.rooms.length && insideArea(p.model, a.outline, a.islands));
+    if (!empty) return false;
+    const result = this.ctx.host.store.run(addRoom, {
+      level,
+      seed: p.model,
+      name: this.ctx.host.nextRoomName(),
+    });
+    if (!result.ok) this.ctx.host.refused(result.reason, p.screen);
+    this.state = { kind: 'idle' };
+    this.ctx.invalidate();
+    return true;
   }
 
   /** The rectangle to draw: from the start corner, typed sizes win over the pointer. */
@@ -140,11 +195,13 @@ export class RoomTool implements Tool {
     const { start, current } = this.state;
     const sx = Math.sign(current.x - start.x) || 1;
     const sy = Math.sign(current.y - start.y) || 1;
-    const to = {
-      x: this.typed.w !== null ? start.x + sx * this.typed.w : current.x,
-      y: this.typed.d !== null ? start.y + sy * this.typed.d : current.y,
+    return {
+      from: start,
+      to: {
+        x: this.typed.w !== null ? start.x + sx * this.typed.w : current.x,
+        y: this.typed.d !== null ? start.y + sy * this.typed.d : current.y,
+      },
     };
-    return { from: start, to };
   }
 
   private args(): DrawRoomArgs {

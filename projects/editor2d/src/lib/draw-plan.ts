@@ -75,7 +75,8 @@ export function drawPlan(
   const outlines = level.outlines();
   const box = view.visible(width, height);
 
-  // Enclosed areas (Room floors), with free-standing islands cut out.
+  // Enclosed areas (Room floors), with free-standing islands cut out. Areas without a Room are hatched.
+  const hatch = hatchPattern(ctx);
   for (const area of fp.areas) {
     if (!overlaps(area.outline, box)) continue;
     const changed = area.rooms.some((r) => options.highlight?.has(r));
@@ -84,6 +85,10 @@ export function drawPlan(
     for (const island of area.islands) tracePolygon(ctx, view, island);
     ctx.fillStyle = changed ? PLAN_COLORS.areaChanged : PLAN_COLORS.area;
     ctx.fill('evenodd');
+    if (!area.rooms.length && hatch) {
+      ctx.fillStyle = hatch;
+      ctx.fill('evenodd');
+    }
   }
 
   // Walls: one batched path; a thick stroke under the fill merges touching outlines into one.
@@ -98,6 +103,8 @@ export function drawPlan(
   ctx.stroke();
   ctx.fillStyle = PLAN_COLORS.wallFill;
   ctx.fill('nonzero');
+
+  drawEmptyAreaLabels(ctx, view, host, fp.areas);
 
   // Room labels at their Seed points: the name, and the Net floor area or why there is none.
   ctx.textAlign = 'center';
@@ -121,6 +128,51 @@ export function drawPlan(
       ctx.fillText(host.format.area(detection.area.area), s.x, s.y + 9);
     }
   }
+}
+
+/** "no Room · 9.96 m²" in the middle of each enclosed area without a Room (click it to make a Room). */
+export function drawEmptyAreaLabels(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  host: EditorHost,
+  areas: readonly { outline: readonly Vec[]; rooms: readonly RoomId[]; area: number }[],
+): void {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '12px system-ui, sans-serif';
+  for (const area of areas) {
+    if (area.rooms.length) continue;
+    const xs = area.outline.map((p) => p.x);
+    const ys = area.outline.map((p) => p.y);
+    const c = view.toScreen({
+      x: (Math.min(...xs) + Math.max(...xs)) / 2,
+      y: (Math.min(...ys) + Math.max(...ys)) / 2,
+    });
+    const text = `${host.text('areas.noRoom')} · ${host.format.area(area.area)}`;
+    const w = ctx.measureText(text).width + 8;
+    ctx.fillStyle = 'rgba(251,250,247,.9)';
+    ctx.fillRect(c.x - w / 2, c.y - 9, w, 18);
+    ctx.fillStyle = PLAN_COLORS.muted;
+    ctx.fillText(text, c.x, c.y);
+  }
+}
+
+let cachedHatch: { ctx: CanvasRenderingContext2D; pattern: CanvasPattern | null } | null = null;
+function hatchPattern(ctx: CanvasRenderingContext2D): CanvasPattern | null {
+  if (cachedHatch?.ctx === ctx) return cachedHatch.pattern;
+  const tile = document.createElement('canvas');
+  tile.width = tile.height = 10;
+  const t = tile.getContext('2d');
+  if (t) {
+    t.strokeStyle = '#d6d2c9';
+    t.lineWidth = 1;
+    t.beginPath();
+    t.moveTo(0, 10);
+    t.lineTo(10, 0);
+    t.stroke();
+  }
+  cachedHatch = { ctx, pattern: ctx.createPattern(tile, 'repeat') };
+  return cachedHatch.pattern;
 }
 
 function drawGrid(ctx: CanvasRenderingContext2D, view: View, width: number, height: number): void {

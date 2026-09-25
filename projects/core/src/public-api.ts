@@ -17,3 +17,7 @@ export * from './lib/commands/command';
 export * from './lib/commands/draw-room';
 export * from './lib/values/building-values';
 export * from './lib/store/project-store';
+export * from './lib/geometry/polygon';
+export * from './lib/geometry/level-geometry';
+export * from './lib/commands/add-room';
+export * from './lib/commands/seeds';
