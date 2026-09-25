@@ -14,6 +14,10 @@
     "room": {
       "name": "Ruimte",
       "hint": "Teken een ruimte op haar binnenmaat"
+    },
+    "wall": {
+      "name": "Muur",
+      "hint": "Teken één muur: slepen, of klikken en een lengte typen"
     }
   },
   "editor": {
@@ -26,6 +30,14 @@
     "room": {
       "insideSize": "binnenmaat",
       "outsideSize": "buitenmaat"
+    },
+    "wall": {
+      "locked": "vast",
+      "side": {
+        "right": "rechts van de lijn",
+        "left": "links van de lijn",
+        "centre": "gecentreerd"
+      }
     }
   },
   "warnings": {
@@ -68,12 +80,18 @@
       "label": "Ruimte toevoegen ({name})",
       "notEnclosed": "Hier is geen afgesloten ruimte.",
       "occupied": "Deze ruimte bestaat al."
+    },
+    "drawWall": {
+      "label": "Muur tekenen",
+      "tooShort": "Een muur moet minstens {min} mm lang zijn.",
+      "insideWall": "Deze muur zou volledig in een andere muur liggen."
     }
   },
   "invariants": {
     "missingReference": "Geweigerd: {what} {id} bestaat niet.",
     "zeroLength": "Geweigerd: muur {id} zou geen lengte hebben.",
-    "twoCorners": "Geweigerd: muur {wall} zou twee hoekverbindingen aan één uiteinde krijgen."
+    "twoCorners": "Geweigerd: muur {wall} zou twee hoekverbindingen aan één uiteinde krijgen.",
+    "overlap": "Geweigerd: muren {a} en {b} zouden overlappen."
   },
   "areas": {
     "noRoom": "geen ruimte"

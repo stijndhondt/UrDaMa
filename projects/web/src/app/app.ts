@@ -15,7 +15,10 @@ interface ToolButton {
 }
 
 /** Tools available so far, with their keyboard shortcuts (the same in every language). */
-const TOOLS: readonly ToolButton[] = [{ name: 'room', key: 'R' }];
+const TOOLS: readonly ToolButton[] = [
+  { name: 'room', key: 'R' },
+  { name: 'wall', key: 'W' },
+];
 
 @Component({
   selector: 'lk-root',

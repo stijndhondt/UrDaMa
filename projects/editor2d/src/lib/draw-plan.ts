@@ -1,7 +1,7 @@
 /**
  * Draws one Level of the plan (Canvas2D, ADR 0005): only what is on screen, Walls batched into one path.
  */
-import type { RoomId, Vec } from '@lakudemis/core';
+import type { LevelSlice, RoomId, Vec, WallId, WallOutline } from '@lakudemis/core';
 import type { EditorHost } from './host';
 import type { View } from './view';
 
@@ -104,6 +104,7 @@ export function drawPlan(
   ctx.fillStyle = PLAN_COLORS.wallFill;
   ctx.fill('nonzero');
 
+  drawWallDetails(ctx, view, host, slice, outlines, box);
   drawEmptyAreaLabels(ctx, view, host, fp.areas);
 
   // Room labels at their Seed points: the name, and the Net floor area or why there is none.
@@ -155,6 +156,76 @@ export function drawEmptyAreaLabels(
     ctx.fillStyle = PLAN_COLORS.muted;
     ctx.fillText(text, c.x, c.y);
   }
+}
+
+/**
+ * Always visible (Slice 1 spec): the length of every Wall face, and a marker at every Wall end:
+ * green = corner Wall connection, blue = T, red square = connected to nothing.
+ */
+export function drawWallDetails(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  host: EditorHost,
+  slice: LevelSlice,
+  outlines: ReadonlyMap<WallId, WallOutline>,
+  box: Box,
+): void {
+  const ends = new Map<string, 'corner' | 'tee'>();
+  for (const c of slice.connections) {
+    ends.set(`${c.wall}:${c.end}`, c.kind);
+    if (c.kind === 'corner') ends.set(`${c.to}:${c.toEnd}`, 'corner');
+  }
+  ctx.save();
+  ctx.font = '11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const wall of slice.walls) {
+    const outline = outlines.get(wall.id);
+    if (!outline || !overlaps(outline, box)) continue;
+    const centre = {
+      x: (outline[0].x + outline[1].x + outline[2].x + outline[3].x) / 4,
+      y: (outline[0].y + outline[1].y + outline[2].y + outline[3].y) / 4,
+    };
+    for (const [a, b] of [
+      [outline[0], outline[1]],
+      [outline[3], outline[2]],
+    ] as const) {
+      const length = Math.hypot(b.x - a.x, b.y - a.y);
+      if (length * view.scale < 45) continue;
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const out = { x: mid.x - centre.x, y: mid.y - centre.y };
+      const outLength = Math.hypot(out.x, out.y) || 1;
+      const s = view.toScreen(mid);
+      const pos = { x: s.x + (out.x / outLength) * 10, y: s.y + (out.y / outLength) * 10 };
+      let angle = Math.atan2(b.y - a.y, b.x - a.x);
+      if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+      ctx.rotate(angle);
+      const text = host.format.length(length);
+      const w = ctx.measureText(text).width + 6;
+      ctx.fillStyle = 'rgba(251,250,247,.85)';
+      ctx.fillRect(-w / 2, -7, w, 14);
+      ctx.fillStyle = PLAN_COLORS.label;
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    }
+    for (const end of ['start', 'end'] as const) {
+      const s = view.toScreen(wall[end]);
+      const kind = ends.get(`${wall.id}:${end}`);
+      if (!kind) {
+        ctx.strokeStyle = PLAN_COLORS.bad;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(s.x - 4, s.y - 4, 8, 8);
+      } else {
+        ctx.fillStyle = kind === 'corner' ? '#1f9d55' : PLAN_COLORS.accent;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
 }
 
 let cachedHatch: { ctx: CanvasRenderingContext2D; pattern: CanvasPattern | null } | null = null;

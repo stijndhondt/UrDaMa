@@ -14,6 +14,10 @@
     "room": {
       "name": "Room",
       "hint": "Draw a Room at its inside size"
+    },
+    "wall": {
+      "name": "Wall",
+      "hint": "Draw a single Wall: drag, or click and type a length"
     }
   },
   "editor": {
@@ -26,6 +30,14 @@
     "room": {
       "insideSize": "inside size",
       "outsideSize": "outside size"
+    },
+    "wall": {
+      "locked": "locked",
+      "side": {
+        "right": "right of the line",
+        "left": "left of the line",
+        "centre": "centred"
+      }
     }
   },
   "warnings": {
@@ -68,12 +80,18 @@
       "label": "Add room ({name})",
       "notEnclosed": "There is no enclosed area here.",
       "occupied": "This area already is a Room."
+    },
+    "drawWall": {
+      "label": "Draw wall",
+      "tooShort": "A Wall must be at least {min} mm long.",
+      "insideWall": "This Wall would lie entirely inside another Wall."
     }
   },
   "invariants": {
     "missingReference": "Refused: {what} {id} does not exist.",
     "zeroLength": "Refused: wall {id} would have no length.",
-    "twoCorners": "Refused: wall {wall} would get two corner connections at one end."
+    "twoCorners": "Refused: wall {wall} would get two corner connections at one end.",
+    "overlap": "Refused: walls {a} and {b} would overlap."
   },
   "areas": {
     "noRoom": "no Room"

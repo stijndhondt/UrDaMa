@@ -4,12 +4,12 @@
 
 **Blocked by:** 04 Rooms side by side
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Click, type 3.73, rotate: the Wall stays exactly 3.73 m; Tab + 90 + Enter places it at 90°.
-- [ ] Snapping creates stored Wall connections; the plan shows corner, T and red unconnected ends distinctly.
-- [ ] Mitred corners and T-joins render correctly for different thicknesses; face lengths are shown on every Wall.
-- [ ] No command can create overlapping Walls: overlaps snap against the face, crossings split into T-connected Walls.
-- [ ] Closing a loop with the Wall tool creates a Room.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] Click, type 3.73, rotate: the Wall stays exactly 3.73 m; Tab + 90 + Enter places it at 90°.
+- [x] Snapping creates stored Wall connections; the plan shows corner, T and red unconnected ends distinctly.
+- [x] Mitred corners and T-joins render correctly for different thicknesses; face lengths are shown on every Wall.
+- [x] No command can create overlapping Walls: overlaps snap against the face, crossings split into T-connected Walls.
+- [x] Closing a loop with the Wall tool creates a Room.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.

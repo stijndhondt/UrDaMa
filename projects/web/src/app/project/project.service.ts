@@ -115,11 +115,13 @@ export class ProjectService {
   }
 
   /** The default name for the next Room, e.g. "Room 3" / "Ruimte 3": the first number not in use. */
-  nextRoomName(): string {
+  nextRoomName(offset = 0): string {
     const used = new Set(Object.values(this.store.committedModel().rooms).map((r) => r.name));
+    let skip = offset;
     for (let n = used.size + 1; ; n++) {
       const name: string = this.translate.instant('rooms.defaultName', { n });
-      if (!used.has(name)) return name;
+      if (used.has(name)) continue;
+      if (skip-- === 0) return name;
     }
   }
 

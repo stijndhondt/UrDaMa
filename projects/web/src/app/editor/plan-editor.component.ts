@@ -55,7 +55,7 @@ export class PlanEditorComponent {
         level: () => this.project.level(),
         text: (key, params) => this.translate.instant(key, params),
         format: { length: this.format.length, area: this.format.area },
-        nextRoomName: () => this.project.nextRoomName(),
+        nextRoomName: (offset) => this.project.nextRoomName(offset),
         refused: (reason, at) => this.messages.refused(reason, at),
       };
       this.editor = new PlanEditor(this.canvas().nativeElement, host);

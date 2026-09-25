@@ -12,8 +12,8 @@ export interface EditorHost {
     readonly length: (mm: number) => string;
     readonly area: (mm2: number) => string;
   };
-  /** The name for the next new Room, e.g. "Room 3". */
-  readonly nextRoomName: () => string;
+  /** The name for a new Room, e.g. "Room 3"; `offset` gives the 2nd, 3rd, … name when several are made at once. */
+  readonly nextRoomName: (offset?: number) => string;
   /** A command was refused: show its reason near the cursor and in the message bar. */
   readonly refused: (reason: Message, at: { x: number; y: number }) => void;
 }
