@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "volta",
+      "runtimeArgs": ["run", "--node", "24.21.0", "pnpm", "start"],
+      "port": 4200
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+dist
+out-tsc
+.angular
+node_modules
+coverage
+pnpm-lock.yaml
+.scratch
+.claude
+.agents
+Docs
+*.md

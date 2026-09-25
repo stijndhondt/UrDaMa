@@ -1,0 +1,11 @@
+{
+  "app": {
+    "tagline": "Elk onderdeel. Eén model.",
+    "language": "Taal",
+    "languages": {
+      "en": "English",
+      "nl": "Nederlands"
+    },
+    "planLabel": "Grondplan"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "app": {
+    "tagline": "Every part. One model.",
+    "language": "Language",
+    "languages": {
+      "en": "English",
+      "nl": "Nederlands"
+    },
+    "planLabel": "Floor plan"
+  }
+}

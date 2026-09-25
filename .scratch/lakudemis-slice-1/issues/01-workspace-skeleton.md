@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `pnpm install`, `pnpm start`, build, lint and `ng test` (Vitest) all succeed from a fresh clone.
-- [ ] TypeScript strict mode is on everywhere; ESLint + Prettier are configured.
-- [ ] An ESLint rule fails the build when `core` imports the DOM or any Angular API other than `signal` / `computed` from `@angular/core` (and only from one wrapper module). A deliberate violation proves it.
-- [ ] Pre-commit hooks run format, type check and tests.
-- [ ] The app shows an empty canvas and switches between English and Dutch at runtime.
-- [ ] The licence file is AGPL-3.0-or-later, and the README states it.
+- [x] `pnpm install`, `pnpm start`, build, lint and `ng test` (Vitest) all succeed from a fresh clone.
+- [x] TypeScript strict mode is on everywhere; ESLint + Prettier are configured.
+- [x] An ESLint rule fails the build when `core` imports the DOM or any Angular API other than `signal` / `computed` from `@angular/core` (and only from one wrapper module). A deliberate violation proves it.
+- [x] Pre-commit hooks run format, type check and tests.
+- [x] The app shows an empty canvas and switches between English and Dutch at runtime.
+- [x] The licence file is AGPL-3.0-or-later, and the README states it.

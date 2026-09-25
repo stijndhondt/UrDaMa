@@ -1,0 +1,57 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "paths": {
+      "@lakudemis/core": ["./projects/core/src/public-api.ts"],
+      "@lakudemis/editor2d": ["./projects/editor2d/src/public-api.ts"],
+      "@lakudemis/render3d": ["./projects/render3d/src/public-api.ts"]
+    },
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve"
+  },
+  "angularCompilerOptions": {
+    "strictTemplates": true,
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/core/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/core/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/editor2d/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/editor2d/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/render3d/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/render3d/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/web/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/web/tsconfig.spec.json"
+    }
+  ]
+}

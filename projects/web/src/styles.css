@@ -1,0 +1,33 @@
+:root {
+  --ink: #1d232b;
+  --muted: #6b7280;
+  --accent: #2f6fde;
+  --ok: #1f9d55;
+  --warn: #c2410c;
+  --bad: #d64545;
+  --line: #e3e1dc;
+  --panel: #ffffff;
+  --paper: #fbfaf7;
+  --bg: #f6f5f2;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+body {
+  font:
+    14px/1.45 system-ui,
+    'Segoe UI',
+    sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+select,
+input,
+button {
+  font: inherit;
+}

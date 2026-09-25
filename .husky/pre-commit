@@ -1,0 +1,5 @@
+# Runs with the Volta-pinned Node (>= 24.15) through `node`, independent of how pnpm is installed.
+node ./node_modules/lint-staged/bin/lint-staged.js
+node ./node_modules/typescript/bin/tsc -b tsconfig.json --noEmit
+node ./node_modules/@angular/cli/bin/ng.js lint
+node scripts/test-all.mjs
