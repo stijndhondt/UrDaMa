@@ -74,6 +74,14 @@ export class PlanEditorComponent {
         this.editor?.fit();
       });
     });
+    // Highlight the Rooms the last edit changed.
+    effect(() => {
+      const change = this.project.store.lastChange();
+      const rooms = new Set(
+        change?.rooms.filter((r) => r.after !== undefined).map((r) => r.room) ?? [],
+      );
+      untracked(() => this.editor?.setHighlight(rooms));
+    });
     // Redraw whenever the model, the Level or the language changes.
     effect(() => {
       this.project.store.model();

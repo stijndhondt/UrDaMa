@@ -4,11 +4,11 @@
 
 **Blocked by:** 03 Draw one Room, see its area
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Undoing every step of a drawing session returns to the empty project exactly; redo replays it exactly.
-- [ ] The undo menu names each step; history is capped at 200 and cleared when another project opens.
-- [ ] After an edit, changed Rooms are highlighted with old → new values; unchanged Rooms are not.
-- [ ] A refused command changes nothing and shows its reason at the cursor and in the message bar.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] Undoing every step of a drawing session returns to the empty project exactly; redo replays it exactly.
+- [x] The undo menu names each step; history is capped at 200 and cleared when another project opens.
+- [x] After an edit, changed Rooms are highlighted with old → new values; unchanged Rooms are not.
+- [x] A refused command changes nothing and shows its reason at the cursor and in the message bar.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.

@@ -1,6 +1,7 @@
-import { Component, HostListener, effect, inject, viewChild } from '@angular/core';
+import { Component, HostListener, computed, effect, inject, viewChild } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ToolName } from '@lakudemis/editor2d';
+import { ChangeSummaryComponent } from './editor/change-summary.component';
 import { PlanEditorComponent } from './editor/plan-editor.component';
 import { LANGUAGES, LanguageService } from './language';
 import { MessagesService } from './messages.service';
@@ -18,7 +19,7 @@ const TOOLS: readonly ToolButton[] = [{ name: 'room', key: 'R' }];
 
 @Component({
   selector: 'lk-root',
-  imports: [TranslatePipe, PlanEditorComponent, NewProjectDialogComponent],
+  imports: [TranslatePipe, PlanEditorComponent, NewProjectDialogComponent, ChangeSummaryComponent],
   template: `
     <header class="bar">
       <h1 class="brand">Lakudemis</h1>
@@ -42,6 +43,38 @@ const TOOLS: readonly ToolButton[] = [{ name: 'room', key: 'R' }];
         </button>
         <button type="button" (click)="saveAs()" [title]="'Ctrl+Shift+S'">
           {{ 'project.saveAs' | translate }}
+        </button>
+      </nav>
+      <nav class="menu" [attr.aria-label]="'history.menu' | translate">
+        <button
+          type="button"
+          [disabled]="!store.canUndo()"
+          (click)="undo()"
+          [title]="
+            store.undoLabel()
+              ? ('history.undo' | translate) +
+                ': ' +
+                (store.undoLabel()!.key | translate: store.undoLabel()!.params) +
+                ' (Ctrl+Z)'
+              : ('history.undo' | translate)
+          "
+        >
+          ↶ {{ 'history.undo' | translate }}
+        </button>
+        <button
+          type="button"
+          [disabled]="!store.canRedo()"
+          (click)="redo()"
+          [title]="
+            store.redoLabel()
+              ? ('history.redo' | translate) +
+                ': ' +
+                (store.redoLabel()!.key | translate: store.redoLabel()!.params) +
+                ' (Ctrl+Y)'
+              : ('history.redo' | translate)
+          "
+        >
+          ↷ {{ 'history.redo' | translate }}
         </button>
       </nav>
       <nav class="tools" [attr.aria-label]="'app.tools' | translate">
@@ -85,6 +118,8 @@ const TOOLS: readonly ToolButton[] = [{ name: 'room', key: 'R' }];
         <span [class.refused]="shown.kind === 'refused'">{{
           shown.message.key | translate: shown.message.params
         }}</span>
+      } @else if (hasChange()) {
+        <lk-change-summary />
       } @else {
         <span class="hint">{{ 'app.hint' | translate }}</span>
       }
@@ -205,6 +240,8 @@ export class App {
   protected readonly tools = TOOLS;
   protected readonly editor = viewChild(PlanEditorComponent);
   protected readonly newDialog = viewChild.required(NewProjectDialogComponent);
+  protected readonly store = this.project.store;
+  protected readonly hasChange = computed(() => (this.store.lastChange()?.rooms.length ?? 0) > 0);
 
   constructor() {
     effect(() => {
@@ -215,6 +252,18 @@ export class App {
   protected selectTool(name: ToolName): void {
     this.messages.clear();
     this.editor()?.setTool(name);
+  }
+
+  protected undo(): void {
+    this.editor()?.cancel();
+    this.messages.clear();
+    this.store.undo();
+  }
+
+  protected redo(): void {
+    this.editor()?.cancel();
+    this.messages.clear();
+    this.store.redo();
   }
 
   protected async save(): Promise<void> {
@@ -245,6 +294,12 @@ export class App {
       } else if (key === 'o') {
         e.preventDefault();
         void this.open();
+      } else if (key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        this.undo();
+      } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        this.redo();
       }
       return;
     }

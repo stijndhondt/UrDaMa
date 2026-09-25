@@ -10,11 +10,33 @@ import type { IdGenerator } from '../model/ids';
 import { checkInvariants } from '../model/invariants';
 import type { Message } from '../model/message';
 import { applyPatch, diffModels, type Patch } from '../model/patch';
-import type { Model } from '../model/types';
+import type { Model, RoomId } from '../model/types';
 import { derived, source, type Derived } from '../reactive';
 import { BuildingValues } from '../values/building-values';
 
 export const UNDO_LIMIT = 200;
+
+/** A Room whose Net floor area an edit changed; `undefined` = the Room did not exist, `null` = not enclosed. */
+export interface RoomChange {
+  readonly room: RoomId;
+  readonly name: string;
+  /** mm² before the edit */
+  readonly before: number | null | undefined;
+  /** mm² after the edit */
+  readonly after: number | null | undefined;
+}
+
+/** What the last edit changed: shown to the user as old → new values (ADR 0003, amended). */
+export interface ChangeSummary {
+  readonly kind: 'do' | 'undo' | 'redo';
+  readonly label: Message;
+  readonly rooms: readonly RoomChange[];
+}
+
+/** Areas closer than this (mm²) count as unchanged: well below the 0.01 m² shown. */
+const AREA_TOLERANCE = 1;
+
+type AreaSnapshot = ReadonlyMap<RoomId, { readonly name: string; readonly area: number | null }>;
 
 export type RunResult =
   { readonly ok: true; readonly patch: Patch } | { readonly ok: false; readonly reason: Message };
@@ -51,6 +73,9 @@ export class ProjectStore {
     () => this.redoStack().at(-1)?.label ?? null,
   );
   readonly isPreviewing = derived('Project · is previewing', () => this.previewModel() !== null);
+  private readonly change = source<ChangeSummary | null>('Project · last change', null);
+  /** What the last command, undo or redo changed (null after opening a project). */
+  readonly lastChange = derived('Project · last change', () => this.change());
 
   constructor(
     initial: Model,
@@ -67,7 +92,7 @@ export class ProjectStore {
     if (!outcome.ok) return outcome;
     const patch = diffModels(before, outcome.model, outcome.label);
     if (!patch.ops.length) return { ok: true, patch };
-    this.committed.set(outcome.model);
+    this.track('do', patch.label, () => this.committed.set(outcome.model));
     this.pushUndo(patch);
     return { ok: true, patch };
   }
@@ -91,7 +116,7 @@ export class ProjectStore {
     const before = this.committed();
     const patch = diffModels(before, p.model, p.label);
     if (!patch.ops.length) return { ok: true, patch };
-    this.committed.set(p.model);
+    this.track('do', patch.label, () => this.committed.set(p.model));
     this.pushUndo(patch);
     return { ok: true, patch };
   }
@@ -100,7 +125,9 @@ export class ProjectStore {
     this.previewModel.set(null);
     const patch = this.undoStack().at(-1);
     if (!patch) return null;
-    this.committed.set(applyPatch(this.committed(), patch, 'reverse'));
+    this.track('undo', patch.label, () =>
+      this.committed.set(applyPatch(this.committed(), patch, 'reverse')),
+    );
     this.undoStack.set(this.undoStack().slice(0, -1));
     this.redoStack.set([...this.redoStack(), patch]);
     return patch;
@@ -110,7 +137,9 @@ export class ProjectStore {
     this.previewModel.set(null);
     const patch = this.redoStack().at(-1);
     if (!patch) return null;
-    this.committed.set(applyPatch(this.committed(), patch, 'forward'));
+    this.track('redo', patch.label, () =>
+      this.committed.set(applyPatch(this.committed(), patch, 'forward')),
+    );
     this.redoStack.set(this.redoStack().slice(0, -1));
     this.undoStack.set([...this.undoStack(), patch]);
     return patch;
@@ -122,6 +151,34 @@ export class ProjectStore {
     this.committed.set(model);
     this.undoStack.set([]);
     this.redoStack.set([]);
+    this.change.set(null);
+  }
+
+  /** Applies a change and records which Rooms' areas it changed. */
+  private track(kind: ChangeSummary['kind'], label: Message, apply: () => void): void {
+    const before = this.areas();
+    apply();
+    const after = this.areas();
+    const rooms: RoomChange[] = [];
+    for (const id of [...new Set([...before.keys(), ...after.keys()])].sort()) {
+      const b = before.get(id);
+      const a = after.get(id);
+      const same =
+        b !== undefined &&
+        a !== undefined &&
+        (b.area === a.area ||
+          (b.area !== null && a.area !== null && Math.abs(b.area - a.area) < AREA_TOLERANCE));
+      if (!same) rooms.push({ room: id, name: (a ?? b)!.name, before: b?.area, after: a?.area });
+    }
+    this.change.set({ kind, label, rooms });
+  }
+
+  private areas(): AreaSnapshot {
+    const snapshot = new Map<RoomId, { name: string; area: number | null }>();
+    for (const room of Object.values(this.committed().rooms)) {
+      snapshot.set(room.id, { name: room.name, area: this.values.room(room.id).netFloorArea() });
+    }
+    return snapshot;
   }
 
   private execute<A>(command: Command<A>, args: A, model: Model): CommandOutcome {

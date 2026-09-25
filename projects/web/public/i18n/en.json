@@ -91,5 +91,16 @@
     "broken": "This project file is damaged and was not opened.",
     "writeFailed": "The file could not be written.",
     "accessFailed": "The browser did not allow access to the file."
+  },
+  "history": {
+    "menu": "History",
+    "undo": "Undo",
+    "redo": "Redo"
+  },
+  "changes": {
+    "undo": "Undone:",
+    "redo": "Redone:",
+    "new": "new,",
+    "removed": "removed"
   }
 }

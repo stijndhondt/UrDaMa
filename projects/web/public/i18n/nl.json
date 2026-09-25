@@ -91,5 +91,16 @@
     "broken": "Dit projectbestand is beschadigd en werd niet geopend.",
     "writeFailed": "Het bestand kon niet geschreven worden.",
     "accessFailed": "De browser gaf geen toegang tot het bestand."
+  },
+  "history": {
+    "menu": "Geschiedenis",
+    "undo": "Ongedaan maken",
+    "redo": "Opnieuw"
+  },
+  "changes": {
+    "undo": "Ongedaan gemaakt:",
+    "redo": "Opnieuw gedaan:",
+    "new": "nieuw,",
+    "removed": "verwijderd"
   }
 }
