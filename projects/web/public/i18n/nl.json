@@ -6,6 +6,54 @@
       "en": "English",
       "nl": "Nederlands"
     },
-    "planLabel": "Grondplan"
+    "planLabel": "Grondplan",
+    "tools": "Gereedschap",
+    "hint": "Sleep een ruimte op de binnenmaat die je gemeten hebt, of klik en typ breedte, Tab, diepte, Enter. S: binnen-/buitenmaat. Wieltje: zoomen, middelste knop: verschuiven, F: alles tonen."
+  },
+  "tools": {
+    "room": {
+      "name": "Ruimte",
+      "hint": "Teken een ruimte op haar binnenmaat"
+    }
+  },
+  "editor": {
+    "typed": {
+      "width": "Breedte",
+      "depth": "Diepte",
+      "length": "Lengte",
+      "angle": "Hoek (°)"
+    },
+    "room": {
+      "insideSize": "binnenmaat",
+      "outsideSize": "buitenmaat"
+    }
+  },
+  "warnings": {
+    "notEnclosed": {
+      "short": "niet afgesloten"
+    },
+    "sharingArea": {
+      "short": "deelt één ruimte"
+    }
+  },
+  "rooms": {
+    "defaultName": "Ruimte {n}"
+  },
+  "project": {
+    "untitled": "Naamloos project"
+  },
+  "levels": {
+    "groundFloor": "Gelijkvloers"
+  },
+  "commands": {
+    "drawRoom": {
+      "label": "Ruimte tekenen ({name})",
+      "tooSmall": "Een ruimte moet minstens {min} mm breed en diep zijn."
+    }
+  },
+  "invariants": {
+    "missingReference": "Geweigerd: {what} {id} bestaat niet.",
+    "zeroLength": "Geweigerd: muur {id} zou geen lengte hebben.",
+    "twoCorners": "Geweigerd: muur {wall} zou twee hoekverbindingen aan één uiteinde krijgen."
   }
 }

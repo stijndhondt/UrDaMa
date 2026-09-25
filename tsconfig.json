@@ -3,6 +3,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "rootDir": ".",
     "paths": {
       "@lakudemis/core": ["./projects/core/src/public-api.ts"],
       "@lakudemis/editor2d": ["./projects/editor2d/src/public-api.ts"],

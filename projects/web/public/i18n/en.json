@@ -6,6 +6,54 @@
       "en": "English",
       "nl": "Nederlands"
     },
-    "planLabel": "Floor plan"
+    "planLabel": "Floor plan",
+    "tools": "Tools",
+    "hint": "Drag a Room at the inside size you measured, or click and type width, Tab, depth, Enter. S: inside / outside size. Wheel: zoom, middle button: pan, F: fit."
+  },
+  "tools": {
+    "room": {
+      "name": "Room",
+      "hint": "Draw a Room at its inside size"
+    }
+  },
+  "editor": {
+    "typed": {
+      "width": "Width",
+      "depth": "Depth",
+      "length": "Length",
+      "angle": "Angle (°)"
+    },
+    "room": {
+      "insideSize": "inside size",
+      "outsideSize": "outside size"
+    }
+  },
+  "warnings": {
+    "notEnclosed": {
+      "short": "not enclosed"
+    },
+    "sharingArea": {
+      "short": "shares one area"
+    }
+  },
+  "rooms": {
+    "defaultName": "Room {n}"
+  },
+  "project": {
+    "untitled": "Untitled project"
+  },
+  "levels": {
+    "groundFloor": "Ground floor"
+  },
+  "commands": {
+    "drawRoom": {
+      "label": "Draw room ({name})",
+      "tooSmall": "A Room must be at least {min} mm wide and deep."
+    }
+  },
+  "invariants": {
+    "missingReference": "Refused: {what} {id} does not exist.",
+    "zeroLength": "Refused: wall {id} would have no length.",
+    "twoCorners": "Refused: wall {wall} would get two corner connections at one end."
   }
 }

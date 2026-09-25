@@ -4,12 +4,12 @@
 
 **Blocked by:** 02 Geometry benchmark
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Dragging or typing 3.73 × 2.67 m gives a Room labelled 9.96 m²; the Walls grow outward with the Preset thickness.
-- [ ] S toggles inside / outside size while drawing; typed values are exact.
-- [ ] Pan (middle-drag or Space+drag) and zoom (wheel) work; the plan draws only what is on screen.
-- [ ] Derived values are lazy and named (e.g. "Room 1 · Net floor area"); nothing is recalculated until read.
-- [ ] `DrawRoom` is one command that returns a forward and a reverse patch; invariants (references exist, lengths > 0) are checked at its end.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] Dragging or typing 3.73 × 2.67 m gives a Room labelled 9.96 m²; the Walls grow outward with the Preset thickness.
+- [x] S toggles inside / outside size while drawing; typed values are exact.
+- [x] Pan (middle-drag or Space+drag) and zoom (wheel) work; the plan draws only what is on screen.
+- [x] Derived values are lazy and named (e.g. "Room 1 · Net floor area"); nothing is recalculated until read.
+- [x] `DrawRoom` is one command that returns a forward and a reverse patch; invariants (references exist, lengths > 0) are checked at its end.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.

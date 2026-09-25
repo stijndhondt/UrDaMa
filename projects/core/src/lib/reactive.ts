@@ -10,7 +10,10 @@ import { computed, signal, type Signal, type WritableSignal } from '@angular/cor
 export type Source<T> = WritableSignal<T>;
 
 /** A Derived value: recalculated only when read after something it read has changed. */
-export type Derived<T> = Signal<T>;
+export type Derived<T> = Signal<T> & {
+  /** Readable name, e.g. "Keuken · Net floor area" (kept current if it depends on data). */
+  readonly label: string;
+};
 
 export type Equality<T> = (a: T, b: T) => boolean;
 
@@ -18,8 +21,19 @@ export function source<T>(name: string, value: T, equal?: Equality<T>): Source<T
   return equal ? signal(value, { debugName: name, equal }) : signal(value, { debugName: name });
 }
 
-export function derived<T>(name: string, compute: () => T, equal?: Equality<T>): Derived<T> {
-  return equal
-    ? computed(compute, { debugName: name, equal })
-    : computed(compute, { debugName: name });
+/**
+ * @param name A readable name, or a function giving it (for names that follow the data, like a
+ *   Room's name). Angular's debug name is fixed at creation.
+ */
+export function derived<T>(
+  name: string | (() => string),
+  compute: () => T,
+  equal?: Equality<T>,
+): Derived<T> {
+  const debugName = typeof name === 'string' ? name : name();
+  const value = equal ? computed(compute, { debugName, equal }) : computed(compute, { debugName });
+  return Object.defineProperty(value, 'label', {
+    get: typeof name === 'string' ? () => name : name,
+    enumerable: true,
+  }) as Derived<T>;
 }

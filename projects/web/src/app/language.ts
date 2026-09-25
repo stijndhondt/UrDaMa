@@ -1,5 +1,6 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 
 export const LANGUAGES = ['en', 'nl'] as const;
 export type Language = (typeof LANGUAGES)[number];
@@ -23,6 +24,11 @@ export class LanguageService {
         // storage unavailable: the choice just isn't remembered
       }
     });
+  }
+
+  /** Loads the chosen language's texts before the app starts (so defaults are translated). */
+  load(): Promise<unknown> {
+    return firstValueFrom(this.translate.use(this.current()));
   }
 }
 
