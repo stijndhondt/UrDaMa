@@ -42,6 +42,10 @@ _Avoid_: Axis, centreline (unless the Wall is centred), location line
 A stored attachment of one Wall's end to another Wall: either to its end (a corner) or to its face at a given distance (a T). Connected Walls move together; unconnected Walls never join, however close they are.
 _Avoid_: Snap, join (for the stored relationship; "join" is the computed geometry)
 
+**Opening**:
+A door or window hosted by a Wall, positioned along its Baseline, with a width, a height and (for windows) a sill height. It cannot exist without its host Wall.
+_Avoid_: Hole, cut-out, aperture
+
 **Wall height**:
 The height of a Wall itself. Usually greater than the Room height of the Rooms it bounds; a partial-height wall (divider, bar wall) has its own, lower Wall height.
 _Avoid_: Height (unqualified)

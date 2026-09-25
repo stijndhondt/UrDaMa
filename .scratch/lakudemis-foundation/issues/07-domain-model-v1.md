@@ -30,7 +30,7 @@ Settled with the user on 2026-09-24. Terms are in `CONTEXT.md`; ADRs: [0001 stor
 |---|---|---|
 | **Project** | Presets, units, language → one Building (v1) | – |
 | **Building** | → Levels | – |
-| **Level** | name, elevation (= finished floor level), storey height | – |
+| **Level** | name, elevation (= finished floor level), storey height. **Amended 2026-09-25 (Slice 1 grilling):** Levels are stacked; only the lowest Level's elevation is stored, and the others are derived from the storey heights below. | elevation of every Level above the lowest |
 | **Wall** | → Level; Baseline (start, end); side (left / centre / right); thickness override or none; Wall height override or none (default = storey height); room-bounding yes/no | box outline, joins, gross/net face areas |
 | **Wall connection** | Wall end → other Wall's end (corner) or face at a distance (T) | – |
 | **Opening** | → host Wall; door/window; offset along the Baseline; width, height, sill height; door hinge side + swing direction | reveals, opening area |
