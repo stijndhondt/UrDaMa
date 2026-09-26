@@ -6,6 +6,12 @@
       "runtimeExecutable": "volta",
       "runtimeArgs": ["run", "--node", "24.21.0", "pnpm", "start"],
       "port": 4200
+    },
+    {
+      "name": "web-acceptance",
+      "runtimeExecutable": "volta",
+      "runtimeArgs": ["run", "--node", "24.21.0", "pnpm", "exec", "ng", "serve", "web", "--port", "4300"],
+      "port": 4300
     }
   ]
 }
