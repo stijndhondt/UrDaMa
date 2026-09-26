@@ -8,7 +8,7 @@
  * end up sharing one area, the Room with priority, else the one whose old area overlaps it most,
  * keeps it.
  */
-import { levelGeometry } from '../geometry/level-geometry';
+import { levelGeometry, levelWallOutlines } from '../geometry/level-geometry';
 import { interiorPoint, intersectionArea } from '../geometry/polygon';
 import type { LevelId, Model, RoomId, Vec } from '../model/types';
 
@@ -105,12 +105,14 @@ function seedsUntouched(before: Model, after: Model, level: LevelId): boolean {
       old.roomBounding !== w.roomBounding
     )
       return false;
-    if (w.level !== level) continue;
-    // Mitred corners reach past the Baseline ends; twice the thickness covers them.
-    around(
-      [old.start, old.end, w.start, w.end],
-      2 * (w.thickness ?? after.project.presets.wallThickness) + 1,
-    );
+  }
+  // Every outline that changed, where it was and where it is (mitres included, at any angle).
+  // Outlines are memoised per Wall, so an unchanged outline is the very same object.
+  const was = levelWallOutlines(before, level);
+  const now = levelWallOutlines(after, level);
+  for (const [id, outline] of now) {
+    const old = was.get(id);
+    if (old !== outline) around([...outline, ...(old ?? [])], 1);
   }
   for (const [id, c] of Object.entries(after.wallConnections)) {
     const old = before.wallConnections[id]!;

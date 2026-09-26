@@ -98,8 +98,16 @@ export function wallOutlines(
         add(other.start, scale(nO, outerO)),
         dO,
       );
-      if (!pIn || !pOut || distance(pIn, p) > reach || distance(pOut, p) > reach) return square;
-      return innerW === lo ? { lo: pIn, hi: pOut } : { lo: pOut, hi: pIn };
+      if (!pIn || !pOut) return square;
+      // A very sharp corner mitres far out: cut the mitre off at the reach. Both points lie on
+      // the mitre line through the Baselines' meeting point, so both Walls still share the same
+      // joint edge and the corner stays closed.
+      const clamp = (q: Vec) => {
+        const r = distance(q, p);
+        return r > reach ? add(p, scale(sub(q, p), reach / r)) : q;
+      };
+      const [qIn, qOut] = [clamp(pIn), clamp(pOut)];
+      return innerW === lo ? { lo: qIn, hi: qOut } : { lo: qOut, hi: qIn };
     }
 
     // T: butt against the host face on the side this Wall comes from.

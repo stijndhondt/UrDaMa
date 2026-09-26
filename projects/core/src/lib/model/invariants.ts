@@ -199,11 +199,11 @@ export function checkInvariants(model: Model, before?: Model): Message | null {
 }
 
 /**
- * Walls whose outline may differ between two models: changed or new Walls, and both Walls of
- * every changed, new or removed connection (a mitre becomes a square end, and so on). Null when
- * a Preset change may have changed every outline.
+ * Walls whose outline may differ between two models: changed or new Walls, both Walls of every
+ * changed, new or removed connection (a mitre becomes a square end, and so on), and the direct
+ * partners of all of those. Null when a Preset change may have changed every outline.
  */
-function changedWalls(before: Model, after: Model): Set<string> | null {
+export function changedWalls(before: Model, after: Model): Set<string> | null {
   if (before.project.presets.wallThickness !== after.project.presets.wallThickness) return null;
   const changed = new Set<string>();
   for (const [id, w] of Object.entries(after.walls)) if (before.walls[id] !== w) changed.add(id);
@@ -216,6 +216,12 @@ function changedWalls(before: Model, after: Model): Set<string> | null {
     const b = after.wallConnections[id];
     if (a === b) continue;
     for (const c of [a, b]) if (c) changed.add(c.wall).add(c.to);
+  }
+  // An outline depends on its direct partners (a thicker Wall moves its partners' mitres).
+  const direct = [...changed];
+  for (const c of Object.values(after.wallConnections)) {
+    if (direct.includes(c.wall)) changed.add(c.to);
+    if (direct.includes(c.to)) changed.add(c.wall);
   }
   return changed;
 }
