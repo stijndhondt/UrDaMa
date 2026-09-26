@@ -63,7 +63,7 @@ const DIRECTIONS: Record<
 const COLORS: Record<ElementMesh['kind'], number> = {
   wall: 0xe4e1da,
   slab: 0xa9adb5,
-  floor: 0xd9c7a7,
+  floorBuildUp: 0xd9c7a7,
 };
 const SELECTED = 0x5b8ef0;
 
@@ -184,7 +184,7 @@ export class View3D {
     this.invalidate();
   }
 
-  /** Highlights the selected elements (Walls, Rooms' floors). */
+  /** Highlights the selected elements (Walls, and a Room's Floor build-up). */
   setSelection(ids: ReadonlySet<string>): void {
     this.selected = new Set(ids);
     this.root.traverse((o) => {

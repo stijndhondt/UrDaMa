@@ -26,7 +26,12 @@ export type Solid =
       readonly cuts: readonly Prism[];
     }
   | { readonly kind: 'slab'; readonly id: SlabId; readonly level: LevelId; readonly body: Prism }
-  | { readonly kind: 'floor'; readonly id: RoomId; readonly level: LevelId; readonly body: Prism };
+  | {
+      readonly kind: 'floorBuildUp';
+      readonly id: RoomId;
+      readonly level: LevelId;
+      readonly body: Prism;
+    };
 
 export interface BuildingSolids {
   /** Lowest first */
@@ -107,7 +112,7 @@ export function buildingSolids(model: Model, values: BuildingValues): BuildingSo
       const buildUp = room.floorBuildUp ?? slice.presets.floorBuildUp;
       if (buildUp <= 0) continue;
       solids.push({
-        kind: 'floor',
+        kind: 'floorBuildUp',
         id: room.id,
         level: level.id,
         body: {

@@ -199,7 +199,7 @@ export class View3dComponent {
     if (picked.level !== this.project.level()) this.project.selectLevel(picked.level as LevelId);
     if (picked.kind === 'wall')
       this.selection.current.set([{ kind: 'wall', id: picked.id as WallId }]);
-    else if (picked.kind === 'floor')
+    else if (picked.kind === 'floorBuildUp')
       this.selection.current.set([{ kind: 'room', id: picked.id as RoomId }]);
     else this.selection.clear();
   }

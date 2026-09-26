@@ -28,6 +28,23 @@ export function faceOffsets(wall: Wall, presetThickness: number): readonly [numb
 }
 
 export const wallDirection = (wall: Wall): Vec => normalize(sub(wall.end, wall.start));
+
+/**
+ * Where along the Baseline (mm from its start) the Wall has its full thickness: both faces are
+ * there. Openings stay inside this span; beyond it lies a corner or a T.
+ */
+export function fullThicknessSpan(
+  wall: Wall,
+  outline: WallOutline,
+): { readonly start: number; readonly end: number } {
+  const d = wallDirection(wall);
+  const t = (p: Vec) => dot(sub(p, wall.start), d);
+  const [a, b, c, e] = outline.map(t) as [number, number, number, number];
+  return {
+    start: Math.max(Math.min(a, b), Math.min(e, c)),
+    end: Math.min(Math.max(a, b), Math.max(e, c)),
+  };
+}
 export const wallNormal = (wall: Wall): Vec => perp(wallDirection(wall));
 export const wallLength = (wall: Wall): number => distance(wall.start, wall.end);
 

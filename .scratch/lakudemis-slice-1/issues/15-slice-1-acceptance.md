@@ -7,9 +7,10 @@
 **Status:** done (run 2026-09-26; gaps → 16, 17, 18, 19)
 
 - [x] Manual redraw of the reference house gives the tape areas for every rectangular Room.
-- [x] < 16 ms of 2D recalculation per edit (including Clipper2) on the reference house and a ~200-Wall plan; a steady 60 fps while dragging, in Chrome / Edge. (Failed on 220 Walls at first → 16, now passes; see 3.)
+- [x] < 16 ms of 2D recalculation per edit (including Clipper2) on the reference house and a ~200-Wall plan. (Failed on 220 Walls at first → 16, now passes; see 3.)
+- [ ] A steady 60 fps while dragging, in Chrome / Edge: every frame's work fits in 16.7 ms, but the frame rate itself still has to be watched in a real Chrome / Edge window (see 3).
 - [x] Byte-identical save round trip; undo back to the empty project; working copy survives a reload.
-- [ ] Dutch UI complete; Dutch numbers use a decimal comma, including the CSV. (Decimal commas and CSV pass; two gaps → 17, 19.)
+- [x] Dutch UI complete; Dutch numbers use a decimal comma, including the CSV. (Two gaps found → 17, 19, both done.)
 - [x] Every acceptance criterion in the spec is checked and recorded here, with follow-up tickets for any gaps.
 
 ## How it was run

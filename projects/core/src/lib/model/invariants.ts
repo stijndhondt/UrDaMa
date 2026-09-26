@@ -13,7 +13,8 @@ import {
 import { message, type Message } from './message';
 import type { LevelId, Model, WallId } from './types';
 import { distance } from '../geometry/vec';
-import { wallOutlines, type WallOutline } from '../geometry/wall-outlines';
+import { levelWallOutlines } from '../geometry/level-geometry';
+import { fullThicknessSpan, wallOutlines, type WallOutline } from '../geometry/wall-outlines';
 
 /** Wall outlines overlapping by more than this (mm²) count as overlapping. */
 const OVERLAP_TOLERANCE_MM2 = 10;
@@ -164,11 +165,20 @@ export function checkInvariants(model: Model, before?: Model): Message | null {
     }
   }
   const byWall = new Map<string, { start: number; end: number; id: string }[]>();
+  const outlinesOf = new Map<LevelId, ReadonlyMap<WallId, WallOutline>>();
   for (const o of Object.values(model.openings)) {
     if (!has('walls', o.wall)) return missing('wall', o.wall);
     const wall = model.walls[o.wall]!;
-    const length = distance(wall.start, wall.end);
-    if (o.offset < -0.5 || o.offset + o.width > length + 0.5) {
+    let outlines = outlinesOf.get(wall.level);
+    if (!outlines) {
+      outlines = levelWallOutlines(model, wall.level);
+      outlinesOf.set(wall.level, outlines);
+    }
+    const outline = outlines.get(wall.id);
+    const span = outline
+      ? fullThicknessSpan(wall, outline)
+      : { start: 0, end: distance(wall.start, wall.end) };
+    if (o.offset < span.start - 0.5 || o.offset + o.width > span.end + 0.5) {
       return message('invariants.openingOutsideWall', { id: o.id });
     }
     const list = byWall.get(o.wall) ?? [];

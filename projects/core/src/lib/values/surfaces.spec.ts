@@ -172,4 +172,30 @@ describe('Room surfaces and Quantities (ticket 12)', () => {
       BOM + 'a,b\r\n"x, ""y""",1.50\r\n',
     );
   });
+
+  it("measures a sill from the Level's finished floor, whatever a Room's own Floor build-up", () => {
+    const { store, level, values, room } = setup();
+    store.run(drawRoom, {
+      level,
+      from: { x: 0, y: 0 },
+      to: { x: 4000, y: 3000 },
+      size: 'inside',
+      name: 'Bureau',
+    });
+    // 50 mm more build-up than the Preset, and a low Ceiling at 2.00 m above that floor.
+    const p = store.model().project.presets;
+    store.run(updateRoom, {
+      room: room('Bureau').id,
+      height: 2000,
+      floorBuildUp: p.floorBuildUp + 50,
+    });
+    const bottom = Object.values(store.model().walls).find(
+      (w: Wall) => w.start.y === 3000 && w.end.y === 3000,
+    )!;
+    store.run(addOpening, { wall: bottom.id, kind: 'window', offset: 1000 });
+    const s = values('Bureau').surfaces()!;
+    // The window runs from 900 to 2100 above the finished floor: 850 to 2050 above this Room's
+    // floor, so 1150 mm of it lies below the Ceiling.
+    expect(m2(s.openings[0]!.cut)).toBe(m2(1200 * 1150));
+  });
 });

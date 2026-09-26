@@ -9,7 +9,7 @@ import {
   insideRing,
   levelWallOutlines,
   wallDirection,
-  wallLength,
+  fullThicknessSpan,
   wallNormal,
   type AddOpeningArgs,
   type OpeningKind,
@@ -29,6 +29,8 @@ interface Hover {
   readonly offset: number;
   /** Which face the pointer is on: distances are measured along it. */
   readonly face: 'lo' | 'hi';
+  /** mm along the Baseline: where the pointer is (picks the stretch of face between corners) */
+  readonly at: number;
 }
 
 export class OpeningTool implements Tool {
@@ -136,7 +138,7 @@ export class OpeningTool implements Tool {
       this.ctx.host.level(),
     ).get(args.wall);
     if (!wall || !outline) return;
-    const { first, last } = this.faceSpan(wall, outline, this.hover.face);
+    const { first, last } = this.insideCorners(wall, outline, this.hover.face, this.hover.at);
     const d = wallDirection(wall);
     const n = wallNormal(wall);
     const faceOffset = this.hover.face === 'lo' ? 0 : 1;
@@ -194,17 +196,35 @@ export class OpeningTool implements Tool {
     };
   }
 
-  /** The Baseline positions where the chosen face starts and ends (the inside corners on that side). */
-  private faceSpan(
+  /**
+   * The inside corners around a point on one face, as Baseline positions: where the face ends,
+   * or where another Wall (a corner or a T) meets it, whichever is nearest on each side.
+   */
+  private insideCorners(
     wall: Wall,
     outline: WallOutline,
     face: 'lo' | 'hi',
+    at: number,
   ): { first: number; last: number } {
     const d = wallDirection(wall);
+    const n = wallNormal(wall);
+    const t = (p: Vec) => (p.x - wall.start.x) * d.x + (p.y - wall.start.y) * d.y;
+    const s = (p: Vec) => (p.x - wall.start.x) * n.x + (p.y - wall.start.y) * n.y;
     const [a, b] = face === 'lo' ? [outline[0], outline[1]] : [outline[3], outline[2]];
-    const ta = (a.x - wall.start.x) * d.x + (a.y - wall.start.y) * d.y;
-    const tb = (b.x - wall.start.x) * d.x + (b.y - wall.start.y) * d.y;
-    return { first: Math.min(ta, tb), last: Math.max(ta, tb) };
+    const onFace = s(a);
+    let first = Math.min(t(a), t(b));
+    let last = Math.max(t(a), t(b));
+    const outlines = levelWallOutlines(this.ctx.host.store.committedModel(), this.ctx.host.level());
+    for (const [id, other] of outlines) {
+      if (id === wall.id) continue;
+      const touching = other.filter((p) => Math.abs(s(p) - onFace) < 0.5).map(t);
+      if (!touching.length) continue;
+      const lo = Math.min(...touching);
+      const hi = Math.max(...touching);
+      if (hi <= at) first = Math.max(first, hi);
+      else if (lo >= at) last = Math.min(last, lo);
+    }
+    return { first, last };
   }
 
   private update(p: PointerInfo): void {
@@ -245,11 +265,16 @@ export class OpeningTool implements Tool {
     const face: 'lo' | 'hi' = Math.abs(side - loOffset) <= Math.abs(side - hiOffset) ? 'lo' : 'hi';
     const { width } = this.size();
     const step = increment(p);
+    // Snap the distance from the inside corner, and stay where the Wall is full thickness.
+    const { first, last } = this.insideCorners(wall, best.outline, face, t);
+    const span = fullThicknessSpan(wall, best.outline);
+    const min = Math.max(first, span.start);
+    const max = Math.min(last, span.end) - width;
     const offset = Math.max(
-      0,
-      Math.min(wallLength(wall) - width, Math.round((t - width / 2) / step) * step),
+      min,
+      Math.min(max, first + Math.round((t - width / 2 - first) / step) * step),
     );
-    this.hover = { wall: wall.id, offset, face };
+    this.hover = { wall: wall.id, offset, face, at: t };
     this.preview();
   }
 
@@ -264,7 +289,9 @@ export class OpeningTool implements Tool {
         this.ctx.host.level(),
       ).get(this.hover.wall);
       if (wall && outline)
-        offset = this.faceSpan(wall, outline, this.hover.face).first + this.typed.distance;
+        offset =
+          this.insideCorners(wall, outline, this.hover.face, this.hover.at).first +
+          this.typed.distance;
     }
     return {
       wall: this.hover.wall,

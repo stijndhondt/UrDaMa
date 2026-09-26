@@ -46,9 +46,15 @@ export function netWallArea(s: RoomSurfaces, rule: MeasurementRule): number {
 export interface SurfaceInput {
   /** The Room's enclosed area: its outline and any islands inside it. */
   readonly rings: readonly (readonly Vec[])[];
-  /** mm */
+  /** mm, absolute: the top of the Room's Floor build-up */
+  readonly floor: number;
+  /** mm, Room height (floor to Ceiling) */
   readonly height: number;
 }
+
+/** mm of [aBottom, aTop] that lies within [bBottom, bTop]. */
+export const heightOverlap = (aBottom: number, aTop: number, bBottom: number, bTop: number) =>
+  Math.max(0, Math.min(aTop, bTop) - Math.max(aBottom, bBottom));
 
 /** A Wall's frame: position along the Baseline (t) and across it (s), with its two face offsets. */
 interface Frame {
@@ -72,9 +78,11 @@ function frameOf(wall: Wall, outline: WallOutline): Frame {
 
 /**
  * Surfaces of every Room on a Level at once: a door's reveals are shared between the Rooms on
- * both sides of it, so each Room's share depends on the others.
+ * both sides of it, so each Room's share depends on the others. Sills are measured from
+ * `elevation`, the Level's finished floor (at the Floor-build-up Preset).
  */
 export function levelRoomSurfaces<K>(
+  elevation: number,
   rooms: ReadonlyMap<K, SurfaceInput>,
   walls: readonly Wall[],
   outlines: ReadonlyMap<WallId, WallOutline>,
@@ -121,16 +129,19 @@ export function levelRoomSurfaces<K>(
 
   const result = new Map<K, RoomSurfaces>();
   for (const [key, { wallLength, widths }] of found) {
-    const height = rooms.get(key)!.height;
+    const { floor, height } = rooms.get(key)!;
+    const ceiling = floor + height;
     let revealArea = 0;
     const cuts: OpeningCut[] = [];
     for (const [o, width] of widths) {
-      const below = Math.max(0, Math.min(o.height, height - o.sill));
+      const bottom = elevation + o.sill;
+      const top = bottom + o.height;
+      const below = heightOverlap(bottom, top, floor, ceiling);
       cuts.push({ opening: o.id, size: o.width * o.height, cut: width * below });
       const f = frames.get(o.wall)!;
       const depth = Math.abs(f.hi - f.lo) / (roomsPerOpening.get(o) ?? 1);
-      const head = o.sill + o.height <= height ? o.width : 0;
-      const sill = o.kind === 'window' && o.sill < height ? o.width : 0;
+      const head = top <= ceiling && top > floor ? o.width : 0;
+      const sill = o.kind === 'window' && bottom > floor && bottom < ceiling ? o.width : 0;
       revealArea += depth * (2 * below + head + sill);
     }
     cuts.sort((x, y) => (x.opening < y.opening ? -1 : x.opening > y.opening ? 1 : 0));

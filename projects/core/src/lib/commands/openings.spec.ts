@@ -5,6 +5,7 @@ import { ProjectStore } from '../store/project-store';
 import { addOpening } from './add-opening';
 import { deleteElements } from './delete-elements';
 import { drawRoom } from './draw-room';
+import { drawWall } from './draw-wall';
 import { moveWall } from './move-wall';
 import { updateOpening } from './update-opening';
 
@@ -101,5 +102,36 @@ describe('doors and windows (ticket 11)', () => {
     store.run(moveWall, { wall, offset: -300 });
     expect(opening().offset).toBe(580);
     expect(opening().wall).toBe(wall);
+  });
+
+  it('refuses an Opening that reaches into a corner, where the Wall is not full thickness', () => {
+    const ids = counterIds();
+    const store = new ProjectStore(
+      createProject({ name: 'T', levelName: 'Ground floor' }, ids),
+      ids,
+    );
+    const level = Object.keys(store.model().levels)[0] as LevelId;
+    // Walls centred on their Baselines: each face stops 70 mm short of the Baseline ends.
+    const points = [
+      { x: 0, y: 0 },
+      { x: 4000, y: 0 },
+      { x: 4000, y: 3000 },
+      { x: 0, y: 3000 },
+    ];
+    points.forEach((p, i) =>
+      store.run(drawWall, {
+        level,
+        start: p,
+        end: points[(i + 1) % 4]!,
+        side: 'centre',
+        roomName: () => 'Room',
+      }),
+    );
+    const top = Object.values(store.model().walls).find((w) => w.start.y === 0 && w.end.y === 0)!;
+    const into = store.run(addOpening, { wall: top.id, kind: 'window', offset: 0, width: 800 });
+    expect(!into.ok && into.reason.key).toBe('invariants.openingOutsideWall');
+    expect(store.run(addOpening, { wall: top.id, kind: 'window', offset: 70, width: 800 }).ok).toBe(
+      true,
+    );
   });
 });

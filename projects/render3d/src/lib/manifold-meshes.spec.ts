@@ -71,7 +71,7 @@ describe('manifold meshes (ticket 14)', () => {
     const { meshes, problems } = meshSolids(wasm, buildingSolids(store.model(), store.values));
     expect(problems).toEqual([]);
     expect(meshes.map((m) => m.kind).sort()).toEqual([
-      'floor',
+      'floorBuildUp',
       'slab',
       'wall',
       'wall',

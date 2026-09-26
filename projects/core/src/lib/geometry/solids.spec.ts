@@ -40,7 +40,7 @@ describe('3D solids (ticket 14)', () => {
     const slab = solids.find((s) => s.kind === 'slab')!;
     expect(slab.body.top).toBe(-p.floorBuildUp);
     expect(slab.body.bottom).toBe(-p.floorBuildUp - p.slabThickness);
-    const floor = solids.find((s) => s.kind === 'floor')!;
+    const floor = solids.find((s) => s.kind === 'floorBuildUp')!;
     expect(floor.body.bottom).toBe(-p.floorBuildUp);
     expect(floor.body.top).toBe(0);
   });

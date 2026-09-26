@@ -10,7 +10,7 @@ import { derived, type Derived } from '../reactive';
 import { message, type Message } from '../model/message';
 import { footprint, type Footprint, type RoomDetection } from '../geometry/footprint';
 import { wallOutlines, type WallOutline } from '../geometry/wall-outlines';
-import { levelRoomSurfaces, type RoomSurfaces, type SurfaceInput } from './surfaces';
+import { heightOverlap, levelRoomSurfaces, type RoomSurfaces, type SurfaceInput } from './surfaces';
 import type {
   Ceiling,
   Level,
@@ -302,16 +302,28 @@ export class BuildingValues {
       () => {
         const s = slice();
         const f = fp();
+        const here = this.levelHeights().get(id) ?? {
+          elevation: 0,
+          slabTop: -s.presets.floorBuildUp,
+        };
         const rooms = new Map<RoomId, SurfaceInput>();
         for (const r of s.rooms) {
           const d = f.rooms.get(r.id);
           if (!d || d.status === 'notEnclosed') continue;
           rooms.set(r.id, {
             rings: [d.area.outline, ...d.area.islands],
+            floor: here.slabTop + (r.floorBuildUp ?? s.presets.floorBuildUp),
             height: r.height ?? s.presets.roomHeight,
           });
         }
-        return levelRoomSurfaces(rooms, s.walls, outlines(), s.separators, s.openings);
+        return levelRoomSurfaces(
+          here.elevation,
+          rooms,
+          s.walls,
+          outlines(),
+          s.separators,
+          s.openings,
+        );
       },
     );
     const warnings = derived(
@@ -387,10 +399,19 @@ export class BuildingValues {
       const outline = level.outlines().get(id);
       if (!outline) return undefined;
       const h = height();
+      // The Wall stands on its Slab; sills are measured from the Level's finished floor.
+      const heights = this.levelHeights().get(w.level);
+      const foot = heights?.slabTop ?? 0;
+      const floor = heights?.elevation ?? 0;
       const openings = level
         .slice()
         .openings.filter((o) => o.wall === id)
-        .reduce((sum, o) => sum + o.width * Math.max(0, Math.min(o.height, h - o.sill)), 0);
+        .reduce(
+          (sum, o) =>
+            sum +
+            o.width * heightOverlap(floor + o.sill, floor + o.sill + o.height, foot, foot + h),
+          0,
+        );
       const face = (a: { x: number; y: number }, b: { x: number; y: number }): FaceValues => {
         const length = Math.hypot(b.x - a.x, b.y - a.y);
         return { length, gross: length * h, net: length * h - openings };
