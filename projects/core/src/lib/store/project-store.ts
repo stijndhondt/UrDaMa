@@ -184,7 +184,7 @@ export class ProjectStore {
   private execute<A>(command: Command<A>, args: A, model: Model): CommandOutcome {
     const outcome = command(model, args, { ids: this.ids });
     if (!outcome.ok) return outcome;
-    const broken = checkInvariants(outcome.model);
+    const broken = checkInvariants(outcome.model, model);
     return broken ? { ok: false, reason: broken } : outcome;
   }
 

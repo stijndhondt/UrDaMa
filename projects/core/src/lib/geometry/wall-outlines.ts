@@ -115,9 +115,47 @@ export function wallOutlines(
   const out = new Map<WallId, WallOutline>();
   for (const wall of walls) {
     if (wallLength(wall) < 1e-6) continue;
+    const ps = partners.get(`${wall.id}:start`);
+    const pe = partners.get(`${wall.id}:end`);
+    const deps: OutlineDeps = {
+      preset: presetThickness,
+      start: ps && byId.get(ps.other),
+      startKind: ps ? `${ps.kind}:${ps.otherEnd ?? ''}` : '',
+      end: pe && byId.get(pe.other),
+      endKind: pe ? `${pe.kind}:${pe.otherEnd ?? ''}` : '',
+    };
+    const cached = memo.get(wall);
+    if (cached && sameDeps(cached.deps, deps)) {
+      out.set(wall.id, cached.outline);
+      continue;
+    }
     const a = cap(wall, 'start');
     const b = cap(wall, 'end');
-    out.set(wall.id, [a.lo, b.lo, b.hi, a.hi]);
+    const outline: WallOutline = [a.lo, b.lo, b.hi, a.hi];
+    memo.set(wall, { deps, outline });
+    out.set(wall.id, outline);
   }
   return out;
 }
+
+/** What a Wall's outline depends on besides the Wall itself: its partners and the Preset. */
+interface OutlineDeps {
+  readonly preset: number;
+  readonly start: Wall | undefined;
+  readonly startKind: string;
+  readonly end: Wall | undefined;
+  readonly endKind: string;
+}
+
+const sameDeps = (a: OutlineDeps, b: OutlineDeps) =>
+  a.preset === b.preset &&
+  a.start === b.start &&
+  a.startKind === b.startKind &&
+  a.end === b.end &&
+  a.endKind === b.endKind;
+
+/**
+ * Outlines per Wall object (models are immutable, so an unchanged Wall with unchanged partners
+ * has the same outline): a drag recomputes only the moved Walls and their neighbours.
+ */
+const memo = new WeakMap<Wall, { readonly deps: OutlineDeps; readonly outline: WallOutline }>();

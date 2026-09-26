@@ -41,8 +41,61 @@ function overlapArea(a: WallOutline, b: WallOutline): number {
   return areaOf(out);
 }
 
-/** The first pair of Walls on a Level whose outlines overlap, if any (Walls never overlap). */
-export function overlappingWalls(model: Model, level: LevelId): readonly [WallId, WallId] | null {
+/**
+ * Penetration below this (mm) counts as merely touching: Walls up to 100 m long overlapping by
+ * less cannot reach OVERLAP_TOLERANCE_MM2.
+ */
+const TOUCHING_MM = 1e-4;
+
+function convex(ring: WallOutline): boolean {
+  let sign = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i]!;
+    const b = ring[(i + 1) % ring.length]!;
+    const c = ring[(i + 2) % ring.length]!;
+    const cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+    if (Math.abs(cross) < 1e-9) continue;
+    if (sign && Math.sign(cross) !== sign) return false;
+    sign = Math.sign(cross);
+  }
+  return true;
+}
+
+/** Separating-axis test for two convex outlines: true when they at most touch. */
+function separated(a: WallOutline, b: WallOutline): boolean {
+  for (const ring of [a, b]) {
+    for (let i = 0; i < ring.length; i++) {
+      const p = ring[i]!;
+      const q = ring[(i + 1) % ring.length]!;
+      const len = Math.hypot(q.x - p.x, q.y - p.y);
+      if (len < 1e-9) continue;
+      const n = { x: -(q.y - p.y) / len, y: (q.x - p.x) / len };
+      const project = (r: WallOutline) => r.map((v) => v.x * n.x + v.y * n.y);
+      const pa = project(a);
+      const pb = project(b);
+      const overlap =
+        Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb));
+      if (overlap <= TOUCHING_MM) return true;
+    }
+  }
+  return false;
+}
+
+/** Whether two Wall outlines overlap by more than the tolerance. */
+function overlapping(a: WallOutline, b: WallOutline): boolean {
+  if (convex(a) && convex(b) && separated(a, b)) return false;
+  return overlapArea(a, b) > OVERLAP_TOLERANCE_MM2;
+}
+
+/**
+ * The first pair of Walls on a Level whose outlines overlap, if any (Walls never overlap).
+ * With `only`, just the pairs involving those Walls are checked (the ones a command changed).
+ */
+export function overlappingWalls(
+  model: Model,
+  level: LevelId,
+  only?: ReadonlySet<string>,
+): readonly [WallId, WallId] | null {
   const walls = Object.values(model.walls).filter((w) => w.level === level);
   if (walls.length < 2) return null;
   const ids = new Set<string>(walls.map((w) => w.id));
@@ -52,6 +105,25 @@ export function overlappingWalls(model: Model, level: LevelId): readonly [WallId
     model.project.presets.wallThickness,
   );
   const list = [...outlines.entries()];
+  if (only) {
+    const box = (o: WallOutline) => {
+      const xs = o.map((p) => p.x);
+      const ys = o.map((p) => p.y);
+      return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] as const;
+    };
+    const boxes = new Map(list.map(([id, o]) => [id, box(o)]));
+    for (const [id, o] of list) {
+      if (!only.has(id)) continue;
+      const a = boxes.get(id)!;
+      for (const [other, p] of list) {
+        if (other === id || (only.has(other) && other < id)) continue;
+        const b = boxes.get(other)!;
+        if (a[0] >= b[2] || b[0] >= a[2] || a[1] >= b[3] || b[1] >= a[3]) continue;
+        if (overlapping(o, p)) return [id, other];
+      }
+    }
+    return null;
+  }
   const paths = list.map(([, o]) => toPath(o));
   // Cheap check first: the union of all outlines is as large as their sum when nothing overlaps.
   if (areaOf(paths) - areaOf(union(paths)) <= OVERLAP_TOLERANCE_MM2) return null;
@@ -62,7 +134,11 @@ export function overlappingWalls(model: Model, level: LevelId): readonly [WallId
   return null;
 }
 
-export function checkInvariants(model: Model): Message | null {
+/**
+ * Checks every invariant. With `before` (the model the command started from), the overlap check
+ * only looks at the Walls the command changed, and the Walls whose connections changed.
+ */
+export function checkInvariants(model: Model, before?: Model): Message | null {
   const has = (collection: keyof Model, id: string) =>
     Object.hasOwn(model[collection] as object, id);
   const missing = (what: string, id: string) =>
@@ -113,9 +189,33 @@ export function checkInvariants(model: Model): Message | null {
   }
   for (const c of Object.values(model.ceilings))
     if (!has('rooms', c.room)) return missing('room', c.room);
+  const changed = before ? changedWalls(before, model) : null;
   for (const level of Object.keys(model.levels)) {
-    const pair = overlappingWalls(model, level as LevelId);
+    if (changed && ![...changed].some((id) => model.walls[id]?.level === level)) continue;
+    const pair = overlappingWalls(model, level as LevelId, changed ?? undefined);
     if (pair) return message('invariants.overlap', { a: pair[0], b: pair[1] });
   }
   return null;
+}
+
+/**
+ * Walls whose outline may differ between two models: changed or new Walls, and both Walls of
+ * every changed, new or removed connection (a mitre becomes a square end, and so on). Null when
+ * a Preset change may have changed every outline.
+ */
+function changedWalls(before: Model, after: Model): Set<string> | null {
+  if (before.project.presets.wallThickness !== after.project.presets.wallThickness) return null;
+  const changed = new Set<string>();
+  for (const [id, w] of Object.entries(after.walls)) if (before.walls[id] !== w) changed.add(id);
+  const ids = new Set([
+    ...Object.keys(before.wallConnections),
+    ...Object.keys(after.wallConnections),
+  ]);
+  for (const id of ids) {
+    const a = before.wallConnections[id];
+    const b = after.wallConnections[id];
+    if (a === b) continue;
+    for (const c of [a, b]) if (c) changed.add(c.wall).add(c.to);
+  }
+  return changed;
 }

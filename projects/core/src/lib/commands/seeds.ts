@@ -10,7 +10,7 @@
  */
 import { levelGeometry } from '../geometry/level-geometry';
 import { interiorPoint, intersectionArea } from '../geometry/polygon';
-import type { LevelId, Model, RoomId } from '../model/types';
+import type { LevelId, Model, RoomId, Vec } from '../model/types';
 
 export function reseatSeeds(
   before: Model,
@@ -18,6 +18,7 @@ export function reseatSeeds(
   level: LevelId,
   priority: ReadonlySet<RoomId> = new Set(),
 ): Model {
+  if (!priority.size && seedsUntouched(before, after, level)) return after;
   const old = levelGeometry(before, level).footprint;
   const now = levelGeometry(after, level).footprint;
   let rooms = after.rooms;
@@ -67,4 +68,68 @@ export function reseatSeeds(
     };
   }
   return rooms === after.rooms ? after : { ...after, rooms };
+}
+
+/**
+ * True when the command cannot have displaced any Seed point, so the (costly) re-detection can be
+ * skipped: the Level has the same Walls, connections, Room separators and Rooms as before, the
+ * changed Walls and separators only moved their ends, and no Seed point lies near where they were
+ * or now are. Moving Walls keeps their connections, so the areas themselves stay the same.
+ */
+function seedsUntouched(before: Model, after: Model, level: LevelId): boolean {
+  if (after.rooms !== before.rooms) return false;
+  const boxes: { min: Vec; max: Vec }[] = [];
+  const sameKeys = (a: object, b: object) => {
+    const ka = Object.keys(a);
+    return ka.length === Object.keys(b).length && ka.every((k) => Object.hasOwn(b, k));
+  };
+  if (!sameKeys(before.walls, after.walls)) return false;
+  if (!sameKeys(before.wallConnections, after.wallConnections)) return false;
+  if (!sameKeys(before.roomSeparators, after.roomSeparators)) return false;
+  if (after.project.presets.wallThickness !== before.project.presets.wallThickness) return false;
+  const around = (points: Vec[], pad: number) => {
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
+    boxes.push({
+      min: { x: Math.min(...xs) - pad, y: Math.min(...ys) - pad },
+      max: { x: Math.max(...xs) + pad, y: Math.max(...ys) + pad },
+    });
+  };
+  for (const [id, w] of Object.entries(after.walls)) {
+    const old = before.walls[id]!;
+    if (old === w) continue;
+    if (
+      old.level !== w.level ||
+      old.side !== w.side ||
+      old.thickness !== w.thickness ||
+      old.roomBounding !== w.roomBounding
+    )
+      return false;
+    if (w.level !== level) continue;
+    // Mitred corners reach past the Baseline ends; twice the thickness covers them.
+    around(
+      [old.start, old.end, w.start, w.end],
+      2 * (w.thickness ?? after.project.presets.wallThickness) + 1,
+    );
+  }
+  for (const [id, c] of Object.entries(after.wallConnections)) {
+    const old = before.wallConnections[id]!;
+    if (old === c) continue;
+    if (old.kind !== c.kind || old.wall !== c.wall || old.to !== c.to || old.end !== c.end)
+      return false;
+  }
+  for (const [id, sep] of Object.entries(after.roomSeparators)) {
+    const old = before.roomSeparators[id]!;
+    if (old === sep) continue;
+    if (old.startWall !== sep.startWall || old.endWall !== sep.endWall) return false;
+    around([old.start, old.end, sep.start, sep.end], 1);
+  }
+  return Object.values(after.rooms).every(
+    (r) =>
+      r.level !== level ||
+      !boxes.some(
+        (b) =>
+          r.seed.x >= b.min.x && r.seed.x <= b.max.x && r.seed.y >= b.min.y && r.seed.y <= b.max.y,
+      ),
+  );
 }
