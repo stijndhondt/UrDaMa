@@ -10,7 +10,7 @@ import {
 } from '@lakudemis/core';
 import Module from 'manifold-3d/manifold';
 import { meshSolids } from './manifold-meshes';
-import type { ElementMesh } from './solid-kernel';
+import type { ElementMesh } from './protocol';
 
 /** Every edge used by exactly two triangles, once in each direction: a closed, watertight mesh. */
 function watertight(mesh: ElementMesh): boolean {

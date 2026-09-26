@@ -7,7 +7,8 @@
     "paths": {
       "@lakudemis/core": ["./projects/core/src/public-api.ts"],
       "@lakudemis/editor2d": ["./projects/editor2d/src/public-api.ts"],
-      "@lakudemis/render3d": ["./projects/render3d/src/public-api.ts"]
+      "@lakudemis/render3d": ["./projects/render3d/src/public-api.ts"],
+      "@lakudemis/render3d/worker": ["./projects/render3d/worker/src/public-api.ts"]
     },
     "strict": true,
     "noUncheckedIndexedAccess": false,

@@ -126,7 +126,9 @@ export class View3dComponent {
   constructor() {
     afterNextRender(() => {
       this.view = new View3D(this.container().nativeElement, (picked) => this.picked(picked));
-      this.kernel = new ManifoldKernel();
+      this.kernel = new ManifoldKernel(
+        new Worker(new URL('./manifold.worker', import.meta.url), { type: 'module' }),
+      );
       this.schedule();
       this.view.setSelection(this.selectedIds());
     });

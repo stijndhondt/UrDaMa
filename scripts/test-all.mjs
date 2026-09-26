@@ -17,7 +17,7 @@ const i18n = spawnSync(process.execPath, [join('scripts', 'check-i18n.mjs')], { 
 if (i18n.status !== 0) process.exit(i18n.status ?? 1);
 
 for (const [name, project] of Object.entries(workspace.projects)) {
-  if (!hasSpec(project.sourceRoot)) {
+  if (!hasSpec(project.root)) {
     console.log(`- ${name}: no tests yet, skipped`);
     continue;
   }

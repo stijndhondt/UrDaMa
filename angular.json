@@ -94,7 +94,8 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "tsConfig": "projects/render3d/tsconfig.spec.json",
-            "runnerConfig": "projects/render3d/vitest.config.mts"
+            "runnerConfig": "projects/render3d/vitest.config.mts",
+            "include": ["../src/**/*.spec.ts", "../worker/src/**/*.spec.ts"]
           }
         },
         "lint": {

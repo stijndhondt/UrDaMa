@@ -5,7 +5,7 @@
  */
 import { solidRef, type BuildingSolids, type Prism } from '@lakudemis/core';
 import type { Manifold, ManifoldToplevel } from 'manifold-3d/manifold';
-import type { ElementMesh } from './solid-kernel';
+import type { ElementMesh } from './protocol';
 
 function prism(wasm: ManifoldToplevel, p: Prism): Manifold {
   const section = new wasm.CrossSection(
