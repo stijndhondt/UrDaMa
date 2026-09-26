@@ -2,6 +2,7 @@
 import { put } from '../model/edit';
 import { message } from '../model/message';
 import type { Opening, OpeningId } from '../model/types';
+import { openingSizeProblem } from './add-opening';
 import { refuse, type Command } from './command';
 
 export interface UpdateOpeningArgs {
@@ -29,8 +30,8 @@ export const updateOpening: Command<UpdateOpeningArgs> = (model, args) => {
     hinge: args.flipHinge ? (o.hinge === 'start' ? 'end' : 'start') : o.hinge,
     swing: args.flipSwing ? (o.swing === 'left' ? 'right' : 'left') : o.swing,
   };
-  if (!(next.width > 0 && next.height > 0) || next.sill < 0)
-    return refuse(message('commands.opening.badSize'));
+  const problem = openingSizeProblem(next);
+  if (problem) return refuse(problem);
   return {
     ok: true,
     model: put(model, 'openings', next),

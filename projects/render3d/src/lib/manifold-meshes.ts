@@ -3,7 +3,7 @@
  * Openings are subtracted from it, so holes are clean and every result is a closed (manifold)
  * solid. Runs wherever the WASM module was loaded: in the Web Worker, or in Node for tests.
  */
-import type { BuildingSolids, Prism } from '@lakudemis/core';
+import { solidRef, type BuildingSolids, type Prism } from '@lakudemis/core';
 import type { Manifold, ManifoldToplevel } from 'manifold-3d/manifold';
 import type { ElementMesh } from './solid-kernel';
 
@@ -45,9 +45,7 @@ export function meshSolids(
         positions[i * 3 + 2] = mesh.vertProperties[i * mesh.numProp + 2]!;
       }
       meshes.push({
-        kind: solid.kind,
-        id: solid.id,
-        level: solid.level,
+        ...solidRef(solid),
         positions,
         indices: new Uint32Array(mesh.triVerts),
       });

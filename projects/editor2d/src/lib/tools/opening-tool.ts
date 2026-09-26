@@ -8,9 +8,8 @@ import {
   addOpening,
   insideRing,
   levelWallOutlines,
-  wallDirection,
   fullThicknessSpan,
-  wallNormal,
+  wallFrame,
   type AddOpeningArgs,
   type OpeningKind,
   type Vec,
@@ -139,22 +138,12 @@ export class OpeningTool implements Tool {
     ).get(args.wall);
     if (!wall || !outline) return;
     const { first, last } = this.insideCorners(wall, outline, this.hover.face, this.hover.at);
-    const d = wallDirection(wall);
-    const n = wallNormal(wall);
-    const faceOffset = this.hover.face === 'lo' ? 0 : 1;
-    const facePoint = outline[faceOffset === 0 ? 0 : 3]!;
-    const offsetN = (facePoint.x - wall.start.x) * n.x + (facePoint.y - wall.start.y) * n.y;
+    const f = wallFrame(wall);
+    const face = f.across(outline[this.hover.face === 'lo' ? 0 : 3]);
     const out = this.hover.face === 'lo' ? -1 : 1;
-    const at = (t: number, extra: number): Vec => {
-      const base = {
-        x: wall.start.x + d.x * t + n.x * offsetN,
-        y: wall.start.y + d.y * t + n.y * offsetN,
-      };
-      return this.ctx.view.toScreen({
-        x: base.x + n.x * out * extra,
-        y: base.y + n.y * out * extra,
-      });
-    };
+    // A dimension line just outside the face, `extra` mm away from it.
+    const at = (t: number, extra: number): Vec =>
+      this.ctx.view.toScreen(f.point(t, face + out * extra));
     const width = args.width ?? 0;
     const pad = 18 / this.ctx.view.scale;
     const labels: [number, number][] = [
@@ -206,10 +195,9 @@ export class OpeningTool implements Tool {
     face: 'lo' | 'hi',
     at: number,
   ): { first: number; last: number } {
-    const d = wallDirection(wall);
-    const n = wallNormal(wall);
-    const t = (p: Vec) => (p.x - wall.start.x) * d.x + (p.y - wall.start.y) * d.y;
-    const s = (p: Vec) => (p.x - wall.start.x) * n.x + (p.y - wall.start.y) * n.y;
+    const f = wallFrame(wall);
+    const t = (p: Vec) => f.along(p);
+    const s = (p: Vec) => f.across(p);
     const [a, b] = face === 'lo' ? [outline[0], outline[1]] : [outline[3], outline[2]];
     const onFace = s(a);
     let first = Math.min(t(a), t(b));
@@ -254,14 +242,11 @@ export class OpeningTool implements Tool {
       return;
     }
     const { wall } = best;
-    const d = wallDirection(wall);
-    const n = wallNormal(wall);
-    const t = (p.model.x - wall.start.x) * d.x + (p.model.y - wall.start.y) * d.y;
-    const side = (p.model.x - wall.start.x) * n.x + (p.model.y - wall.start.y) * n.y;
-    const loOffset =
-      (best.outline[0].x - wall.start.x) * n.x + (best.outline[0].y - wall.start.y) * n.y;
-    const hiOffset =
-      (best.outline[3].x - wall.start.x) * n.x + (best.outline[3].y - wall.start.y) * n.y;
+    const f = wallFrame(wall);
+    const t = f.along(p.model);
+    const side = f.across(p.model);
+    const loOffset = f.across(best.outline[0]);
+    const hiOffset = f.across(best.outline[3]);
     const face: 'lo' | 'hi' = Math.abs(side - loOffset) <= Math.abs(side - hiOffset) ? 'lo' : 'hi';
     const { width } = this.size();
     const step = increment(p);

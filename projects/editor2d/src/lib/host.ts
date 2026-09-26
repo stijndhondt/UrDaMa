@@ -1,10 +1,19 @@
-import type { LevelId, Message, ProjectStore } from '@lakudemis/core';
+import type {
+  LevelId,
+  Message,
+  OpeningId,
+  ProjectStore,
+  RoomId,
+  RoomSeparatorId,
+  WallId,
+} from '@lakudemis/core';
 
-/** The selected element: a Wall or a Room (Slice 1 spec, "Select / move / delete"). */
-export interface Selection {
-  readonly kind: 'wall' | 'room' | 'separator' | 'opening';
-  readonly id: string;
-}
+/** A selected element (Slice 1 spec, "Select / move / delete"): its kind, with the matching ID type. */
+export type Selection =
+  | { readonly kind: 'wall'; readonly id: WallId }
+  | { readonly kind: 'room'; readonly id: RoomId }
+  | { readonly kind: 'separator'; readonly id: RoomSeparatorId }
+  | { readonly kind: 'opening'; readonly id: OpeningId };
 
 /** What the editor needs from the app around it. */
 export interface EditorHost {

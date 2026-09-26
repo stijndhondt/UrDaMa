@@ -5,16 +5,10 @@
  */
 import { put, remove } from '../model/edit';
 import { message } from '../model/message';
+import { levelsInOrder } from '../model/levels';
 import { defaultStoreyHeight } from '../model/new-project';
-import type { Level, LevelId, Model, Slab, SlabId } from '../model/types';
+import type { Level, LevelId, Slab, SlabId } from '../model/types';
 import { refuse, type Command } from './command';
-
-/** A Building's Levels, lowest first. */
-export function levelsInOrder(model: Model, building?: string): Level[] {
-  return Object.values(model.levels)
-    .filter((l) => building === undefined || l.building === building)
-    .sort((a, b) => a.order - b.order);
-}
 
 export interface AddLevelArgs {
   readonly relativeTo: LevelId;

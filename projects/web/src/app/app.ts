@@ -9,15 +9,7 @@ import {
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ToolName } from '@lakudemis/editor2d';
-import {
-  deleteElements,
-  mergeRooms,
-  updateOpening,
-  type OpeningId,
-  type RoomId,
-  type RoomSeparatorId,
-  type WallId,
-} from '@lakudemis/core';
+import { deleteElements, mergeRooms, updateOpening } from '@lakudemis/core';
 import { ChangeSummaryComponent } from './editor/change-summary.component';
 import { PropertiesPanelComponent } from './editor/properties-panel.component';
 import { LevelTabsComponent } from './editor/level-tabs.component';
@@ -352,12 +344,11 @@ export class App {
   protected deleteSelection(): void {
     const s = this.selection.current();
     if (!s.length) return;
-    const ids = (kind: string) => s.filter((x) => x.kind === kind).map((x) => x.id);
     const result = this.store.run(deleteElements, {
-      walls: ids('wall') as WallId[],
-      rooms: ids('room') as RoomId[],
-      separators: ids('separator') as RoomSeparatorId[],
-      openings: ids('opening') as OpeningId[],
+      walls: s.flatMap((x) => (x.kind === 'wall' ? [x.id] : [])),
+      rooms: s.flatMap((x) => (x.kind === 'room' ? [x.id] : [])),
+      separators: s.flatMap((x) => (x.kind === 'separator' ? [x.id] : [])),
+      openings: s.flatMap((x) => (x.kind === 'opening' ? [x.id] : [])),
     });
     if (!result.ok) this.messages.refused(result.reason);
     else this.selection.clear();
@@ -469,10 +460,10 @@ export class App {
       e.preventDefault();
       // F / Shift+F flip a selected door (hinge side / swing); otherwise F fits the plan.
       const selected = this.selection.current();
-      const door = selected.length === 1 && selected[0]!.kind === 'opening' ? selected[0]! : null;
-      if (door) {
+      const only = selected.length === 1 ? selected[0]! : null;
+      if (only?.kind === 'opening') {
         const result = this.store.run(updateOpening, {
-          opening: door.id as OpeningId,
+          opening: only.id,
           ...(e.shiftKey ? { flipSwing: true } : { flipHinge: true }),
         });
         if (!result.ok) this.messages.refused(result.reason);

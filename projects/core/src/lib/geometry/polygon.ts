@@ -17,6 +17,34 @@ const toPath = (ring: readonly Vec[]): Path64 => {
 };
 
 /** Distance from a point to a segment. */
+/** An axis-aligned box in plan coordinates (mm). */
+export interface Box {
+  readonly min: Vec;
+  readonly max: Vec;
+}
+
+/** The box around some points, grown by `pad` on every side. */
+export function boundingBox(points: readonly Vec[], pad = 0): Box {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of points) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+  return { min: { x: minX - pad, y: minY - pad }, max: { x: maxX + pad, y: maxY + pad } };
+}
+
+/** Whether two boxes overlap or touch. */
+export const boxesOverlap = (a: Box, b: Box): boolean =>
+  a.max.x >= b.min.x && a.min.x <= b.max.x && a.max.y >= b.min.y && a.min.y <= b.max.y;
+
+export const insideBox = (p: Vec, box: Box): boolean =>
+  p.x >= box.min.x && p.x <= box.max.x && p.y >= box.min.y && p.y <= box.max.y;
+
 export function distanceToSegment(p: Vec, a: Vec, b: Vec): number {
   const ab = sub(b, a);
   const len2 = dot(ab, ab);

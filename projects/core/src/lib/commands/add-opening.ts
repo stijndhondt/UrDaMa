@@ -4,7 +4,7 @@
  * sill). Openings never overlap each other or run past the Wall's ends (invariants).
  */
 import { put } from '../model/edit';
-import { message } from '../model/message';
+import { message, type Message } from '../model/message';
 import type { Opening, OpeningId, OpeningKind, WallId } from '../model/types';
 import { refuse, type Command } from './command';
 
@@ -18,6 +18,11 @@ export interface AddOpeningArgs {
   readonly sill?: number;
   readonly hinge?: Opening['hinge'];
   readonly swing?: Opening['swing'];
+}
+
+/** Why an Opening's size is not possible, if it isn't: sizes above 0, a sill not below the floor. */
+export function openingSizeProblem(o: Pick<Opening, 'width' | 'height' | 'sill'>): Message | null {
+  return o.width > 0 && o.height > 0 && o.sill >= 0 ? null : message('commands.opening.badSize');
 }
 
 export const addOpening: Command<AddOpeningArgs> = (model, args, { ids }) => {
@@ -36,8 +41,8 @@ export const addOpening: Command<AddOpeningArgs> = (model, args, { ids }) => {
     hinge: args.hinge ?? 'start',
     swing: args.swing ?? 'right',
   };
-  if (!(opening.width > 0 && opening.height > 0) || opening.sill < 0)
-    return refuse(message('commands.opening.badSize'));
+  const problem = openingSizeProblem(opening);
+  if (problem) return refuse(problem);
   return {
     ok: true,
     model: put(model, 'openings', opening),

@@ -14,6 +14,7 @@ import { message, type Message } from './message';
 import type { LevelId, Model, WallId } from './types';
 import { distance } from '../geometry/vec';
 import { levelWallOutlines } from '../geometry/level-geometry';
+import { boundingBox, boxesOverlap } from '../geometry/polygon';
 import { fullThicknessSpan, wallOutlines, type WallOutline } from '../geometry/wall-outlines';
 
 /** Wall outlines overlapping by more than this (mm²) count as overlapping. */
@@ -107,19 +108,13 @@ export function overlappingWalls(
   );
   const list = [...outlines.entries()];
   if (only) {
-    const box = (o: WallOutline) => {
-      const xs = o.map((p) => p.x);
-      const ys = o.map((p) => p.y);
-      return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] as const;
-    };
-    const boxes = new Map(list.map(([id, o]) => [id, box(o)]));
+    const boxes = new Map(list.map(([id, o]) => [id, boundingBox(o)]));
     for (const [id, o] of list) {
       if (!only.has(id)) continue;
       const a = boxes.get(id)!;
       for (const [other, p] of list) {
         if (other === id || (only.has(other) && other < id)) continue;
-        const b = boxes.get(other)!;
-        if (a[0] >= b[2] || b[0] >= a[2] || a[1] >= b[3] || b[1] >= a[3]) continue;
+        if (!boxesOverlap(a, boxes.get(other)!)) continue;
         if (overlapping(o, p)) return [id, other];
       }
     }

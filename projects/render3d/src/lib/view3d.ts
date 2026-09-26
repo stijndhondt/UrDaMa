@@ -26,7 +26,14 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import type { LevelId, SolidRef } from '@lakudemis/core';
 import type { ElementMesh } from './solid-kernel';
+
+/** The element a mesh shows, without its geometry. */
+const solidRefOf = (m: ElementMesh): SolidRef => {
+  const { positions: _p, indices: _i, ...ref } = m;
+  return ref;
+};
 
 export type CameraPreset = 'orbit' | 'top' | 'front' | 'back' | 'left' | 'right' | 'bottom';
 
@@ -40,12 +47,8 @@ export const CAMERA_PRESETS: readonly CameraPreset[] = [
   'bottom',
 ];
 
-/** What was clicked: an element, or nothing. */
-export interface Picked {
-  readonly kind: ElementMesh['kind'];
-  readonly id: string;
-  readonly level: string;
-}
+/** What was clicked: an element (its kind, typed ID and Level), or nothing. */
+export type Picked = SolidRef;
 
 const DIRECTIONS: Record<
   CameraPreset,
@@ -60,7 +63,7 @@ const DIRECTIONS: Record<
   right: { dir: [1, 0, 0], up: [0, 1, 0] },
 };
 
-const COLORS: Record<ElementMesh['kind'], number> = {
+const COLORS: Record<SolidRef['kind'], number> = {
   wall: 0xe4e1da,
   slab: 0xa9adb5,
   floorBuildUp: 0xd9c7a7,
@@ -73,9 +76,9 @@ export class View3D {
   private readonly camera = new OrthographicCamera(-1, 1, 1, -1, -1000, 1000);
   private readonly controls: OrbitControls;
   private readonly root = new Group();
-  private readonly levels = new Map<string, Group>();
-  private readonly hidden = new Set<string>();
-  private selected = new Set<string>();
+  private readonly levels = new Map<LevelId, Group>();
+  private readonly hidden = new Set<LevelId>();
+  private selected: ReadonlySet<SolidRef['id']> = new Set();
   private readonly resize: ResizeObserver;
   private readonly edgeMaterial = new LineBasicMaterial({ color: 0x3a4250 });
   private frame = 0;
@@ -165,7 +168,8 @@ export class View3D {
           polygonOffsetUnits: 1,
         }),
       );
-      mesh.userData = { kind: m.kind, id: m.id, level: m.level } satisfies Picked;
+      const picked: Picked = solidRefOf(m);
+      mesh.userData = picked;
       group.add(mesh);
       group.add(new LineSegments(new EdgesGeometry(geometry, 25), this.edgeMaterial));
     }
@@ -177,7 +181,7 @@ export class View3D {
   }
 
   /** Levels to hide (their IDs). */
-  setHiddenLevels(hidden: ReadonlySet<string>): void {
+  setHiddenLevels(hidden: ReadonlySet<LevelId>): void {
     this.hidden.clear();
     for (const id of hidden) this.hidden.add(id);
     for (const [id, group] of this.levels) group.visible = !hidden.has(id);
@@ -185,7 +189,7 @@ export class View3D {
   }
 
   /** Highlights the selected elements (Walls, and a Room's Floor build-up). */
-  setSelection(ids: ReadonlySet<string>): void {
+  setSelection(ids: ReadonlySet<SolidRef['id']>): void {
     this.selected = new Set(ids);
     this.root.traverse((o) => {
       if (o instanceof Mesh) {

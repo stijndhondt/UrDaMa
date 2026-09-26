@@ -7,6 +7,7 @@
  * on another Level yields an equal slice and nothing downstream is recalculated.
  */
 import { derived, type Derived } from '../reactive';
+import { levelsInOrder } from '../model/levels';
 import { message, type Message } from '../model/message';
 import { footprint, type Footprint, type RoomDetection } from '../geometry/footprint';
 import { wallOutlines, type WallOutline } from '../geometry/wall-outlines';
@@ -163,9 +164,7 @@ export class BuildingValues {
       const result = new Map<LevelId, LevelHeights>();
       const buildUp = m.project.presets.floorBuildUp;
       for (const building of Object.values(m.buildings)) {
-        const stack = Object.values(m.levels)
-          .filter((l) => l.building === building.id)
-          .sort((a, b) => a.order - b.order);
+        const stack = levelsInOrder(m, building.id);
         let elevation = building.baseElevation;
         stack.forEach((level, i) => {
           const slab = Object.values(m.slabs).find((s) => s.level === level.id);
@@ -360,25 +359,12 @@ export class BuildingValues {
         );
         if (open) out.push(message('warnings.unconnectedEnds', { count: open }));
         // A Ceiling running into the Slab above: a warning, never a refusal.
-        const heights = this.levelHeights();
-        const here = heights.get(id);
-        const above = here?.above ? heights.get(here.above) : undefined;
-        if (here && above) {
-          const slabBottom = above.slabTop - above.slabThickness;
-          for (const room of s.rooms) {
-            const top =
-              here.slabTop +
-              (room.floorBuildUp ?? s.presets.floorBuildUp) +
-              (room.height ?? s.presets.roomHeight) +
-              (s.ceilings.find((c) => c.room === room.id)?.thickness ?? s.presets.ceilingThickness);
-            if (top > slabBottom + 0.5)
-              out.push(
-                message('warnings.ceilingIntoSlab', {
-                  room: room.name,
-                  mm: Math.round(top - slabBottom),
-                }),
-              );
-          }
+        for (const room of s.rooms) {
+          const gap = this.room(room.id).ceilingVoid();
+          if (gap !== null && gap < -0.5)
+            out.push(
+              message('warnings.ceilingIntoSlab', { room: room.name, mm: Math.round(-gap) }),
+            );
         }
         return out;
       },
@@ -472,9 +458,10 @@ export class BuildingValues {
         const heights = this.levelHeights();
         const above = heights.get(heights.get(r.level)?.above ?? ('' as LevelId));
         if (!above) return null;
-        const m = this.model();
-        const ceiling = Object.values(m.ceilings).find((c) => c.room === id);
-        const thickness = ceiling?.thickness ?? m.project.presets.ceilingThickness;
+        // Through the Level's slice, so edits elsewhere don't recalculate it.
+        const slice = this.level(r.level).slice();
+        const ceiling = slice.ceilings.find((c) => c.room === id);
+        const thickness = ceiling?.thickness ?? slice.presets.ceilingThickness;
         return above.slabTop - above.slabThickness - (ceilingUnderside() + thickness);
       },
     );

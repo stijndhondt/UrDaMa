@@ -9,7 +9,13 @@
  * keeps it.
  */
 import { levelGeometry, levelWallOutlines } from '../geometry/level-geometry';
-import { interiorPoint, intersectionArea } from '../geometry/polygon';
+import {
+  boundingBox,
+  insideBox,
+  interiorPoint,
+  intersectionArea,
+  type Box,
+} from '../geometry/polygon';
 import type { LevelId, Model, RoomId, Vec } from '../model/types';
 
 export function reseatSeeds(
@@ -78,7 +84,7 @@ export function reseatSeeds(
  */
 function seedsUntouched(before: Model, after: Model, level: LevelId): boolean {
   if (after.rooms !== before.rooms) return false;
-  const boxes: { min: Vec; max: Vec }[] = [];
+  const boxes: Box[] = [];
   const sameKeys = (a: object, b: object) => {
     const ka = Object.keys(a);
     return ka.length === Object.keys(b).length && ka.every((k) => Object.hasOwn(b, k));
@@ -87,14 +93,7 @@ function seedsUntouched(before: Model, after: Model, level: LevelId): boolean {
   if (!sameKeys(before.wallConnections, after.wallConnections)) return false;
   if (!sameKeys(before.roomSeparators, after.roomSeparators)) return false;
   if (after.project.presets.wallThickness !== before.project.presets.wallThickness) return false;
-  const around = (points: Vec[], pad: number) => {
-    const xs = points.map((p) => p.x);
-    const ys = points.map((p) => p.y);
-    boxes.push({
-      min: { x: Math.min(...xs) - pad, y: Math.min(...ys) - pad },
-      max: { x: Math.max(...xs) + pad, y: Math.max(...ys) + pad },
-    });
-  };
+  const around = (points: readonly Vec[], pad: number) => boxes.push(boundingBox(points, pad));
   for (const [id, w] of Object.entries(after.walls)) {
     const old = before.walls[id]!;
     if (old === w) continue;
@@ -127,11 +126,6 @@ function seedsUntouched(before: Model, after: Model, level: LevelId): boolean {
     around([old.start, old.end, sep.start, sep.end], 1);
   }
   return Object.values(after.rooms).every(
-    (r) =>
-      r.level !== level ||
-      !boxes.some(
-        (b) =>
-          r.seed.x >= b.min.x && r.seed.x <= b.max.x && r.seed.y >= b.min.y && r.seed.y <= b.max.y,
-      ),
+    (r) => r.level !== level || !boxes.some((b) => insideBox(r.seed, b)),
   );
 }

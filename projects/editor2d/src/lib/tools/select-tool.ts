@@ -41,7 +41,7 @@ export class SelectTool implements Tool {
       this.ctx.host.select(has ? current.filter((s) => s.id !== hit.id) : [...current, hit]);
     } else {
       this.ctx.host.select(hit ? [hit] : []);
-      if (hit?.kind === 'wall') this.drag = { wall: hit.id as WallId, from: p.model, offset: 0 };
+      if (hit?.kind === 'wall') this.drag = { wall: hit.id, from: p.model, offset: 0 };
     }
     this.ctx.invalidate();
   }

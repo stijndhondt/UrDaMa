@@ -3,6 +3,7 @@
  * buys materials with, and its CSV export. Values are in mm, mm² and mm³, as everywhere in core;
  * the table and the CSV show m, m² and m³.
  */
+import { levelsInOrder } from '../model/levels';
 import type { LevelId, Model, RoomId } from '../model/types';
 import type { BuildingValues } from '../values/building-values';
 import { netWallArea, type MeasurementRule } from '../values/surfaces';
@@ -39,8 +40,7 @@ export function quantityRows(
   rule: MeasurementRule,
 ): QuantityRow[] {
   const rows: QuantityRow[] = [];
-  const levels = Object.values(model.levels).sort((a, b) => a.order - b.order);
-  for (const level of levels) {
+  for (const level of levelsInOrder(model)) {
     const rooms = Object.values(model.rooms)
       .filter((r) => r.level === level.id)
       .sort((a, b) => a.name.localeCompare(b.name) || (a.id < b.id ? -1 : 1));

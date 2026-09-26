@@ -29,6 +29,51 @@ export function faceOffsets(wall: Wall, presetThickness: number): readonly [numb
 
 export const wallDirection = (wall: Wall): Vec => normalize(sub(wall.end, wall.start));
 
+/** Positions relative to a Wall's Baseline: along it from its start, and across it (along its normal). */
+export interface WallFrame {
+  /** Unit direction of the Baseline */
+  readonly d: Vec;
+  /** Unit normal, the visual right of the Baseline */
+  readonly n: Vec;
+  /** mm along the Baseline from its start */
+  along(p: Vec): number;
+  /** mm across the Baseline, towards its normal */
+  across(p: Vec): number;
+  /** The point `t` along and `s` across */
+  point(t: number, s: number): Vec;
+}
+
+export function wallFrame(wall: Wall): WallFrame {
+  const d = wallDirection(wall);
+  const n = perp(d);
+  return {
+    d,
+    n,
+    along: (p) => dot(sub(p, wall.start), d),
+    across: (p) => dot(sub(p, wall.start), n),
+    point: (t, s) => add(wall.start, add(scale(d, t), scale(n, s))),
+  };
+}
+
+/**
+ * An Opening's rectangle in the plan: its width along the Baseline, across the Wall's whole
+ * thickness, widened by `margin` past both faces (for clean cuts). Low face first, like an outline.
+ */
+export function openingRect(
+  wall: Wall,
+  outline: WallOutline,
+  opening: { readonly offset: number; readonly width: number },
+  margin = 0,
+): WallOutline {
+  const f = wallFrame(wall);
+  const across = outline.map((p) => f.across(p));
+  const lo = Math.min(...across) - margin;
+  const hi = Math.max(...across) + margin;
+  const t0 = opening.offset;
+  const t1 = opening.offset + opening.width;
+  return [f.point(t0, lo), f.point(t1, lo), f.point(t1, hi), f.point(t0, hi)];
+}
+
 /**
  * Where along the Baseline (mm from its start) the Wall has its full thickness: both faces are
  * there. Openings stay inside this span; beyond it lies a corner or a T.
@@ -37,9 +82,8 @@ export function fullThicknessSpan(
   wall: Wall,
   outline: WallOutline,
 ): { readonly start: number; readonly end: number } {
-  const d = wallDirection(wall);
-  const t = (p: Vec) => dot(sub(p, wall.start), d);
-  const [a, b, c, e] = outline.map(t) as [number, number, number, number];
+  const f = wallFrame(wall);
+  const [a, b, c, e] = outline.map((p) => f.along(p)) as [number, number, number, number];
   return {
     start: Math.max(Math.min(a, b), Math.min(e, c)),
     end: Math.min(Math.max(a, b), Math.max(e, c)),

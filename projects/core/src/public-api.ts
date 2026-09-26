@@ -10,6 +10,7 @@ export * from './lib/geometry/footprint';
 export * from './lib/model/ids';
 export * from './lib/model/message';
 export * from './lib/model/new-project';
+export * from './lib/model/levels';
 export * from './lib/model/patch';
 export * from './lib/model/edit';
 export * from './lib/model/invariants';

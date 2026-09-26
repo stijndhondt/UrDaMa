@@ -5,7 +5,7 @@
  * a Measurement rule, chosen per report and never stored.
  */
 import { distanceToSegment } from '../geometry/polygon';
-import type { WallOutline } from '../geometry/wall-outlines';
+import { wallFrame, type WallFrame, type WallOutline } from '../geometry/wall-outlines';
 import type { Opening, OpeningId, RoomSeparator, Vec, Wall, WallId } from '../model/types';
 
 export type MeasurementRule = 'exact' | 'belgianMasonry';
@@ -56,11 +56,9 @@ export interface SurfaceInput {
 export const heightOverlap = (aBottom: number, aTop: number, bBottom: number, bTop: number) =>
   Math.max(0, Math.min(aTop, bTop) - Math.max(aBottom, bBottom));
 
-/** A Wall's frame: position along the Baseline (t) and across it (s), with its two face offsets. */
-interface Frame {
+/** A Wall's frame with its two face offsets across the Baseline. */
+interface Frame extends WallFrame {
   readonly wall: Wall;
-  readonly d: Vec;
-  readonly n: Vec;
   readonly lo: number;
   readonly hi: number;
 }
@@ -69,11 +67,8 @@ const ON = 0.5; // mm: an edge closer than this to a face lies on it
 const ON_SEPARATOR = 0.01; // mm: separator strips are 0.002 mm wide
 
 function frameOf(wall: Wall, outline: WallOutline): Frame {
-  const length = Math.hypot(wall.end.x - wall.start.x, wall.end.y - wall.start.y) || 1;
-  const d = { x: (wall.end.x - wall.start.x) / length, y: (wall.end.y - wall.start.y) / length };
-  const n = { x: -d.y, y: d.x };
-  const s = (p: Vec) => (p.x - wall.start.x) * n.x + (p.y - wall.start.y) * n.y;
-  return { wall, d, n, lo: s(outline[0]), hi: s(outline[3]) };
+  const f = wallFrame(wall);
+  return { ...f, wall, lo: f.across(outline[0]), hi: f.across(outline[3]) };
 }
 
 /**
@@ -111,12 +106,12 @@ export function levelRoomSurfaces<K>(
         for (const o of openings) {
           const f = frames.get(o.wall);
           if (!f) continue;
-          const sa = (a.x - f.wall.start.x) * f.n.x + (a.y - f.wall.start.y) * f.n.y;
-          const sb = (b.x - f.wall.start.x) * f.n.x + (b.y - f.wall.start.y) * f.n.y;
+          const sa = f.across(a);
+          const sb = f.across(b);
           const onFace = (face: number) => Math.abs(sa - face) <= ON && Math.abs(sb - face) <= ON;
           if (!onFace(f.lo) && !onFace(f.hi)) continue;
-          const ta = (a.x - f.wall.start.x) * f.d.x + (a.y - f.wall.start.y) * f.d.y;
-          const tb = (b.x - f.wall.start.x) * f.d.x + (b.y - f.wall.start.y) * f.d.y;
+          const ta = f.along(a);
+          const tb = f.along(b);
           const overlap =
             Math.min(Math.max(ta, tb), o.offset + o.width) - Math.max(Math.min(ta, tb), o.offset);
           if (overlap > 1e-6) widths.set(o, (widths.get(o) ?? 0) + overlap);

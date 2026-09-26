@@ -9,6 +9,7 @@ import {
   type LevelId,
   type Model,
   type NewProjectOptions,
+  levelsInOrder,
 } from '@lakudemis/core';
 import { readWorkingCopy, writeWorkingCopy } from './working-copy';
 
@@ -42,9 +43,7 @@ export class ProjectService {
   readonly name = computed(() => this.store.committedModel().project.name);
 
   /** The Levels, lowest first. */
-  readonly levels = computed(() =>
-    Object.values(this.store.model().levels).sort((a, b) => a.order - b.order),
-  );
+  readonly levels = computed(() => levelsInOrder(this.store.model()));
   /** The Level below the edited one (shown faded), or null. */
   readonly levelBelow = computed<LevelId | null>(() => {
     const levels = this.levels();
@@ -54,7 +53,7 @@ export class ProjectService {
 
   /** The Level being edited: the chosen one, or the lowest. */
   readonly level = computed<LevelId>(() => {
-    const levels = Object.values(this.store.model().levels).sort((a, b) => a.order - b.order);
+    const levels = this.levels();
     const chosen = this.selectedLevel();
     return chosen && levels.some((l) => l.id === chosen) ? chosen : levels[0]!.id;
   });

@@ -1,15 +1,12 @@
-import type { BuildingSolids, LevelId, Solid } from '@lakudemis/core';
+import type { BuildingSolids, SolidRef } from '@lakudemis/core';
 
 /** One element's triangle mesh, in plan millimetres: x right, y down (plan), z up. */
-export interface ElementMesh {
-  readonly kind: Solid['kind'];
-  readonly id: string;
-  readonly level: LevelId;
+export type ElementMesh = SolidRef & {
   /** x, y, z per vertex */
   readonly positions: Float32Array;
   /** Three vertex indices per triangle, counter-clockwise seen from outside (z up). */
   readonly indices: Uint32Array;
-}
+};
 
 /**
  * Turns solid descriptions into meshes (ADR 0005): manifold-3d in a Web Worker today, anything

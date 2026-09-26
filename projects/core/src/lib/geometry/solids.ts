@@ -5,7 +5,9 @@
  * calculated from it (ADR 0003).
  */
 import type { LevelId, Model, RoomId, SlabId, Vec, WallId } from '../model/types';
+import { levelsInOrder } from '../model/levels';
 import type { BuildingValues } from '../values/building-values';
+import { openingRect } from './wall-outlines';
 
 /** A vertical prism: plan rings (the first is the outline, the rest are holes), bottom to top. */
 export interface Prism {
@@ -33,6 +35,25 @@ export type Solid =
       readonly body: Prism;
     };
 
+/** Which element a solid (or its mesh) is: its kind, with the matching ID type, and its Level. */
+export type SolidRef = Pick<Solid, 'kind' | 'id' | 'level'> &
+  (
+    | { readonly kind: 'wall'; readonly id: WallId }
+    | { readonly kind: 'slab'; readonly id: SlabId }
+    | { readonly kind: 'floorBuildUp'; readonly id: RoomId }
+  );
+
+export function solidRef(s: Solid): SolidRef {
+  switch (s.kind) {
+    case 'wall':
+      return { kind: s.kind, id: s.id, level: s.level };
+    case 'slab':
+      return { kind: s.kind, id: s.id, level: s.level };
+    case 'floorBuildUp':
+      return { kind: s.kind, id: s.id, level: s.level };
+  }
+}
+
 export interface BuildingSolids {
   /** Lowest first */
   readonly levels: readonly { readonly id: LevelId; readonly name: string }[];
@@ -44,9 +65,7 @@ const CUT_MARGIN = 10;
 
 export function buildingSolids(model: Model, values: BuildingValues): BuildingSolids {
   const heights = values.levelHeights();
-  const levels = Object.values(model.levels).sort(
-    (a, b) => (heights.get(a.id)?.elevation ?? 0) - (heights.get(b.id)?.elevation ?? 0),
-  );
+  const levels = levelsInOrder(model);
   const solids: Solid[] = [];
   for (const level of levels) {
     const h = heights.get(level.id);
@@ -59,27 +78,12 @@ export function buildingSolids(model: Model, values: BuildingValues): BuildingSo
       const outline = outlines.get(wall.id);
       if (!outline) continue;
       const bottom = h.slabTop;
-      const top = bottom + (wall.height ?? level.storeyHeight);
-      const length = Math.hypot(wall.end.x - wall.start.x, wall.end.y - wall.start.y) || 1;
-      const d = {
-        x: (wall.end.x - wall.start.x) / length,
-        y: (wall.end.y - wall.start.y) / length,
-      };
-      const n = { x: -d.y, y: d.x };
-      const across = outline.map((p) => (p.x - wall.start.x) * n.x + (p.y - wall.start.y) * n.y);
-      const lo = Math.min(...across) - CUT_MARGIN;
-      const hi = Math.max(...across) + CUT_MARGIN;
-      const at = (t: number, s: number): Vec => ({
-        x: wall.start.x + d.x * t + n.x * s,
-        y: wall.start.y + d.y * t + n.y * s,
-      });
+      const top = bottom + values.wall(wall.id).height();
       const cuts = slice.openings
         .filter((o) => o.wall === wall.id)
         .map((o): Prism => {
-          const t0 = o.offset;
-          const t1 = o.offset + o.width;
           return {
-            rings: [[at(t0, lo), at(t1, lo), at(t1, hi), at(t0, hi)]],
+            rings: [openingRect(wall, outline, o, CUT_MARGIN)],
             bottom: o.sill > 0 ? h.elevation + o.sill : bottom - CUT_MARGIN,
             top: h.elevation + o.sill + o.height,
           };
@@ -109,7 +113,7 @@ export function buildingSolids(model: Model, values: BuildingValues): BuildingSo
     for (const room of slice.rooms) {
       const d = values.room(room.id).detection();
       if (!d || d.status === 'notEnclosed') continue;
-      const buildUp = room.floorBuildUp ?? slice.presets.floorBuildUp;
+      const buildUp = values.room(room.id).floorBuildUp();
       if (buildUp <= 0) continue;
       solids.push({
         kind: 'floorBuildUp',

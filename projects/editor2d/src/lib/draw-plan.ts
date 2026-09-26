@@ -1,15 +1,20 @@
 /**
  * Draws one Level of the plan (Canvas2D, ADR 0005): only what is on screen, Walls batched into one path.
  */
-import type {
-  LevelId,
-  LevelSlice,
-  Opening,
-  RoomId,
-  Vec,
-  Wall,
-  WallId,
-  WallOutline,
+import {
+  boundingBox,
+  boxesOverlap,
+  openingRect,
+  wallFrame,
+  type Box,
+  type LevelId,
+  type LevelSlice,
+  type Opening,
+  type RoomId,
+  type Vec,
+  type Wall,
+  type WallId,
+  type WallOutline,
 } from '@lakudemis/core';
 import type { EditorHost, Selection } from './host';
 import type { View } from './view';
@@ -31,24 +36,9 @@ export const PLAN_COLORS = {
   accent: '#2f6fde',
 } as const;
 
-export interface Box {
-  readonly min: Vec;
-  readonly max: Vec;
-}
-
-export function overlaps(ring: readonly Vec[], box: Box): boolean {
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const p of ring) {
-    if (p.x < minX) minX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y > maxY) maxY = p.y;
-  }
-  return maxX >= box.min.x && minX <= box.max.x && maxY >= box.min.y && minY <= box.max.y;
-}
+/** Whether a ring may be visible in a box (its bounding box overlaps it). */
+export const overlaps = (ring: readonly Vec[], box: Box): boolean =>
+  boxesOverlap(boundingBox(ring), box);
 
 export function tracePolygon(
   ctx: CanvasRenderingContext2D,
@@ -292,9 +282,9 @@ export function drawSelected(
       const o = model.openings[item.id];
       ring = o ? openingOutline(model, values.outlines(), o) : null;
     } else if (item.kind === 'wall') {
-      ring = values.outlines().get(item.id as WallId) ?? null;
+      ring = values.outlines().get(item.id) ?? null;
     } else {
-      const d = host.store.values.room(item.id as RoomId).detection();
+      const d = host.store.values.room(item.id).detection();
       ring = d && d.status !== 'notEnclosed' ? d.area.outline : null;
     }
     if (ring) tracePolygon(ctx, view, ring);
@@ -332,23 +322,7 @@ export function openingOutline(
 ): Vec[] | null {
   const wall = model.walls[o.wall];
   const outline = outlines.get(o.wall);
-  if (!wall || !outline) return null;
-  const length = Math.hypot(wall.end.x - wall.start.x, wall.end.y - wall.start.y) || 1;
-  const d = { x: (wall.end.x - wall.start.x) / length, y: (wall.end.y - wall.start.y) / length };
-  const n = { x: -d.y, y: d.x };
-  const off = (p: Vec) => (p.x - wall.start.x) * n.x + (p.y - wall.start.y) * n.y;
-  const lo = off(outline[0]);
-  const hi = off(outline[3]);
-  const pt = (t: number, s: number): Vec => ({
-    x: wall.start.x + d.x * t + n.x * s,
-    y: wall.start.y + d.y * t + n.y * s,
-  });
-  return [
-    pt(o.offset, lo),
-    pt(o.offset + o.width, lo),
-    pt(o.offset + o.width, hi),
-    pt(o.offset, hi),
-  ];
+  return wall && outline ? [...openingRect(wall, outline, o)] : null;
 }
 
 /** Openings: cut out of their Wall, with a door leaf and swing, or window glass lines. */
@@ -364,17 +338,13 @@ export function drawOpenings(
     const wall = walls.get(o.wall);
     const outline = outlines.get(o.wall);
     if (!wall || !outline) continue;
-    const length = Math.hypot(wall.end.x - wall.start.x, wall.end.y - wall.start.y) || 1;
-    const d = { x: (wall.end.x - wall.start.x) / length, y: (wall.end.y - wall.start.y) / length };
-    const n = { x: -d.y, y: d.x };
-    const off = (p: Vec) => (p.x - wall.start.x) * n.x + (p.y - wall.start.y) * n.y;
-    const lo = off(outline[0]);
-    const hi = off(outline[3]);
-    const point = (t: number, s: number): Vec =>
-      view.toScreen({ x: wall.start.x + d.x * t + n.x * s, y: wall.start.y + d.y * t + n.y * s });
+    const f = wallFrame(wall);
+    const lo = f.across(outline[0]);
+    const hi = f.across(outline[3]);
+    const point = (t: number, s: number): Vec => view.toScreen(f.point(t, s));
     const t0 = o.offset;
     const t1 = o.offset + o.width;
-    const corners = [point(t0, lo), point(t1, lo), point(t1, hi), point(t0, hi)];
+    const corners = openingRect(wall, outline, o).map((c) => view.toScreen(c));
     ctx.beginPath();
     corners.forEach((c, i) => (i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y)));
     ctx.closePath();

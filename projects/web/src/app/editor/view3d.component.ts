@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { buildingSolids, type LevelId, type RoomId, type WallId } from '@lakudemis/core';
+import { buildingSolids, type LevelId, type SolidRef } from '@lakudemis/core';
 import {
   CAMERA_PRESETS,
   ManifoldKernel,
@@ -116,7 +116,7 @@ export class View3dComponent {
 
   protected readonly presets = CAMERA_PRESETS;
   protected readonly preset = signal<CameraPreset>('orbit');
-  protected readonly hidden = signal<ReadonlySet<string>>(new Set());
+  protected readonly hidden = signal<ReadonlySet<LevelId>>(new Set());
   protected readonly building = signal(false);
 
   private view: View3D | null = null;
@@ -163,8 +163,13 @@ export class View3dComponent {
     this.hidden.set(next);
   }
 
-  private selectedIds(): ReadonlySet<string> {
-    return new Set(this.selection.current().map((s) => s.id as string));
+  /** The selected Walls, and the selected Rooms (shown by their Floor build-up). */
+  private selectedIds(): ReadonlySet<SolidRef['id']> {
+    return new Set(
+      this.selection
+        .current()
+        .flatMap((s) => (s.kind === 'wall' || s.kind === 'room' ? [s.id] : [])),
+    );
   }
 
   private schedule(): void {
@@ -196,11 +201,10 @@ export class View3dComponent {
       this.selection.clear();
       return;
     }
-    if (picked.level !== this.project.level()) this.project.selectLevel(picked.level as LevelId);
-    if (picked.kind === 'wall')
-      this.selection.current.set([{ kind: 'wall', id: picked.id as WallId }]);
+    if (picked.level !== this.project.level()) this.project.selectLevel(picked.level);
+    if (picked.kind === 'wall') this.selection.current.set([{ kind: 'wall', id: picked.id }]);
     else if (picked.kind === 'floorBuildUp')
-      this.selection.current.set([{ kind: 'room', id: picked.id as RoomId }]);
+      this.selection.current.set([{ kind: 'room', id: picked.id }]);
     else this.selection.clear();
   }
 }
