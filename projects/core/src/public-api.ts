@@ -31,3 +31,6 @@ export * from './lib/commands/push';
 export * from './lib/commands/set-wall-thickness';
 export * from './lib/commands/set-presets';
 export * from './lib/commands/resize-room';
+export * from './lib/commands/new-rooms';
+export * from './lib/commands/draw-room-separator';
+export * from './lib/commands/merge-rooms';

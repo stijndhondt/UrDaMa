@@ -104,6 +104,21 @@ export function drawPlan(
   ctx.fillStyle = PLAN_COLORS.wallFill;
   ctx.fill('nonzero');
 
+  // Room separators: dashed lines with no physical form.
+  ctx.save();
+  ctx.setLineDash([8, 5]);
+  ctx.strokeStyle = '#8a93a3';
+  ctx.lineWidth = 1.5;
+  for (const s of slice.separators) {
+    const a = view.toScreen(s.start);
+    const b = view.toScreen(s.end);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  }
+  ctx.restore();
+
   drawWallDetails(ctx, view, host, slice, outlines, box);
   drawEmptyAreaLabels(ctx, view, host, fp.areas);
 

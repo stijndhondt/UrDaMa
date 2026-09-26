@@ -11,7 +11,8 @@
     "hints": {
       "select": "Klik een muur of ruimte om ze te selecteren. Sleep een muur om ze te verplaatsen (Shift: 100 mm, Ctrl: 1 mm). Delete verwijdert. Wieltje: zoomen, middelste knop: verschuiven, F: alles tonen.",
       "room": "Sleep een ruimte op de binnenmaat die je gemeten hebt, of klik en typ breedte, Tab, diepte, Enter. S: binnen-/buitenmaat. Begin op de buitenkant van een muur om ze te delen.",
-      "wall": "Sleep een muur, of klik en typ een lengte (en draai met de muis), Tab: hoek, Enter. S: kant van de dikte. Shift: 45°, Ctrl: 1°."
+      "wall": "Sleep een muur, of klik en typ een lengte (en draai met de muis), Tab: hoek, Enter. S: kant van de dikte. Shift: 45°, Ctrl: 1°.",
+      "separator": "Sleep een ruimtescheiding van het ene muurvlak naar het andere (of klik beide uiteinden). Ze deelt de ruimte; het andere deel wordt een nieuwe ruimte."
     }
   },
   "tools": {
@@ -26,6 +27,10 @@
     "select": {
       "name": "Selecteren",
       "hint": "Selecteren, verplaatsen en verwijderen: klik een muur of ruimte, sleep een muur om ze te verplaatsen"
+    },
+    "separator": {
+      "name": "Scheiding",
+      "hint": "Deel een open ruimte op: sleep van het ene muurvlak naar het andere"
     }
   },
   "editor": {
@@ -49,12 +54,9 @@
     }
   },
   "warnings": {
-    "notEnclosed": {
-      "short": "niet afgesloten"
-    },
-    "sharingArea": {
-      "short": "deelt één ruimte"
-    }
+    "notEnclosed": "{room} is niet afgesloten: dicht de opening of verbind de muuruiteinden.",
+    "sharingArea": "{rooms} delen één ruimte: verwijder er één of voeg een scheiding toe.",
+    "unconnectedEnds": "{count, plural, one {# muuruiteinde is} other {# muuruiteinden zijn}} nergens mee verbonden (rode vierkantjes)."
   },
   "rooms": {
     "defaultName": "Ruimte {n}"
@@ -130,6 +132,17 @@
       "notRectangular": "Alleen een rechthoekige ruimte kan je van maat veranderen door te typen; sleep anders haar muren.",
       "sameSize": "De ruimte heeft al deze maat.",
       "noWall": "Aan die kant begrenst geen muur de ruimte."
+    },
+    "separator": {
+      "label": "Ruimtescheiding tekenen",
+      "tooShort": "Een ruimtescheiding moet minstens {min} mm lang zijn.",
+      "notOnWalls": "Beide uiteinden van een ruimtescheiding moeten op een muurvlak liggen."
+    },
+    "merge": {
+      "label": "{a} en {b} samenvoegen",
+      "twoRooms": "Selecteer twee ruimtes om samen te voegen (Shift+klik de tweede).",
+      "notNeighbours": "Deze ruimtes grenzen niet aan elkaar: er ligt geen muur of scheiding tussen.",
+      "notEnclosed": "Samenvoegen zou de ruimte open laten."
     }
   },
   "invariants": {
@@ -194,7 +207,10 @@
       "height": "Muurhoogte",
       "roomBounding": "Begrenst ruimtes"
     },
-    "resetToPreset": "Terug naar standaard"
+    "resetToPreset": "Terug naar standaard",
+    "twoRooms": "Twee ruimtes geselecteerd",
+    "merge": "Ruimtes samenvoegen",
+    "warnings": "Waarschuwingen"
   },
   "presets": {
     "title": "Projectstandaarden",

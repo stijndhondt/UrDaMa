@@ -19,24 +19,37 @@ export interface WallSnap {
 }
 
 /**
- * Snaps to the nearest Wall outline corner, else the nearest point on a Wall face, within `radius` mm.
- * Along a horizontal or vertical face, the position is rounded to the drag increment `step`.
+ * Snaps to the nearest point of interest within `radius` mm: a Wall outline corner, or a point on a
+ * horizontal / vertical face aligned with one of `alignTo` (Wall ends: where a neighbouring Room's
+ * inside corner belongs). Else the nearest point on a Wall face, rounded along it to `step`.
  */
 export function snapToWalls(
   p: Vec,
   outlines: Iterable<WallOutline>,
   radius: number,
   step = 0,
+  alignTo: readonly Vec[] = [],
 ): WallSnap | null {
   let best: WallSnap | null = null;
   let bestDistance = radius;
   const list = [...outlines];
+  const consider = (c: Vec) => {
+    const d = Math.hypot(c.x - p.x, c.y - p.y);
+    if (d <= bestDistance) {
+      bestDistance = d;
+      best = { point: c, kind: 'corner' };
+    }
+  };
   for (const outline of list) {
-    for (const c of outline) {
-      const d = Math.hypot(c.x - p.x, c.y - p.y);
-      if (d <= bestDistance) {
-        bestDistance = d;
-        best = { point: c, kind: 'corner' };
+    for (const c of outline) consider(c);
+    for (let i = 0; i < 4; i++) {
+      const a = outline[i]!;
+      const b = outline[(i + 1) % 4]!;
+      for (const q of alignTo) {
+        if (Math.abs(a.y - b.y) < 1e-6 && q.x > Math.min(a.x, b.x) && q.x < Math.max(a.x, b.x))
+          consider({ x: q.x, y: a.y });
+        else if (Math.abs(a.x - b.x) < 1e-6 && q.y > Math.min(a.y, b.y) && q.y < Math.max(a.y, b.y))
+          consider({ x: a.x, y: q.y });
       }
     }
   }

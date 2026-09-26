@@ -5,6 +5,7 @@
  * while dragging; release commits one undo step, Esc cancels. Rooms themselves are not dragged.
  */
 import {
+  distanceToSegment,
   insideArea,
   insideRing,
   levelWallOutlines,
@@ -32,15 +33,22 @@ export class SelectTool implements Tool {
   constructor(private readonly ctx: ToolContext) {}
 
   pointerDown(p: PointerInfo): void {
-    const hit = this.hitTest(p.model);
-    this.ctx.host.select(hit);
-    if (hit?.kind === 'wall') this.drag = { wall: hit.id as WallId, from: p.model, offset: 0 };
+    const hit = this.hitTest(p.model, p);
+    const current = this.ctx.host.selection();
+    if (p.shift && hit) {
+      // Shift+click adds to (or removes from) the selection, e.g. two Rooms to merge.
+      const has = current.some((s) => s.id === hit.id);
+      this.ctx.host.select(has ? current.filter((s) => s.id !== hit.id) : [...current, hit]);
+    } else {
+      this.ctx.host.select(hit ? [hit] : []);
+      if (hit?.kind === 'wall') this.drag = { wall: hit.id as WallId, from: p.model, offset: 0 };
+    }
     this.ctx.invalidate();
   }
 
   pointerMove(p: PointerInfo): void {
     if (!this.drag) {
-      const hover = this.hitTest(p.model);
+      const hover = this.hitTest(p.model, p);
       if (hover?.id !== this.hover?.id) {
         this.hover = hover;
         this.ctx.invalidate();
@@ -78,8 +86,8 @@ export class SelectTool implements Tool {
         this.cancel();
         return true;
       }
-      if (this.ctx.host.selection()) {
-        this.ctx.host.select(null);
+      if (this.ctx.host.selection().length) {
+        this.ctx.host.select([]);
         this.ctx.invalidate();
         return true;
       }
@@ -94,20 +102,34 @@ export class SelectTool implements Tool {
   }
 
   drawOverlay(ctx: CanvasRenderingContext2D): void {
-    const selected = this.ctx.host.selection();
-    for (const [item, color, width] of [
-      [this.hover, 'rgba(47,111,222,.45)', 2],
-      [selected, '#2f6fde', 3],
-    ] as const) {
-      if (!item) continue;
-      const ring = this.outlineOf(item);
-      if (!ring) continue;
+    const items: [Selection, string, number][] = [
+      ...(this.hover
+        ? [[this.hover, 'rgba(47,111,222,.45)', 2] as [Selection, string, number]]
+        : []),
+      ...this.ctx.host.selection().map((s) => [s, '#2f6fde', 3] as [Selection, string, number]),
+    ];
+    for (const [item, color, width] of items) {
       ctx.save();
-      ctx.beginPath();
-      tracePolygon(ctx, this.ctx.view, ring);
       ctx.strokeStyle = color;
       ctx.lineWidth = width;
-      ctx.stroke();
+      if (item.kind === 'separator') {
+        const sep = this.ctx.host.store.model().roomSeparators[item.id as never];
+        if (sep) {
+          const a = this.ctx.view.toScreen(sep.start);
+          const b = this.ctx.view.toScreen(sep.end);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      } else {
+        const ring = this.outlineOf(item);
+        if (ring) {
+          ctx.beginPath();
+          tracePolygon(ctx, this.ctx.view, ring);
+          ctx.stroke();
+        }
+      }
       ctx.restore();
     }
     if (this.drag && this.drag.offset !== 0) {
@@ -131,9 +153,15 @@ export class SelectTool implements Tool {
     }
   }
 
-  /** A Wall's body wins over the Room around it. */
-  private hitTest(p: Vec): Selection | null {
+  /** A Room separator (near its line), then a Wall's body, then the Room around the point. */
+  private hitTest(p: Vec, info: PointerInfo): Selection | null {
     const level = this.ctx.host.level();
+    const near = 6 / this.ctx.view.scale;
+    for (const s of Object.values(this.ctx.host.store.committedModel().roomSeparators)) {
+      if (s.level === level && distanceToSegment(p, s.start, s.end) <= near)
+        return { kind: 'separator', id: s.id };
+    }
+    void info;
     const outlines = levelWallOutlines(this.ctx.host.store.committedModel(), level);
     for (const [id, outline] of outlines) if (insideRing(p, outline)) return { kind: 'wall', id };
     for (const area of this.ctx.host.store.values.level(level).footprint().areas) {

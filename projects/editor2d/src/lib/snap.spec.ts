@@ -24,6 +24,15 @@ describe('snapToWalls', () => {
     });
   });
 
+  it('prefers a point on a face aligned with a Wall end over a nearby outline corner', () => {
+    // Clicking at the inner corner line (x = 0) on the outer face must not jump to the corner at -140.
+    const snap = snapToWalls({ x: 3, y: -142 }, [wall], 200, 10, [
+      { x: 0, y: 0 },
+      { x: 2670, y: 0 },
+    ]);
+    expect(snap).toEqual({ point: { x: 0, y: -140 }, kind: 'corner' });
+  });
+
   it('returns nothing outside the radius', () => {
     expect(snapToWalls({ x: 1000, y: -400 }, [wall], 50)).toBeNull();
   });

@@ -2,7 +2,7 @@ import type { LevelId, Message, ProjectStore } from '@lakudemis/core';
 
 /** The selected element: a Wall or a Room (Slice 1 spec, "Select / move / delete"). */
 export interface Selection {
-  readonly kind: 'wall' | 'room';
+  readonly kind: 'wall' | 'room' | 'separator';
   readonly id: string;
 }
 
@@ -21,8 +21,8 @@ export interface EditorHost {
   /** The name for a new Room, e.g. "Room 3"; `offset` gives the 2nd, 3rd, … name when several are made at once. */
   readonly nextRoomName: (offset?: number) => string;
   /** The current selection, and a way to change it. */
-  readonly selection: () => Selection | null;
-  readonly select: (selection: Selection | null) => void;
+  readonly selection: () => readonly Selection[];
+  readonly select: (selection: readonly Selection[]) => void;
   /** A command was refused: show its reason near the cursor and in the message bar. */
   readonly refused: (reason: Message, at: { x: number; y: number }) => void;
 }

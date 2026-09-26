@@ -22,7 +22,7 @@ import {
   type WallSnap,
 } from '../snap';
 import { parseLength } from '../units';
-import type { PointerInfo, Tool, ToolContext } from './tool';
+import { wallEnds, type PointerInfo, type Tool, type ToolContext } from './tool';
 
 type State =
   | { readonly kind: 'idle' }
@@ -166,6 +166,7 @@ export class RoomTool implements Tool {
       outlines,
       SNAP_RADIUS_PX / this.ctx.view.scale,
       increment(p),
+      wallEnds(this.ctx),
     );
     return this.snapped?.point ?? snapToIncrement(p.model, increment(p));
   }

@@ -36,3 +36,11 @@ export interface Tool {
   /** Draws the tool's own feedback on top of the plan. */
   drawOverlay(ctx: CanvasRenderingContext2D): void;
 }
+
+/** The Wall ends on the current Level (committed): along faces, snapping aligns with them. */
+export function wallEnds(ctx: ToolContext): Vec[] {
+  const level = ctx.host.level();
+  return Object.values(ctx.host.store.committedModel().walls)
+    .filter((w) => w.level === level)
+    .flatMap((w) => [w.start, w.end]);
+}

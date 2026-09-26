@@ -7,6 +7,7 @@
  * on another Level yields an equal slice and nothing downstream is recalculated.
  */
 import { derived, type Derived } from '../reactive';
+import { message, type Message } from '../model/message';
 import { footprint, type Footprint, type RoomDetection } from '../geometry/footprint';
 import { wallOutlines, type WallOutline } from '../geometry/wall-outlines';
 import type {
@@ -52,6 +53,8 @@ export interface LevelValues {
   readonly footprint: Derived<Footprint>;
   /** mm², inside the outer faces of the merged footprint */
   readonly grossArea: Derived<number>;
+  /** Things to fix: Rooms not enclosed or sharing one area, Wall ends connected to nothing. */
+  readonly warnings: Derived<readonly Message[]>;
 }
 
 export interface RoomValues {
@@ -144,7 +147,43 @@ export class BuildingValues {
       () => `${name()} · Gross floor area`,
       () => fp().grossArea,
     );
-    return { slice, outlines, footprint: fp, grossArea };
+    const warnings = derived(
+      () => `${name()} · warnings`,
+      (): readonly Message[] => {
+        const s = slice();
+        const f = fp();
+        const out: Message[] = [];
+        const names = new Map(s.rooms.map((r) => [r.id as string, r.name]));
+        const reported = new Set<string>();
+        for (const room of s.rooms) {
+          const d = f.rooms.get(room.id);
+          if (!d || d.status === 'notEnclosed') {
+            out.push(message('warnings.notEnclosed', { room: room.name }));
+          } else if (d.status === 'sharingArea' && !reported.has(room.id)) {
+            const group = [room.id, ...d.others];
+            group.forEach((id) => reported.add(id));
+            out.push(
+              message('warnings.sharingArea', {
+                rooms: group.map((id) => names.get(id) ?? id).join(', '),
+              }),
+            );
+          }
+        }
+        const connected = new Set<string>();
+        for (const c of s.connections) {
+          connected.add(`${c.wall}:${c.end}`);
+          if (c.kind === 'corner') connected.add(`${c.to}:${c.toEnd}`);
+        }
+        const open = s.walls.reduce(
+          (n, w) =>
+            n + (connected.has(`${w.id}:start`) ? 0 : 1) + (connected.has(`${w.id}:end`) ? 0 : 1),
+          0,
+        );
+        if (open) out.push(message('warnings.unconnectedEnds', { count: open }));
+        return out;
+      },
+    );
+    return { slice, outlines, footprint: fp, grossArea, warnings };
   }
 
   private createRoom(id: RoomId): RoomValues {

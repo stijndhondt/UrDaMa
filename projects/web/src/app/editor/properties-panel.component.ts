@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
+  mergeRooms,
   resizeRoom,
   setWallThickness,
   updateRoom,
@@ -148,8 +149,22 @@ import { SelectionService } from './selection.service';
         />
         {{ 'panel.wall.roomBounding' | translate }}
       </label>
+    } @else if (selection.rooms().length === 2) {
+      <h2>{{ 'panel.twoRooms' | translate }}</h2>
+      <p>{{ selection.rooms()[0]!.name }} + {{ selection.rooms()[1]!.name }}</p>
+      <button type="button" class="primary" (click)="merge()">
+        {{ 'panel.merge' | translate }} (M)
+      </button>
     } @else {
       <p class="empty">{{ 'panel.nothingSelected' | translate }}</p>
+      @if (warnings().length) {
+        <h3>{{ 'panel.warnings' | translate }}</h3>
+        <ul class="warnings">
+          @for (w of warnings(); track $index) {
+            <li>{{ w.key | translate: w.params }}</li>
+          }
+        </ul>
+      }
       <lk-presets-panel />
     }
   `,
@@ -169,6 +184,18 @@ import { SelectionService } from './selection.service';
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
+    }
+    .warnings {
+      margin: 0 0 12px;
+      padding-left: 18px;
+      color: var(--warn);
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      padding: 5px 12px;
+      font-size: 13px;
     }
     select,
     button {
@@ -242,6 +269,17 @@ export class PropertiesPanelComponent {
     const area = room ? this.project.store.values.room(room.id).netFloorArea() : null;
     return area === null ? '—' : this.format.area(area);
   });
+
+  protected readonly warnings = computed(() =>
+    this.project.store.values.level(this.project.level()).warnings(),
+  );
+
+  protected merge(): void {
+    const rooms = this.selection.rooms();
+    if (rooms.length !== 2) return;
+    this.run(mergeRooms, { keep: rooms[0]!.id, other: rooms[1]!.id }, null, '');
+    this.selection.current.set([{ kind: 'room', id: rooms[0]!.id }]);
+  }
 
   protected widthSide: 'min' | 'max' = 'max';
   protected depthSide: 'min' | 'max' = 'max';

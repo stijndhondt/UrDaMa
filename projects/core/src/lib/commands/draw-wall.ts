@@ -9,7 +9,7 @@
  * - enclosed areas the new Wall closes get a Room.
  */
 import { levelGeometry, wallFaces } from '../geometry/level-geometry';
-import { distanceToSegment, interiorPoint, insideRing } from '../geometry/polygon';
+import { distanceToSegment, insideRing } from '../geometry/polygon';
 import {
   faceOffsets,
   wallDirection,
@@ -17,15 +17,10 @@ import {
   type WallOutline,
 } from '../geometry/wall-outlines';
 import { add, cross, distance, dot, perp, scale, sub } from '../geometry/vec';
-import { put, putAll } from '../model/edit';
+import { putAll } from '../model/edit';
 import { message } from '../model/message';
 import type {
-  Ceiling,
-  CeilingId,
   LevelId,
-  Model,
-  Room,
-  RoomId,
   Vec,
   Wall,
   WallConnection,
@@ -36,6 +31,7 @@ import type {
 } from '../model/types';
 import { refuse, type Command, type CommandContext } from './command';
 import { reseatSeeds } from './seeds';
+import { roomsForNewAreas } from './new-rooms';
 
 export interface DrawWallArgs {
   readonly level: LevelId;
@@ -138,7 +134,24 @@ export const drawWall: Command<DrawWallArgs> = (model, args, context) => {
   next = putAll(next, 'wallConnections', connections);
   // Rooms the new Wall landed on keep their best-overlapping piece; what is left gets new Rooms.
   next = reseatSeeds(model, next, args.level);
-  next = roomsForClosedAreas(model, next, args.level, walls, args.roomName, context);
+  const newOutlines = levelGeometry(next, args.level);
+  const added = walls.flatMap((w) =>
+    newOutlines.outlines.has(w.id) ? [newOutlines.outlines.get(w.id)!] : [],
+  );
+  next = roomsForNewAreas(
+    model,
+    next,
+    args.level,
+    (area) =>
+      area.outline.some((p) =>
+        added.some(
+          (o) =>
+            wallFaces(o).some(([a, b]) => distanceToSegment(p, a, b) <= ON) || insideRing(p, o),
+        ),
+      ),
+    args.roomName,
+    context,
+  );
   return { ok: true, model: next, label: message('commands.drawWall.label') };
 };
 
@@ -255,43 +268,4 @@ function joinAt(
     if (onFace || onBaselineEnd) return tee(context, wall, end, other, point);
   }
   return null;
-}
-
-/** Enclosed areas bounded by the new Walls that have no Room yet become Rooms. */
-function roomsForClosedAreas(
-  before: Model,
-  after: Model,
-  level: LevelId,
-  newWalls: readonly Wall[],
-  roomName: (index: number) => string,
-  context: CommandContext,
-): Model {
-  const previous = levelGeometry(before, level).footprint.areas;
-  const now = levelGeometry(after, level);
-  const newOutlines = newWalls.flatMap((w) =>
-    now.outlines.has(w.id) ? [now.outlines.get(w.id)!] : [],
-  );
-  let next = after;
-  let count = 0;
-  for (const area of now.footprint.areas) {
-    if (area.rooms.length) continue;
-    const touchesNewWall = area.outline.some((p) =>
-      newOutlines.some(
-        (o) => wallFaces(o).some(([a, b]) => distanceToSegment(p, a, b) <= ON) || insideRing(p, o),
-      ),
-    );
-    const existedBefore = previous.some(
-      (old) => !old.rooms.length && Math.abs(old.area - area.area) < 1,
-    );
-    if (!touchesNewWall || existedBefore) continue;
-    const room: Room = {
-      id: context.ids('rooms') as RoomId,
-      level,
-      name: roomName(count++),
-      seed: interiorPoint(area.outline, area.islands),
-    };
-    const ceiling: Ceiling = { id: context.ids('ceilings') as CeilingId, room: room.id };
-    next = put(put(next, 'rooms', room), 'ceilings', ceiling);
-  }
-  return next;
 }

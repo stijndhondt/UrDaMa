@@ -11,7 +11,8 @@
     "hints": {
       "select": "Click a Wall or a Room to select it. Drag a Wall to move it (Shift: 100 mm, Ctrl: 1 mm). Delete removes it. Wheel: zoom, middle button: pan, F: fit.",
       "room": "Drag a Room at the inside size you measured, or click and type width, Tab, depth, Enter. S: inside / outside size. Start on a Wall's far face to share it.",
-      "wall": "Drag a Wall, or click and type a length (then rotate with the mouse), Tab: angle, Enter. S: side of the thickness. Shift: 45°, Ctrl: 1°."
+      "wall": "Drag a Wall, or click and type a length (then rotate with the mouse), Tab: angle, Enter. S: side of the thickness. Shift: 45°, Ctrl: 1°.",
+      "separator": "Drag a Room separator from one Wall face to another (or click both ends). It splits the area; the other part becomes a new Room."
     }
   },
   "tools": {
@@ -26,6 +27,10 @@
     "select": {
       "name": "Select",
       "hint": "Select, move and delete: click a Wall or a Room, drag a Wall to move it"
+    },
+    "separator": {
+      "name": "Separator",
+      "hint": "Split an open space into Rooms: drag from one Wall face to another"
     }
   },
   "editor": {
@@ -49,12 +54,9 @@
     }
   },
   "warnings": {
-    "notEnclosed": {
-      "short": "not enclosed"
-    },
-    "sharingArea": {
-      "short": "shares one area"
-    }
+    "notEnclosed": "{room} is not enclosed: close the gap or connect the Wall ends.",
+    "sharingArea": "{rooms} share one area: delete one or add a Room separator.",
+    "unconnectedEnds": "{count, plural, one {# Wall end is} other {# Wall ends are}} connected to nothing (red squares)."
   },
   "rooms": {
     "defaultName": "Room {n}"
@@ -130,6 +132,17 @@
       "notRectangular": "Only a rectangular Room can be resized by typing its size; drag its Walls instead.",
       "sameSize": "The Room already has this size.",
       "noWall": "No Wall bounds the Room on that side."
+    },
+    "separator": {
+      "label": "Draw room separator",
+      "tooShort": "A Room separator must be at least {min} mm long.",
+      "notOnWalls": "Both ends of a Room separator must be on a Wall face."
+    },
+    "merge": {
+      "label": "Merge {a} and {b}",
+      "twoRooms": "Select two Rooms to merge (Shift+click the second one).",
+      "notNeighbours": "These Rooms are not neighbours: no Wall or Room separator lies between them.",
+      "notEnclosed": "Merging would leave the Room not enclosed."
     }
   },
   "invariants": {
@@ -194,7 +207,10 @@
       "height": "Wall height",
       "roomBounding": "Bounds Rooms"
     },
-    "resetToPreset": "Reset to Preset"
+    "resetToPreset": "Reset to Preset",
+    "twoRooms": "Two Rooms selected",
+    "merge": "Merge Rooms",
+    "warnings": "Warnings"
   },
   "presets": {
     "title": "Project Presets",

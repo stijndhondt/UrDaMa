@@ -8,6 +8,7 @@ import type { EditorHost } from './host';
 import { RoomTool } from './tools/room-tool';
 import { WallTool } from './tools/wall-tool';
 import { SelectTool } from './tools/select-tool';
+import { SeparatorTool } from './tools/separator-tool';
 import type { PointerInfo, Tool, ToolContext, ToolName } from './tools/tool';
 import { TypedInput } from './typed-input';
 import { View } from './view';
@@ -48,6 +49,7 @@ export class PlanEditor {
       select: new SelectTool(toolContext),
       room: new RoomTool(toolContext),
       wall: new WallTool(toolContext),
+      separator: new SeparatorTool(toolContext),
     };
     this.setTool('room');
 

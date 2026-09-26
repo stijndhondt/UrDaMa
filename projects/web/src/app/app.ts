@@ -1,7 +1,13 @@
 import { Component, HostListener, computed, effect, inject, viewChild } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ToolName } from '@lakudemis/editor2d';
-import { deleteElements, type RoomId, type WallId } from '@lakudemis/core';
+import {
+  deleteElements,
+  mergeRooms,
+  type RoomId,
+  type RoomSeparatorId,
+  type WallId,
+} from '@lakudemis/core';
 import { ChangeSummaryComponent } from './editor/change-summary.component';
 import { PropertiesPanelComponent } from './editor/properties-panel.component';
 import { SelectionService } from './editor/selection.service';
@@ -22,6 +28,7 @@ const TOOLS: readonly ToolButton[] = [
   { name: 'select', key: 'V' },
   { name: 'room', key: 'R' },
   { name: 'wall', key: 'W' },
+  { name: 'separator', key: 'E' },
 ];
 
 @Component({
@@ -289,13 +296,26 @@ export class App {
 
   protected deleteSelection(): void {
     const s = this.selection.current();
-    if (!s) return;
+    if (!s.length) return;
+    const ids = (kind: string) => s.filter((x) => x.kind === kind).map((x) => x.id);
     const result = this.store.run(deleteElements, {
-      walls: s.kind === 'wall' ? [s.id as WallId] : [],
-      rooms: s.kind === 'room' ? [s.id as RoomId] : [],
+      walls: ids('wall') as WallId[],
+      rooms: ids('room') as RoomId[],
+      separators: ids('separator') as RoomSeparatorId[],
     });
     if (!result.ok) this.messages.refused(result.reason);
-    else this.selection.current.set(null);
+    else this.selection.clear();
+  }
+
+  protected merge(): void {
+    const rooms = this.selection.rooms();
+    if (rooms.length !== 2) {
+      this.messages.refused({ key: 'commands.merge.twoRooms' });
+      return;
+    }
+    const result = this.store.run(mergeRooms, { keep: rooms[0]!.id, other: rooms[1]!.id });
+    if (!result.ok) this.messages.refused(result.reason);
+    else this.selection.current.set([{ kind: 'room', id: rooms[0]!.id }]);
   }
 
   protected undo(): void {
@@ -368,6 +388,11 @@ export class App {
     }
     if (e.key === 'Escape') {
       this.selectTool('select');
+      return;
+    }
+    if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      this.merge();
       return;
     }
     const tool = TOOLS.find((t) => t.key.toLowerCase() === e.key.toLowerCase());
