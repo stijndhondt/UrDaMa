@@ -43,8 +43,24 @@ A stored attachment of one Wall's end to another Wall: either to its end (a corn
 _Avoid_: Snap, join (for the stored relationship; "join" is the computed geometry)
 
 **Opening**:
-A door or window hosted by a Wall, positioned along its Baseline, with a width, a height and (for windows) a sill height. It cannot exist without its host Wall.
-_Avoid_: Hole, cut-out, aperture
+A hole in a Wall, placed as an instance of an Opening type: a door, a window, a wall opening or a garage door. It is positioned along the Wall's Baseline, has its own sill height and opening direction, and takes its other sizes from its type. It cannot exist without its host Wall.
+_Avoid_: Hole, cut-out, aperture, block
+
+**Opening family**:
+A design of an Opening, made once as one object from parametric parts (frame, leaves, glass, panels) and seen in every view, such as "interior door, single leaf". A change to the family changes all its Opening types and every Opening of them.
+_Avoid_: Block, template, object (unqualified)
+
+**Opening type**:
+A named set of sizes within an Opening family, such as "90 × 211" of the interior door family. Each Opening is an instance of one Opening type and follows it: a change to the type changes every Opening of that type. Changing one Opening on its own detaches it into a new Opening type of its own.
+_Avoid_: Block, variant, template
+
+**Wall face**:
+One side of a Wall: the surface that is painted, plastered or tiled. It faces a Room or the outside.
+_Avoid_: Wall side, surface (unqualified)
+
+**Façade**:
+All outside Wall faces of the building on one side (front, back, left side or right side, as seen standing in front of the house), counted relative to the building's own front, not to compass directions. A Façade that is not flat, such as the front of an L- or T-shaped house, splits into Façade parts that each lie in one plane.
+_Avoid_: Exterior wall (for the surface), gevel (in code and UI text), elevation (for the surface)
 
 **Wall height**:
 The height of a Wall itself. Usually greater than the Room height of the Rooms it bounds; a partial-height wall (divider, bar wall) has its own, lower Wall height.
@@ -79,6 +95,16 @@ _Avoid_: Input, parameters, properties (for the category)
 **Derived value**:
 Anything calculated from Source data, such as a Room outline, an area or a warning. It is never stored, always reproducible, and carries a readable name such as "Keuken · Net floor area".
 _Avoid_: Computed property, cached value, result
+
+### Views
+
+**Elevation**:
+A flat, straight-on drawing of the building seen from one side (front, back, left or right), all Levels stacked, showing what is visible from outside: Wall faces, Openings, Slab edges and heights.
+_Avoid_: Side view, façade view, gevelaanzicht (in code and UI text)
+
+**Section plane**:
+A plane that slices the building in a view: everything between the viewer and the plane is cut away, so the inside shows.
+_Avoid_: Slicer, cut, clipping plane
 
 ### Measurements
 
