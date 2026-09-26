@@ -9,10 +9,12 @@
     "planLabel": "Floor plan",
     "tools": "Tools",
     "hints": {
-      "select": "Click a Wall or a Room to select it. Drag a Wall to move it (Shift: 100 mm, Ctrl: 1 mm). Delete removes it. Wheel: zoom, middle button: pan, F: fit.",
+      "select": "Click a Wall, Room, door or window to select it. Drag a Wall to move it (Shift: 100 mm, Ctrl: 1 mm). Delete removes it. F / Shift+F flip a selected door. Wheel: zoom, middle button: pan, F: fit.",
       "room": "Drag a Room at the inside size you measured, or click and type width, Tab, depth, Enter. S: inside / outside size. Start on a Wall's far face to share it.",
       "wall": "Drag a Wall, or click and type a length (then rotate with the mouse), Tab: angle, Enter. S: side of the thickness. Shift: 45°, Ctrl: 1°.",
-      "separator": "Drag a Room separator from one Wall face to another (or click both ends). It splits the area; the other part becomes a new Room."
+      "separator": "Drag a Room separator from one Wall face to another (or click both ends). It splits the area; the other part becomes a new Room.",
+      "door": "Move along a Wall to place a door: it shows the distance to both inside corners. Click to place, or type the distance, Tab, width, Tab, height, Enter. F: hinge side, Shift+F: swing.",
+      "window": "Move along a Wall to place a window: it shows the distance to both inside corners. Click to place, or type the distance, Tab, width, Tab, height, Tab, sill, Enter."
     }
   },
   "tools": {
@@ -31,6 +33,14 @@
     "separator": {
       "name": "Separator",
       "hint": "Split an open space into Rooms: drag from one Wall face to another"
+    },
+    "door": {
+      "name": "Door",
+      "hint": "Place a door in a Wall"
+    },
+    "window": {
+      "name": "Window",
+      "hint": "Place a window in a Wall"
     }
   },
   "editor": {
@@ -51,6 +61,12 @@
         "left": "left of the line",
         "centre": "centred"
       }
+    },
+    "opening": {
+      "distance": "Distance",
+      "width": "Width",
+      "height": "Height",
+      "sill": "Sill"
     }
   },
   "warnings": {
@@ -143,13 +159,21 @@
       "twoRooms": "Select two Rooms to merge (Shift+click the second one).",
       "notNeighbours": "These Rooms are not neighbours: no Wall or Room separator lies between them.",
       "notEnclosed": "Merging would leave the Room not enclosed."
+    },
+    "opening": {
+      "addDoor": "Add door",
+      "addWindow": "Add window",
+      "update": "Change door or window",
+      "badSize": "Refused: width and height must be more than 0 and the sill can't be negative."
     }
   },
   "invariants": {
     "missingReference": "Refused: {what} {id} does not exist.",
     "zeroLength": "Refused: wall {id} would have no length.",
     "twoCorners": "Refused: wall {wall} would get two corner connections at one end.",
-    "overlap": "Refused: walls {a} and {b} would overlap."
+    "overlap": "Refused: walls {a} and {b} would overlap.",
+    "openingOutsideWall": "Refused: the door or window would stick out past the end of its Wall.",
+    "openingsOverlap": "Refused: two doors or windows would overlap in the same Wall."
   },
   "areas": {
     "noRoom": "no Room"
@@ -205,12 +229,27 @@
       "thickness": "Thickness",
       "side": "Thickness side",
       "height": "Wall height",
-      "roomBounding": "Bounds Rooms"
+      "roomBounding": "Bounds Rooms",
+      "faces": "Faces",
+      "drawnFace": "Drawn face",
+      "otherFace": "Other face",
+      "gross": "gross",
+      "net": "net"
     },
     "resetToPreset": "Reset to Preset",
     "twoRooms": "Two Rooms selected",
     "merge": "Merge Rooms",
-    "warnings": "Warnings"
+    "warnings": "Warnings",
+    "opening": {
+      "door": "Door",
+      "window": "Window",
+      "offset": "Position along the Wall",
+      "width": "Width",
+      "height": "Height",
+      "sill": "Sill height",
+      "flipHinge": "Hinge side",
+      "flipSwing": "Swing"
+    }
   },
   "presets": {
     "title": "Project Presets",

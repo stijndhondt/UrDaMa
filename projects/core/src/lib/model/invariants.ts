@@ -87,8 +87,23 @@ export function checkInvariants(model: Model): Message | null {
       }
     }
   }
-  for (const o of Object.values(model.openings))
+  const byWall = new Map<string, { start: number; end: number; id: string }[]>();
+  for (const o of Object.values(model.openings)) {
     if (!has('walls', o.wall)) return missing('wall', o.wall);
+    const wall = model.walls[o.wall]!;
+    const length = distance(wall.start, wall.end);
+    if (o.offset < -0.5 || o.offset + o.width > length + 0.5) {
+      return message('invariants.openingOutsideWall', { id: o.id });
+    }
+    const list = byWall.get(o.wall) ?? [];
+    for (const other of list) {
+      if (o.offset < other.end - 0.5 && other.start < o.offset + o.width - 0.5) {
+        return message('invariants.openingsOverlap', { a: other.id, b: o.id });
+      }
+    }
+    list.push({ start: o.offset, end: o.offset + o.width, id: o.id });
+    byWall.set(o.wall, list);
+  }
   for (const r of Object.values(model.rooms))
     if (!has('levels', r.level)) return missing('level', r.level);
   for (const s of Object.values(model.roomSeparators)) {

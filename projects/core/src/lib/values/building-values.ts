@@ -57,6 +57,24 @@ export interface LevelValues {
   readonly warnings: Derived<readonly Message[]>;
 }
 
+/** One face of a Wall: its length, and its area gross (face length × Wall height) and net of Openings. */
+export interface FaceValues {
+  /** mm */
+  readonly length: number;
+  /** mm² */
+  readonly gross: number;
+  /** mm² */
+  readonly net: number;
+}
+
+export interface WallValues {
+  readonly wall: Derived<Wall | undefined>;
+  /** mm: the Wall's own height, or the Level's storey height */
+  readonly height: Derived<number>;
+  /** The face along the drawn Baseline, and the other face (undefined when the Wall is gone). */
+  readonly faces: Derived<{ readonly drawn: FaceValues; readonly other: FaceValues } | undefined>;
+}
+
 export interface RoomValues {
   readonly room: Derived<Room | undefined>;
   readonly detection: Derived<RoomDetection | undefined>;
@@ -67,6 +85,7 @@ export interface RoomValues {
 export class BuildingValues {
   private readonly levels = new Map<LevelId, LevelValues>();
   private readonly rooms = new Map<RoomId, RoomValues>();
+  private readonly walls = new Map<WallId, WallValues>();
 
   constructor(private readonly model: () => Model) {}
 
@@ -75,6 +94,15 @@ export class BuildingValues {
     if (!values) {
       values = this.createLevel(id);
       this.levels.set(id, values);
+    }
+    return values;
+  }
+
+  wall(id: WallId): WallValues {
+    let values = this.walls.get(id);
+    if (!values) {
+      values = this.createWall(id);
+      this.walls.set(id, values);
     }
     return values;
   }
@@ -184,6 +212,35 @@ export class BuildingValues {
       },
     );
     return { slice, outlines, footprint: fp, grossArea, warnings };
+  }
+
+  private createWall(id: WallId): WallValues {
+    const wall = derived(`${id} · Source data`, () => this.model().walls[id]);
+    const height = derived(`${id} · Wall height`, () => {
+      const w = wall();
+      return w ? (w.height ?? this.model().levels[w.level]?.storeyHeight ?? 0) : 0;
+    });
+    const faces = derived(`${id} · faces`, () => {
+      const w = wall();
+      if (!w) return undefined;
+      const level = this.level(w.level);
+      const outline = level.outlines().get(id);
+      if (!outline) return undefined;
+      const h = height();
+      const openings = level
+        .slice()
+        .openings.filter((o) => o.wall === id)
+        .reduce((sum, o) => sum + o.width * Math.max(0, Math.min(o.height, h - o.sill)), 0);
+      const face = (a: { x: number; y: number }, b: { x: number; y: number }): FaceValues => {
+        const length = Math.hypot(b.x - a.x, b.y - a.y);
+        return { length, gross: length * h, net: length * h - openings };
+      };
+      const lo = face(outline[0], outline[1]);
+      const hi = face(outline[3], outline[2]);
+      // The drawn face is the one on the Baseline: 'right' → low (offset 0), 'left' → high.
+      return w.side === 'left' ? { drawn: hi, other: lo } : { drawn: lo, other: hi };
+    });
+    return { wall, height, faces };
   }
 
   private createRoom(id: RoomId): RoomValues {

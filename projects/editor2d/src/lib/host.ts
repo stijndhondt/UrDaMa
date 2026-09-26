@@ -2,7 +2,7 @@ import type { LevelId, Message, ProjectStore } from '@lakudemis/core';
 
 /** The selected element: a Wall or a Room (Slice 1 spec, "Select / move / delete"). */
 export interface Selection {
-  readonly kind: 'wall' | 'room' | 'separator';
+  readonly kind: 'wall' | 'room' | 'separator' | 'opening';
   readonly id: string;
 }
 

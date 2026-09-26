@@ -34,3 +34,5 @@ export * from './lib/commands/resize-room';
 export * from './lib/commands/new-rooms';
 export * from './lib/commands/draw-room-separator';
 export * from './lib/commands/merge-rooms';
+export * from './lib/commands/add-opening';
+export * from './lib/commands/update-opening';

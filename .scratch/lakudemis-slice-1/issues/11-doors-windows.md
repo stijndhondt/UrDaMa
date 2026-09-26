@@ -4,7 +4,7 @@
 
 **Blocked by:** 08 Select, move, delete
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Placing a window 0.58 m from the inside corner is exact, whether typed or snapped.
 - [ ] Overlapping Openings or Openings crossing a Wall end are refused with a reason.

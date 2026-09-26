@@ -9,10 +9,12 @@
     "planLabel": "Grondplan",
     "tools": "Gereedschap",
     "hints": {
-      "select": "Klik een muur of ruimte om ze te selecteren. Sleep een muur om ze te verplaatsen (Shift: 100 mm, Ctrl: 1 mm). Delete verwijdert. Wieltje: zoomen, middelste knop: verschuiven, F: alles tonen.",
+      "select": "Klik op een muur, ruimte, deur of raam om te selecteren. Sleep een muur om hem te verplaatsen (Shift: 100 mm, Ctrl: 1 mm). Delete verwijdert. F / Shift+F draait een geselecteerde deur om. Wiel: zoomen, middelste knop: pannen, F: passend maken.",
       "room": "Sleep een ruimte op de binnenmaat die je gemeten hebt, of klik en typ breedte, Tab, diepte, Enter. S: binnen-/buitenmaat. Begin op de buitenkant van een muur om ze te delen.",
       "wall": "Sleep een muur, of klik en typ een lengte (en draai met de muis), Tab: hoek, Enter. S: kant van de dikte. Shift: 45°, Ctrl: 1°.",
-      "separator": "Sleep een ruimtescheiding van het ene muurvlak naar het andere (of klik beide uiteinden). Ze deelt de ruimte; het andere deel wordt een nieuwe ruimte."
+      "separator": "Sleep een ruimtescheiding van het ene muurvlak naar het andere (of klik beide uiteinden). Ze deelt de ruimte; het andere deel wordt een nieuwe ruimte.",
+      "door": "Beweeg langs een muur om een deur te plaatsen: je ziet de afstand tot beide binnenhoeken. Klik om te plaatsen, of typ de afstand, Tab, breedte, Tab, hoogte, Enter. F: scharnierkant, Shift+F: draairichting.",
+      "window": "Beweeg langs een muur om een raam te plaatsen: je ziet de afstand tot beide binnenhoeken. Klik om te plaatsen, of typ de afstand, Tab, breedte, Tab, hoogte, Tab, borstwering, Enter."
     }
   },
   "tools": {
@@ -31,6 +33,14 @@
     "separator": {
       "name": "Scheiding",
       "hint": "Deel een open ruimte op: sleep van het ene muurvlak naar het andere"
+    },
+    "door": {
+      "name": "Deur",
+      "hint": "Plaats een deur in een muur"
+    },
+    "window": {
+      "name": "Raam",
+      "hint": "Plaats een raam in een muur"
     }
   },
   "editor": {
@@ -51,6 +61,12 @@
         "left": "links van de lijn",
         "centre": "gecentreerd"
       }
+    },
+    "opening": {
+      "distance": "Afstand",
+      "width": "Breedte",
+      "height": "Hoogte",
+      "sill": "Borstwering"
     }
   },
   "warnings": {
@@ -143,13 +159,21 @@
       "twoRooms": "Selecteer twee ruimtes om samen te voegen (Shift+klik de tweede).",
       "notNeighbours": "Deze ruimtes grenzen niet aan elkaar: er ligt geen muur of scheiding tussen.",
       "notEnclosed": "Samenvoegen zou de ruimte open laten."
+    },
+    "opening": {
+      "addDoor": "Deur toevoegen",
+      "addWindow": "Raam toevoegen",
+      "update": "Deur of raam wijzigen",
+      "badSize": "Geweigerd: breedte en hoogte moeten groter zijn dan 0 en de borstwering kan niet negatief zijn."
     }
   },
   "invariants": {
     "missingReference": "Geweigerd: {what} {id} bestaat niet.",
     "zeroLength": "Geweigerd: muur {id} zou geen lengte hebben.",
     "twoCorners": "Geweigerd: muur {wall} zou twee hoekverbindingen aan één uiteinde krijgen.",
-    "overlap": "Geweigerd: muren {a} en {b} zouden overlappen."
+    "overlap": "Geweigerd: muren {a} en {b} zouden overlappen.",
+    "openingOutsideWall": "Geweigerd: de deur of het raam zou voorbij het einde van de muur uitsteken.",
+    "openingsOverlap": "Geweigerd: twee deuren of ramen zouden overlappen in dezelfde muur."
   },
   "areas": {
     "noRoom": "geen ruimte"
@@ -205,12 +229,27 @@
       "thickness": "Dikte",
       "side": "Kant van de dikte",
       "height": "Muurhoogte",
-      "roomBounding": "Begrenst ruimtes"
+      "roomBounding": "Begrenst ruimtes",
+      "faces": "Zijden",
+      "drawnFace": "Getekende zijde",
+      "otherFace": "Andere zijde",
+      "gross": "bruto",
+      "net": "netto"
     },
     "resetToPreset": "Terug naar standaard",
     "twoRooms": "Twee ruimtes geselecteerd",
     "merge": "Ruimtes samenvoegen",
-    "warnings": "Waarschuwingen"
+    "warnings": "Waarschuwingen",
+    "opening": {
+      "door": "Deur",
+      "window": "Raam",
+      "offset": "Positie langs de muur",
+      "width": "Breedte",
+      "height": "Hoogte",
+      "sill": "Borstweringshoogte",
+      "flipHinge": "Scharnierkant",
+      "flipSwing": "Draairichting"
+    }
   },
   "presets": {
     "title": "Projectstandaarden",

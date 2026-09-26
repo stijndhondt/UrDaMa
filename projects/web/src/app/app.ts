@@ -4,6 +4,8 @@ import type { ToolName } from '@lakudemis/editor2d';
 import {
   deleteElements,
   mergeRooms,
+  updateOpening,
+  type OpeningId,
   type RoomId,
   type RoomSeparatorId,
   type WallId,
@@ -29,6 +31,8 @@ const TOOLS: readonly ToolButton[] = [
   { name: 'room', key: 'R' },
   { name: 'wall', key: 'W' },
   { name: 'separator', key: 'E' },
+  { name: 'door', key: 'D' },
+  { name: 'window', key: 'N' },
 ];
 
 @Component({
@@ -302,6 +306,7 @@ export class App {
       walls: ids('wall') as WallId[],
       rooms: ids('room') as RoomId[],
       separators: ids('separator') as RoomSeparatorId[],
+      openings: ids('opening') as OpeningId[],
     });
     if (!result.ok) this.messages.refused(result.reason);
     else this.selection.clear();
@@ -401,7 +406,16 @@ export class App {
       this.selectTool(tool.name);
     } else if (e.key === 'f' || e.key === 'F') {
       e.preventDefault();
-      editor.fit();
+      // F / Shift+F flip a selected door (hinge side / swing); otherwise F fits the plan.
+      const selected = this.selection.current();
+      const door = selected.length === 1 && selected[0]!.kind === 'opening' ? selected[0]! : null;
+      if (door) {
+        const result = this.store.run(updateOpening, {
+          opening: door.id as OpeningId,
+          ...(e.shiftKey ? { flipSwing: true } : { flipHinge: true }),
+        });
+        if (!result.ok) this.messages.refused(result.reason);
+      } else editor.fit();
     }
   }
 

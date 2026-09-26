@@ -1,7 +1,7 @@
 /**
  * Draws one Level of the plan (Canvas2D, ADR 0005): only what is on screen, Walls batched into one path.
  */
-import type { LevelSlice, RoomId, Vec, WallId, WallOutline } from '@lakudemis/core';
+import type { LevelSlice, Opening, RoomId, Vec, Wall, WallId, WallOutline } from '@lakudemis/core';
 import type { EditorHost } from './host';
 import type { View } from './view';
 
@@ -103,6 +103,8 @@ export function drawPlan(
   ctx.stroke();
   ctx.fillStyle = PLAN_COLORS.wallFill;
   ctx.fill('nonzero');
+
+  drawOpenings(ctx, view, slice, outlines);
 
   // Room separators: dashed lines with no physical form.
   ctx.save();
@@ -238,6 +240,113 @@ export function drawWallDetails(
         ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
         ctx.fill();
       }
+    }
+  }
+  ctx.restore();
+}
+
+/** An Opening's rectangle in the plan: its width along the Wall, across the Wall's full thickness. */
+export function openingOutline(
+  model: { readonly walls: Readonly<Record<string, Wall>> },
+  outlines: ReadonlyMap<WallId, WallOutline>,
+  o: Opening,
+): Vec[] | null {
+  const wall = model.walls[o.wall];
+  const outline = outlines.get(o.wall);
+  if (!wall || !outline) return null;
+  const length = Math.hypot(wall.end.x - wall.start.x, wall.end.y - wall.start.y) || 1;
+  const d = { x: (wall.end.x - wall.start.x) / length, y: (wall.end.y - wall.start.y) / length };
+  const n = { x: -d.y, y: d.x };
+  const off = (p: Vec) => (p.x - wall.start.x) * n.x + (p.y - wall.start.y) * n.y;
+  const lo = off(outline[0]);
+  const hi = off(outline[3]);
+  const pt = (t: number, s: number): Vec => ({
+    x: wall.start.x + d.x * t + n.x * s,
+    y: wall.start.y + d.y * t + n.y * s,
+  });
+  return [
+    pt(o.offset, lo),
+    pt(o.offset + o.width, lo),
+    pt(o.offset + o.width, hi),
+    pt(o.offset, hi),
+  ];
+}
+
+/** Openings: cut out of their Wall, with a door leaf and swing, or window glass lines. */
+export function drawOpenings(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  slice: LevelSlice,
+  outlines: ReadonlyMap<WallId, WallOutline>,
+): void {
+  const walls = new Map(slice.walls.map((w) => [w.id as string, w]));
+  ctx.save();
+  for (const o of slice.openings) {
+    const wall = walls.get(o.wall);
+    const outline = outlines.get(o.wall);
+    if (!wall || !outline) continue;
+    const length = Math.hypot(wall.end.x - wall.start.x, wall.end.y - wall.start.y) || 1;
+    const d = { x: (wall.end.x - wall.start.x) / length, y: (wall.end.y - wall.start.y) / length };
+    const n = { x: -d.y, y: d.x };
+    const off = (p: Vec) => (p.x - wall.start.x) * n.x + (p.y - wall.start.y) * n.y;
+    const lo = off(outline[0]);
+    const hi = off(outline[3]);
+    const point = (t: number, s: number): Vec =>
+      view.toScreen({ x: wall.start.x + d.x * t + n.x * s, y: wall.start.y + d.y * t + n.y * s });
+    const t0 = o.offset;
+    const t1 = o.offset + o.width;
+    const corners = [point(t0, lo), point(t1, lo), point(t1, hi), point(t0, hi)];
+    ctx.beginPath();
+    corners.forEach((c, i) => (i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y)));
+    ctx.closePath();
+    ctx.fillStyle = PLAN_COLORS.area;
+    ctx.fill();
+    ctx.strokeStyle = PLAN_COLORS.wallStroke;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(corners[0]!.x, corners[0]!.y);
+    ctx.lineTo(corners[3]!.x, corners[3]!.y);
+    ctx.moveTo(corners[1]!.x, corners[1]!.y);
+    ctx.lineTo(corners[2]!.x, corners[2]!.y);
+    ctx.stroke();
+    if (o.kind === 'window') {
+      const mid = (lo + hi) / 2;
+      const gap = Math.max(1, Math.abs(hi - lo) * 0.12);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (const s of [mid - gap, mid + gap]) {
+        const a = point(t0, s);
+        const b = point(t1, s);
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+      }
+      ctx.stroke();
+    } else {
+      // Door: the leaf stands open at 90° on the swing side, with the swing arc.
+      const face = o.swing === 'right' ? Math.max(lo, hi) : Math.min(lo, hi);
+      const outward = o.swing === 'right' ? 1 : -1;
+      const hingeT = o.hinge === 'start' ? t0 : t1;
+      const freeT = o.hinge === 'start' ? t1 : t0;
+      const hinge = point(hingeT, face);
+      const leafEnd = point(hingeT, face + outward * o.width);
+      const free = point(freeT, face);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(hinge.x, hinge.y);
+      ctx.lineTo(leafEnd.x, leafEnd.y);
+      ctx.stroke();
+      const radius = Math.hypot(leafEnd.x - hinge.x, leafEnd.y - hinge.y);
+      const a0 = Math.atan2(leafEnd.y - hinge.y, leafEnd.x - hinge.x);
+      const a1 = Math.atan2(free.y - hinge.y, free.x - hinge.x);
+      let sweep = a1 - a0;
+      while (sweep > Math.PI) sweep -= 2 * Math.PI;
+      while (sweep < -Math.PI) sweep += 2 * Math.PI;
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(hinge.x, hinge.y, radius, a0, a0 + sweep, sweep < 0);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
   ctx.restore();

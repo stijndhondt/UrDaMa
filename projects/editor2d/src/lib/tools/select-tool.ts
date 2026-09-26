@@ -14,7 +14,7 @@ import {
   type Vec,
   type WallId,
 } from '@lakudemis/core';
-import { tracePolygon } from '../draw-plan';
+import { openingOutline, tracePolygon } from '../draw-plan';
 import type { Selection } from '../host';
 import { increment } from '../snap';
 import type { PointerInfo, Tool, ToolContext } from './tool';
@@ -162,7 +162,12 @@ export class SelectTool implements Tool {
         return { kind: 'separator', id: s.id };
     }
     void info;
-    const outlines = levelWallOutlines(this.ctx.host.store.committedModel(), level);
+    const model = this.ctx.host.store.committedModel();
+    const outlines = levelWallOutlines(model, level);
+    for (const o of Object.values(model.openings)) {
+      const ring = openingOutline(model, outlines, o);
+      if (ring && insideRing(p, ring)) return { kind: 'opening', id: o.id };
+    }
     for (const [id, outline] of outlines) if (insideRing(p, outline)) return { kind: 'wall', id };
     for (const area of this.ctx.host.store.values.level(level).footprint().areas) {
       if (area.rooms.length && insideArea(p, area.outline, area.islands))
@@ -173,6 +178,13 @@ export class SelectTool implements Tool {
 
   private outlineOf(item: Selection): readonly Vec[] | null {
     const level = this.ctx.host.level();
+    if (item.kind === 'opening') {
+      const model = this.ctx.host.store.model();
+      const o = model.openings[item.id as never];
+      return o
+        ? openingOutline(model, this.ctx.host.store.values.level(level).outlines(), o)
+        : null;
+    }
     if (item.kind === 'wall')
       return (
         this.ctx.host.store.values

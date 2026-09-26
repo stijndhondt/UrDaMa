@@ -4,12 +4,14 @@ import {
   mergeRooms,
   resizeRoom,
   setWallThickness,
+  updateOpening,
   updateRoom,
   updateWall,
   wallLength,
   wallThickness,
   type Command,
   type LevelId,
+  type OpeningId,
   type WallId,
 } from '@lakudemis/core';
 import { parseLength } from '@lakudemis/editor2d';
@@ -97,6 +99,63 @@ import { SelectionService } from './selection.service';
           </span>
         </label>
       }
+    } @else if (selection.opening(); as opening) {
+      <h2>{{ 'panel.opening.' + opening.kind | translate }}</h2>
+      <label>
+        {{ 'panel.opening.offset' | translate }}
+        <span class="field">
+          <input
+            [value]="round(opening.offset)"
+            (change)="setOpening(opening.id, 'offset', $any($event.target))"
+            (keydown.enter)="$any($event.target).blur()"
+          />
+          mm
+        </span>
+      </label>
+      <label>
+        {{ 'panel.opening.width' | translate }}
+        <span class="field">
+          <input
+            [value]="round(opening.width)"
+            (change)="setOpening(opening.id, 'width', $any($event.target))"
+            (keydown.enter)="$any($event.target).blur()"
+          />
+          mm
+        </span>
+      </label>
+      <label>
+        {{ 'panel.opening.height' | translate }}
+        <span class="field">
+          <input
+            [value]="round(opening.height)"
+            (change)="setOpening(opening.id, 'height', $any($event.target))"
+            (keydown.enter)="$any($event.target).blur()"
+          />
+          mm
+        </span>
+      </label>
+      @if (opening.kind === 'window') {
+        <label>
+          {{ 'panel.opening.sill' | translate }}
+          <span class="field">
+            <input
+              [value]="round(opening.sill)"
+              (change)="setOpening(opening.id, 'sill', $any($event.target))"
+              (keydown.enter)="$any($event.target).blur()"
+            />
+            mm
+          </span>
+        </label>
+      } @else {
+        <p class="buttons">
+          <button type="button" (click)="flip(opening.id, 'flipHinge')">
+            {{ 'panel.opening.flipHinge' | translate }} (F)
+          </button>
+          <button type="button" (click)="flip(opening.id, 'flipSwing')">
+            {{ 'panel.opening.flipSwing' | translate }} (Shift+F)
+          </button>
+        </p>
+      }
     } @else if (selection.wall(); as wall) {
       <h2>{{ 'panel.wall.title' | translate }}</h2>
       <dl>
@@ -149,6 +208,19 @@ import { SelectionService } from './selection.service';
         />
         {{ 'panel.wall.roomBounding' | translate }}
       </label>
+      @if (wallFaces(); as faces) {
+        <h3>{{ 'panel.wall.faces' | translate }}</h3>
+        <dl>
+          @for (f of faces; track f.key) {
+            <dt>{{ f.key | translate }}</dt>
+            <dd>
+              {{ format.length(f.face.length) }} · {{ 'panel.wall.gross' | translate }}
+              {{ format.area(f.face.gross) }} · {{ 'panel.wall.net' | translate }}
+              {{ format.area(f.face.net) }}
+            </dd>
+          }
+        </dl>
+      }
     } @else if (selection.rooms().length === 2) {
       <h2>{{ 'panel.twoRooms' | translate }}</h2>
       <p>{{ selection.rooms()[0]!.name }} + {{ selection.rooms()[1]!.name }}</p>
@@ -252,6 +324,11 @@ import { SelectionService } from './selection.service';
     dd {
       margin: 0;
     }
+    .buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
     .empty {
       color: var(--muted);
     }
@@ -273,6 +350,37 @@ export class PropertiesPanelComponent {
   protected readonly warnings = computed(() =>
     this.project.store.values.level(this.project.level()).warnings(),
   );
+
+  /** Both faces of the selected Wall: length, gross and net area (Openings subtracted). */
+  protected readonly wallFaces = computed(() => {
+    const wall = this.selection.wall();
+    const faces = wall ? this.project.store.values.wall(wall.id).faces() : undefined;
+    return faces
+      ? [
+          { key: 'panel.wall.drawnFace', face: faces.drawn },
+          { key: 'panel.wall.otherFace', face: faces.other },
+        ]
+      : null;
+  });
+
+  protected round(mm: number): string {
+    return String(Math.round(mm * 10) / 10);
+  }
+
+  protected setOpening(
+    opening: OpeningId,
+    field: 'offset' | 'width' | 'height' | 'sill',
+    input: HTMLInputElement,
+  ): void {
+    const value = parseLength(input.value);
+    const current = this.selection.opening();
+    if (value === null || !current) return;
+    this.run(updateOpening, { opening, [field]: value }, input, this.round(current[field]));
+  }
+
+  protected flip(opening: OpeningId, which: 'flipHinge' | 'flipSwing'): void {
+    this.run(updateOpening, { opening, [which]: true }, null, '');
+  }
 
   protected merge(): void {
     const rooms = this.selection.rooms();

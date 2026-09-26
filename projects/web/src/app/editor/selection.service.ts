@@ -1,9 +1,17 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import type { Room, RoomId, RoomSeparatorId, Wall, WallId } from '@lakudemis/core';
+import type {
+  Opening,
+  OpeningId,
+  Room,
+  RoomId,
+  RoomSeparatorId,
+  Wall,
+  WallId,
+} from '@lakudemis/core';
 import type { Selection } from '@lakudemis/editor2d';
 import { ProjectService } from '../project/project.service';
 
-/** The selected Walls, Rooms and Room separators, shared by the plan and the properties panel. */
+/** The selected Walls, Rooms, Room separators and Openings, shared by the plan and the properties panel. */
 @Injectable({ providedIn: 'root' })
 export class SelectionService {
   private readonly project = inject(ProjectService);
@@ -23,6 +31,13 @@ export class SelectionService {
       ? (this.project.store.model().rooms[s[0]!.id as RoomId] ?? null)
       : null;
   });
+  /** The selected Opening, when exactly one door or window is selected. */
+  readonly opening = computed<Opening | null>(() => {
+    const s = this.current();
+    return s.length === 1 && s[0]!.kind === 'opening'
+      ? (this.project.store.model().openings[s[0]!.id as OpeningId] ?? null)
+      : null;
+  });
   /** All selected Rooms (two of them can be merged). */
   readonly rooms = computed<readonly Room[]>(() =>
     this.current()
@@ -40,7 +55,9 @@ export class SelectionService {
           ? !!model.walls[x.id as WallId]
           : x.kind === 'room'
             ? !!model.rooms[x.id as RoomId]
-            : !!model.roomSeparators[x.id as RoomSeparatorId];
+            : x.kind === 'opening'
+              ? !!model.openings[x.id as OpeningId]
+              : !!model.roomSeparators[x.id as RoomSeparatorId];
       if (s.some((x) => !exists(x))) untracked(() => this.current.set(s.filter(exists)));
     });
   }

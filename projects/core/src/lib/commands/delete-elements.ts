@@ -8,13 +8,14 @@
  */
 import { remove } from '../model/edit';
 import { message } from '../model/message';
-import type { RoomId, RoomSeparatorId, WallId } from '../model/types';
+import type { OpeningId, RoomId, RoomSeparatorId, WallId } from '../model/types';
 import { refuse, type Command } from './command';
 
 export interface DeleteElementsArgs {
   readonly walls: readonly WallId[];
   readonly rooms: readonly RoomId[];
   readonly separators?: readonly RoomSeparatorId[];
+  readonly openings?: readonly OpeningId[];
 }
 
 export const deleteElements: Command<DeleteElementsArgs> = (model, args) => {
@@ -23,7 +24,8 @@ export const deleteElements: Command<DeleteElementsArgs> = (model, args) => {
   const separators = new Set<string>(
     (args.separators ?? []).filter((id) => model.roomSeparators[id]),
   );
-  if (!walls.size && !rooms.size && !separators.size)
+  const chosenOpenings = new Set<string>((args.openings ?? []).filter((id) => model.openings[id]));
+  if (!walls.size && !rooms.size && !separators.size && !chosenOpenings.size)
     return refuse(message('commands.delete.nothing'));
 
   for (const s of Object.values(model.roomSeparators)) {
@@ -33,7 +35,7 @@ export const deleteElements: Command<DeleteElementsArgs> = (model, args) => {
     .filter((c) => walls.has(c.wall) || walls.has(c.to))
     .map((c) => c.id);
   const openings = Object.values(model.openings)
-    .filter((o) => walls.has(o.wall))
+    .filter((o) => walls.has(o.wall) || chosenOpenings.has(o.id))
     .map((o) => o.id);
   const ceilings = Object.values(model.ceilings)
     .filter((c) => rooms.has(c.room))
@@ -45,6 +47,6 @@ export const deleteElements: Command<DeleteElementsArgs> = (model, args) => {
   next = remove(next, 'roomSeparators', [...separators]);
   next = remove(next, 'rooms', [...rooms]);
   next = remove(next, 'ceilings', ceilings);
-  const count = walls.size + rooms.size + separators.size;
+  const count = walls.size + rooms.size + separators.size + chosenOpenings.size;
   return { ok: true, model: next, label: message('commands.delete.label', { count }) };
 };
