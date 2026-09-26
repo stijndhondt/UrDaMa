@@ -187,6 +187,18 @@
       "skillPath": "skills/engineering/triage/SKILL.md",
       "computedHash": "363ca4f1b97ca5227d41d3973178ab301d7c498ba41b466dfe30b6163f6d72b5"
     },
+    "tui-migration": {
+      "source": "taiga-family/skills",
+      "sourceType": "github",
+      "skillPath": "tui-migration/SKILL.md",
+      "computedHash": "b84432ba6667c00cc8df595fad4ff557d00df75cacd9a976f126955582b1721f"
+    },
+    "tui-setup": {
+      "source": "taiga-family/skills",
+      "sourceType": "github",
+      "skillPath": "tui-setup/SKILL.md",
+      "computedHash": "93cfee94b76f8b4b5daab5e85fa2c00c8b250ed5653d7f0c371aecf4571ee171"
+    },
     "wait-what": {
       "source": "mattpocock/skills",
       "sourceType": "github",
