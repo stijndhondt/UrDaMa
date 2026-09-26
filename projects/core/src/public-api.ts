@@ -38,3 +38,4 @@ export * from './lib/commands/add-opening';
 export * from './lib/commands/update-opening';
 export * from './lib/values/surfaces';
 export * from './lib/report/quantities';
+export * from './lib/commands/levels';

@@ -4,11 +4,11 @@
 
 **Blocked by:** 09 Thickness, Presets and push
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Changing the ground floor's storey height moves the Levels above.
-- [ ] A synthetic second Level works end to end; editing one Level never recalculates the other (verified by the engine's recalculation log).
-- [ ] The Ceiling-into-Slab warning appears when a Room height is too large, and never blocks editing.
-- [ ] The Level below is visible, faded, while drawing.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] Changing the ground floor's storey height moves the Levels above.
+- [x] A synthetic second Level works end to end; editing one Level never recalculates the other (verified by the engine's recalculation log).
+- [x] The Ceiling-into-Slab warning appears when a Room height is too large, and never blocks editing.
+- [x] The Level below is visible, faded, while drawing.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.

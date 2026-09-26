@@ -72,7 +72,8 @@
   "warnings": {
     "notEnclosed": "{room} is niet afgesloten: dicht de opening of verbind de muuruiteinden.",
     "sharingArea": "{rooms} delen één ruimte: verwijder er één of voeg een scheiding toe.",
-    "unconnectedEnds": "{count, plural, one {# muuruiteinde is} other {# muuruiteinden zijn}} nergens mee verbonden (rode vierkantjes)."
+    "unconnectedEnds": "{count, plural, one {# muuruiteinde is} other {# muuruiteinden zijn}} nergens mee verbonden (rode vierkantjes).",
+    "ceilingIntoSlab": "Het plafond van {room} steekt {mm} mm in de vloerplaat erboven."
   },
   "rooms": {
     "defaultName": "Ruimte {n}"
@@ -95,7 +96,17 @@
     }
   },
   "levels": {
-    "groundFloor": "Gelijkvloers"
+    "groundFloor": "Gelijkvloers",
+    "tabs": "Bouwlagen",
+    "addAbove": "Bouwlaag erboven",
+    "addBelow": "Bouwlaag eronder",
+    "addAboveTitle": "Bouwlaag erboven toevoegen",
+    "addBelowTitle": "Bouwlaag eronder toevoegen",
+    "name": "Naam",
+    "storeyHeight": "Verdiepingshoogte (vloer tot vloer)",
+    "elevationNote": "De vloer komt op {elevation}. Bouwlagen zijn gestapeld: de bouwlagen erboven volgen.",
+    "add": "Bouwlaag toevoegen",
+    "defaultName": "Bouwlaag {n}"
   },
   "commands": {
     "drawRoom": {
@@ -165,6 +176,17 @@
       "addWindow": "Raam toevoegen",
       "update": "Deur of raam wijzigen",
       "badSize": "Geweigerd: breedte en hoogte moeten groter zijn dan 0 en de borstwering kan niet negatief zijn."
+    },
+    "level": {
+      "add": "Bouwlaag {name} toevoegen",
+      "update": "Bouwlaag {name} wijzigen",
+      "delete": "Bouwlaag {name} verwijderen",
+      "slab": "Vloerplaatdikte wijzigen",
+      "emptyName": "Geweigerd: een bouwlaag heeft een naam nodig.",
+      "badStoreyHeight": "Geweigerd: de verdiepingshoogte moet groter zijn dan 0.",
+      "badSlab": "Geweigerd: de vloerplaatdikte moet groter zijn dan 0.",
+      "elevationDerived": "Geweigerd: alleen het peil van de laagste bouwlaag kan ingesteld worden; de andere volgen uit de verdiepingshoogtes.",
+      "lastLevel": "Geweigerd: een project houdt minstens één bouwlaag."
     }
   },
   "invariants": {
@@ -227,7 +249,14 @@
       "floorFinishArea": "Oppervlakte vloerafwerking",
       "ceilingArea": "Plafondoppervlakte",
       "netWallArea": "Netto wandoppervlakte",
-      "revealArea": "Dagkanten (apart)"
+      "revealArea": "Dagkanten (apart)",
+      "floorBuildUp": "Vloeropbouw",
+      "floorFinish": "Vloerafwerking",
+      "floorFinishPlaceholder": "bv. tegels, parket",
+      "floorLevel": "Vloerpeil",
+      "ceilingLevel": "Plafondpeil",
+      "ceilingVoid": "Plafondruimte",
+      "voidUnknown": "onbekend (geen bouwlaag erboven)"
     },
     "wall": {
       "title": "Muur",
@@ -255,6 +284,20 @@
       "sill": "Borstweringshoogte",
       "flipHinge": "Scharnierkant",
       "flipSwing": "Draairichting"
+    },
+    "level": {
+      "title": "Bouwlaag",
+      "name": "Naam",
+      "elevation": "Peil (afgewerkte vloer)",
+      "elevationLowest": "de laagste bouwlaag: de andere volgen",
+      "elevationDerived": "volgt uit de verdiepingshoogtes eronder",
+      "storeyHeight": "Verdiepingshoogte",
+      "storeyHint": "vloer tot vloer; de bouwlagen erboven schuiven mee",
+      "slabThickness": "Dikte vloerplaat",
+      "grossFloorArea": "Bruto vloeroppervlakte",
+      "netFloorArea": "Netto vloeroppervlakte (totaal)",
+      "delete": "Bouwlaag verwijderen",
+      "confirmDelete": "{name} en alles erop verwijderen?"
     }
   },
   "presets": {

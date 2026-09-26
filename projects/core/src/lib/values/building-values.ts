@@ -12,6 +12,7 @@ import { footprint, type Footprint, type RoomDetection } from '../geometry/footp
 import { wallOutlines, type WallOutline } from '../geometry/wall-outlines';
 import { levelRoomSurfaces, type RoomSurfaces, type SurfaceInput } from './surfaces';
 import type {
+  Ceiling,
   Level,
   LevelId,
   Model,
@@ -19,6 +20,7 @@ import type {
   Presets,
   Room,
   RoomId,
+  Vec,
   RoomSeparator,
   Wall,
   WallConnection,
@@ -34,6 +36,7 @@ export interface LevelSlice {
   readonly separators: readonly RoomSeparator[];
   readonly rooms: readonly Room[];
   readonly openings: readonly Opening[];
+  readonly ceilings: readonly Ceiling[];
 }
 
 const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -46,7 +49,48 @@ const sameSlice = (a: LevelSlice, b: LevelSlice) =>
   sameList(a.connections, b.connections) &&
   sameList(a.separators, b.separators) &&
   sameList(a.rooms, b.rooms) &&
-  sameList(a.openings, b.openings);
+  sameList(a.openings, b.openings) &&
+  sameList(a.ceilings, b.ceilings);
+
+/** Where a Level sits in the stack (all mm, absolute heights). */
+export interface LevelHeights {
+  readonly order: number;
+  /** Finished floor level at the Floor-build-up Preset (the Level's elevation) */
+  readonly elevation: number;
+  readonly storeyHeight: number;
+  /** Top of this Level's Slab: elevation − Floor-build-up Preset */
+  readonly slabTop: number;
+  readonly slabThickness: number;
+  /** The Level above in the same Building, if any */
+  readonly above: LevelId | null;
+}
+
+const sameHeights = (
+  a: ReadonlyMap<LevelId, LevelHeights>,
+  b: ReadonlyMap<LevelId, LevelHeights>,
+) =>
+  a.size === b.size &&
+  [...a].every(([id, x]) => {
+    const y = b.get(id);
+    return (
+      !!y &&
+      x.order === y.order &&
+      x.elevation === y.elevation &&
+      x.storeyHeight === y.storeyHeight &&
+      x.slabTop === y.slabTop &&
+      x.slabThickness === y.slabThickness &&
+      x.above === y.above
+    );
+  });
+
+export interface SlabValues {
+  /** mm */
+  readonly thickness: Derived<number>;
+  /** The outer faces of the Level's merged footprint */
+  readonly outline: Derived<readonly (readonly Vec[])[]>;
+  /** mm² */
+  readonly area: Derived<number>;
+}
 
 export interface LevelValues {
   readonly slice: Derived<LevelSlice>;
@@ -87,6 +131,14 @@ export interface RoomValues {
   readonly netFloorArea: Derived<number | null>;
   /** mm: the Room's own height, or the Preset */
   readonly height: Derived<number>;
+  /** mm: the Room's own Floor build-up, or the Preset */
+  readonly floorBuildUp: Derived<number>;
+  /** mm, absolute: top of the Floor build-up (the Room height is measured from here) */
+  readonly floorTop: Derived<number>;
+  /** mm, absolute: floorTop + Room height */
+  readonly ceilingUnderside: Derived<number>;
+  /** mm, between the top of the Ceiling and the underside of the Slab above; null without a Level above */
+  readonly ceilingVoid: Derived<number | null>;
   /** mm³: Net floor area × Room height */
   readonly volume: Derived<number | null>;
   /** mm² (= Net floor area in Slice 1) */
@@ -101,6 +153,54 @@ export class BuildingValues {
   private readonly levels = new Map<LevelId, LevelValues>();
   private readonly rooms = new Map<RoomId, RoomValues>();
   private readonly walls = new Map<WallId, WallValues>();
+  private readonly slabs = new Map<LevelId, SlabValues>();
+
+  /** Every Level's place in its Building's stack; unchanged unless Levels, Slabs or Presets change. */
+  readonly levelHeights: Derived<ReadonlyMap<LevelId, LevelHeights>> = derived(
+    'Level stack',
+    () => {
+      const m = this.model();
+      const result = new Map<LevelId, LevelHeights>();
+      const buildUp = m.project.presets.floorBuildUp;
+      for (const building of Object.values(m.buildings)) {
+        const stack = Object.values(m.levels)
+          .filter((l) => l.building === building.id)
+          .sort((a, b) => a.order - b.order);
+        let elevation = building.baseElevation;
+        stack.forEach((level, i) => {
+          const slab = Object.values(m.slabs).find((s) => s.level === level.id);
+          result.set(level.id, {
+            order: level.order,
+            elevation,
+            storeyHeight: level.storeyHeight,
+            slabTop: elevation - buildUp,
+            slabThickness: slab?.thickness ?? m.project.presets.slabThickness,
+            above: stack[i + 1]?.id ?? null,
+          });
+          elevation += level.storeyHeight;
+        });
+      }
+      return result;
+    },
+    sameHeights,
+  );
+
+  slab(level: LevelId): SlabValues {
+    let values = this.slabs.get(level);
+    if (!values) {
+      const lv = this.level(level);
+      values = {
+        thickness: derived(
+          `${level} · Slab thickness`,
+          () => this.levelHeights().get(level)?.slabThickness ?? 0,
+        ),
+        outline: derived(`${level} · Slab outline`, () => lv.footprint().outer),
+        area: derived(`${level} · Slab area`, () => lv.grossArea()),
+      };
+      this.slabs.set(level, values);
+    }
+    return values;
+  }
 
   constructor(private readonly model: () => Model) {}
 
@@ -160,6 +260,9 @@ export class BuildingValues {
             .sort(byId),
           openings: Object.values(m.openings)
             .filter((o) => wallIds.has(o.wall))
+            .sort(byId),
+          ceilings: Object.values(m.ceilings)
+            .filter((c) => m.rooms[c.room]?.level === id)
             .sort(byId),
         };
       },
@@ -244,6 +347,27 @@ export class BuildingValues {
           0,
         );
         if (open) out.push(message('warnings.unconnectedEnds', { count: open }));
+        // A Ceiling running into the Slab above: a warning, never a refusal.
+        const heights = this.levelHeights();
+        const here = heights.get(id);
+        const above = here?.above ? heights.get(here.above) : undefined;
+        if (here && above) {
+          const slabBottom = above.slabTop - above.slabThickness;
+          for (const room of s.rooms) {
+            const top =
+              here.slabTop +
+              (room.floorBuildUp ?? s.presets.floorBuildUp) +
+              (room.height ?? s.presets.roomHeight) +
+              (s.ceilings.find((c) => c.room === room.id)?.thickness ?? s.presets.ceilingThickness);
+            if (top > slabBottom + 0.5)
+              out.push(
+                message('warnings.ceilingIntoSlab', {
+                  room: room.name,
+                  mm: Math.round(top - slabBottom),
+                }),
+              );
+          }
+        }
         return out;
       },
     );
@@ -303,6 +427,36 @@ export class BuildingValues {
       () => `${name()} · Room height`,
       () => room()?.height ?? this.model().project.presets.roomHeight,
     );
+    const floorBuildUp = derived(
+      () => `${name()} · Floor build-up`,
+      () => room()?.floorBuildUp ?? this.model().project.presets.floorBuildUp,
+    );
+    const floorTop = derived(
+      () => `${name()} · floor level`,
+      () => {
+        const r = room();
+        const slabTop = r ? (this.levelHeights().get(r.level)?.slabTop ?? 0) : 0;
+        return slabTop + floorBuildUp();
+      },
+    );
+    const ceilingUnderside = derived(
+      () => `${name()} · Ceiling level`,
+      () => floorTop() + height(),
+    );
+    const ceilingVoid = derived(
+      () => `${name()} · Ceiling void`,
+      () => {
+        const r = room();
+        if (!r) return null;
+        const heights = this.levelHeights();
+        const above = heights.get(heights.get(r.level)?.above ?? ('' as LevelId));
+        if (!above) return null;
+        const m = this.model();
+        const ceiling = Object.values(m.ceilings).find((c) => c.room === id);
+        const thickness = ceiling?.thickness ?? m.project.presets.ceilingThickness;
+        return above.slabTop - above.slabThickness - (ceilingUnderside() + thickness);
+      },
+    );
     const volume = derived(
       () => `${name()} · volume`,
       () => {
@@ -322,6 +476,10 @@ export class BuildingValues {
       detection,
       netFloorArea,
       height,
+      floorBuildUp,
+      floorTop,
+      ceilingUnderside,
+      ceilingVoid,
       volume,
       floorFinishArea: netFloorArea,
       ceilingArea: netFloorArea,

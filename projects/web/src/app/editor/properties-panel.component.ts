@@ -1,12 +1,15 @@
 import { Component, computed, inject } from '@angular/core';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  deleteLevel,
   mergeRooms,
   netWallArea,
   resizeRoom,
   setWallThickness,
+  updateLevel,
   updateOpening,
   updateRoom,
+  updateSlab,
   updateWall,
   wallLength,
   wallThickness,
@@ -56,6 +59,30 @@ import { SelectionService } from './selection.service';
           (room.height === undefined ? 'panel.preset' : 'panel.custom') | translate
         }}</small>
       </label>
+      <label>
+        {{ 'panel.room.floorBuildUp' | translate }}
+        <span class="field">
+          <input
+            [value]="room.floorBuildUp ?? presets().floorBuildUp"
+            [class.preset]="room.floorBuildUp === undefined"
+            (change)="setFloorBuildUp($any($event.target))"
+            (keydown.enter)="$any($event.target).blur()"
+          />
+          mm
+        </span>
+        <small>{{
+          (room.floorBuildUp === undefined ? 'panel.preset' : 'panel.custom') | translate
+        }}</small>
+      </label>
+      <label>
+        {{ 'panel.room.floorFinish' | translate }}
+        <input
+          [value]="room.floorFinish ?? ''"
+          [placeholder]="'panel.room.floorFinishPlaceholder' | translate"
+          (change)="setFloorFinish($any($event.target))"
+          (keydown.enter)="$any($event.target).blur()"
+        />
+      </label>
       <dl>
         <dt>{{ 'panel.room.netFloorArea' | translate }}</dt>
         <dd>{{ roomArea() }}</dd>
@@ -73,6 +100,14 @@ import { SelectionService } from './selection.service';
           </dd>
           <dt>{{ 'panel.room.revealArea' | translate }}</dt>
           <dd>{{ f.reveals }}</dd>
+        }
+        @if (roomLevels(); as v) {
+          <dt>{{ 'panel.room.floorLevel' | translate }}</dt>
+          <dd>{{ v.floor }}</dd>
+          <dt>{{ 'panel.room.ceilingLevel' | translate }}</dt>
+          <dd>{{ v.ceiling }}</dd>
+          <dt>{{ 'panel.room.ceilingVoid' | translate }}</dt>
+          <dd [class.bad]="v.clash">{{ v.void ?? ('panel.room.voidUnknown' | translate) }}</dd>
         }
       </dl>
       @if (roomSize(); as size) {
@@ -246,6 +281,75 @@ import { SelectionService } from './selection.service';
       </button>
     } @else {
       <p class="empty">{{ 'panel.nothingSelected' | translate }}</p>
+      @if (level(); as l) {
+        <h2>{{ 'panel.level.title' | translate }}</h2>
+        <label>
+          {{ 'panel.level.name' | translate }}
+          <input
+            [value]="l.level.name"
+            (change)="renameLevel($any($event.target))"
+            (keydown.enter)="$any($event.target).blur()"
+          />
+        </label>
+        <label>
+          {{ 'panel.level.elevation' | translate }}
+          <span class="field">
+            <input
+              [value]="l.heights.elevation"
+              [disabled]="!l.lowest"
+              (change)="setElevation($any($event.target))"
+              (keydown.enter)="$any($event.target).blur()"
+            />
+            mm
+          </span>
+          <small>{{
+            (l.lowest ? 'panel.level.elevationLowest' : 'panel.level.elevationDerived') | translate
+          }}</small>
+        </label>
+        <label>
+          {{ 'panel.level.storeyHeight' | translate }}
+          <span class="field">
+            <input
+              [value]="l.level.storeyHeight"
+              (change)="setStoreyHeight($any($event.target))"
+              (keydown.enter)="$any($event.target).blur()"
+            />
+            mm
+          </span>
+          <small>{{ 'panel.level.storeyHint' | translate }}</small>
+        </label>
+        <label>
+          {{ 'panel.level.slabThickness' | translate }}
+          <span class="field">
+            <input
+              [value]="l.heights.slabThickness"
+              [class.preset]="!l.slabOwn"
+              (change)="setSlab($any($event.target))"
+              (keydown.enter)="$any($event.target).blur()"
+            />
+            mm
+            @if (l.slabOwn) {
+              <button type="button" (click)="resetSlab()">
+                {{ 'panel.resetToPreset' | translate }}
+              </button>
+            }
+          </span>
+          <small>{{ (l.slabOwn ? 'panel.custom' : 'panel.preset') | translate }}</small>
+        </label>
+        <dl>
+          <dt>{{ 'panel.level.grossFloorArea' | translate }}</dt>
+          <dd>{{ l.gross }}</dd>
+          <dt>{{ 'panel.level.netFloorArea' | translate }}</dt>
+          <dd>{{ l.net }}</dd>
+        </dl>
+        @if (l.count > 1) {
+          <p class="buttons">
+            <button type="button" (click)="removeLevel()">
+              {{ 'panel.level.delete' | translate }}
+            </button>
+          </p>
+        }
+      }
       @if (warnings().length) {
         <h3>{{ 'panel.warnings' | translate }}</h3>
         <ul class="warnings">
@@ -346,6 +450,14 @@ import { SelectionService } from './selection.service';
       gap: 6px;
       flex-wrap: wrap;
     }
+    dd.bad {
+      color: var(--bad, #d64545);
+      font-weight: 600;
+    }
+    input:disabled {
+      background: #f3f4f6;
+      color: var(--muted);
+    }
     .empty {
       color: var(--muted);
     }
@@ -356,6 +468,7 @@ export class PropertiesPanelComponent {
   protected readonly format = inject(FormatService);
   private readonly project = inject(ProjectService);
   private readonly messages = inject(MessagesService);
+  private readonly translate = inject(TranslateService);
   protected readonly wallLength = wallLength;
   protected readonly presets = computed(() => this.project.store.model().project.presets);
   protected readonly roomArea = computed(() => {
@@ -365,6 +478,100 @@ export class PropertiesPanelComponent {
   });
 
   protected readonly measurement = inject(MeasurementService);
+
+  /** The edited Level: its place in the stack, Slab and floor areas. */
+  protected readonly level = computed(() => {
+    const id = this.project.level();
+    const model = this.project.store.model();
+    const level = model.levels[id];
+    const heights = this.project.store.values.levelHeights().get(id);
+    if (!level || !heights) return null;
+    const levels = this.project.levels();
+    const values = this.project.store.values.level(id);
+    return {
+      level,
+      heights,
+      lowest: levels[0]?.id === id,
+      count: levels.length,
+      slabOwn: Object.values(model.slabs).some((s) => s.level === id && s.thickness !== undefined),
+      gross: this.format.area(values.grossArea()),
+      net: this.format.area(values.netFloorArea()),
+    };
+  });
+
+  /** Floor level, Ceiling level and Ceiling void of the selected Room. */
+  protected readonly roomLevels = computed(() => {
+    const room = this.selection.room();
+    if (!room) return null;
+    const v = this.project.store.values.room(room.id);
+    const gap = v.ceilingVoid();
+    return {
+      floor: this.format.length(v.floorTop()),
+      ceiling: this.format.length(v.ceilingUnderside()),
+      void: gap === null ? null : this.format.millimetres(Math.round(gap)),
+      clash: gap !== null && gap < -0.5,
+    };
+  });
+
+  protected renameLevel(input: HTMLInputElement): void {
+    const l = this.level();
+    if (l && input.value.trim() !== l.level.name)
+      this.run(updateLevel, { level: l.level.id, name: input.value }, input, l.level.name);
+  }
+
+  protected setElevation(input: HTMLInputElement): void {
+    const l = this.level();
+    const elevation = parseLength(input.value);
+    if (!l || elevation === null) return;
+    this.run(updateLevel, { level: l.level.id, elevation }, input, String(l.heights.elevation));
+  }
+
+  protected setStoreyHeight(input: HTMLInputElement): void {
+    const l = this.level();
+    const storeyHeight = parseLength(input.value);
+    if (!l || storeyHeight === null) return;
+    this.run(updateLevel, { level: l.level.id, storeyHeight }, input, String(l.level.storeyHeight));
+  }
+
+  protected setSlab(input: HTMLInputElement): void {
+    const l = this.level();
+    const thickness = parseLength(input.value);
+    if (!l || thickness === null) return;
+    this.run(updateSlab, { level: l.level.id, thickness }, input, String(l.heights.slabThickness));
+  }
+
+  protected resetSlab(): void {
+    const l = this.level();
+    if (l) this.run(updateSlab, { level: l.level.id, thickness: null }, null, '');
+  }
+
+  protected removeLevel(): void {
+    const l = this.level();
+    if (!l) return;
+    const text = this.translate.instant('panel.level.confirmDelete', { name: l.level.name });
+    if (!window.confirm(text)) return;
+    this.run(deleteLevel, { level: l.level.id }, null, '');
+  }
+
+  protected setFloorBuildUp(input: HTMLInputElement): void {
+    const room = this.selection.room();
+    if (!room) return;
+    const floorBuildUp = input.value.trim() === '' ? null : parseLength(input.value);
+    this.run(
+      updateRoom,
+      { room: room.id, floorBuildUp },
+      input,
+      String(room.floorBuildUp ?? this.presets().floorBuildUp),
+    );
+  }
+
+  protected setFloorFinish(input: HTMLInputElement): void {
+    const room = this.selection.room();
+    if (!room) return;
+    const floorFinish = input.value.trim() === '' ? null : input.value;
+    if ((floorFinish ?? undefined) === room.floorFinish) return;
+    this.run(updateRoom, { room: room.id, floorFinish }, input, room.floorFinish ?? '');
+  }
   /** Volume, finishes and wall surfaces of the selected Room, under the chosen Measurement rule. */
   protected readonly roomFigures = computed(() => {
     const room = this.selection.room();

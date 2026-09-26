@@ -12,6 +12,7 @@ import {
 } from '@lakudemis/core';
 import { ChangeSummaryComponent } from './editor/change-summary.component';
 import { PropertiesPanelComponent } from './editor/properties-panel.component';
+import { LevelTabsComponent } from './editor/level-tabs.component';
 import { SelectionService } from './editor/selection.service';
 import { PlanEditorComponent } from './editor/plan-editor.component';
 import { LANGUAGES, LanguageService } from './language';
@@ -43,6 +44,7 @@ const TOOLS: readonly ToolButton[] = [
     PlanEditorComponent,
     NewProjectDialogComponent,
     QuantitiesDialogComponent,
+    LevelTabsComponent,
     ChangeSummaryComponent,
     PropertiesPanelComponent,
   ],
@@ -135,6 +137,7 @@ const TOOLS: readonly ToolButton[] = [
     <main class="work">
       <div class="stage" (pointerdown)="messages.clear()">
         <lk-plan-editor [label]="'app.planLabel' | translate" />
+        <lk-level-tabs class="levels" />
         @if (messages.current(); as shown) {
           @if (shown.at) {
             <div class="note" [style.left.px]="shown.at.x + 14" [style.top.px]="shown.at.y + 14">
@@ -253,6 +256,15 @@ const TOOLS: readonly ToolButton[] = [
       position: relative;
       overflow: hidden;
     }
+    .levels {
+      position: absolute;
+      left: 10px;
+      bottom: 10px;
+      padding: 4px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
     .note {
       position: absolute;
       max-width: 320px;
@@ -290,6 +302,7 @@ export class App {
   protected readonly editor = viewChild(PlanEditorComponent);
   protected readonly newDialog = viewChild.required(NewProjectDialogComponent);
   protected readonly quantities = viewChild.required(QuantitiesDialogComponent);
+  private readonly levelTabs = viewChild.required(LevelTabsComponent);
   protected readonly store = this.project.store;
   private readonly selection = inject(SelectionService);
   protected readonly hasChange = computed(() => (this.store.lastChange()?.rooms.length ?? 0) > 0);
@@ -400,6 +413,11 @@ export class App {
     }
     if (e.key === 'Escape') {
       this.selectTool('select');
+      return;
+    }
+    if (/^[1-9]$/.test(e.key) && this.levelTabs().chooseByNumber(Number(e.key))) {
+      e.preventDefault();
+      editor.cancel();
       return;
     }
     if (e.key === 'q' || e.key === 'Q') {

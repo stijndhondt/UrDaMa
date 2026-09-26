@@ -23,17 +23,39 @@ export function source<T>(name: string, value: T, equal?: Equality<T>): Source<T
 
 /**
  * @param name A readable name, or a function giving it (for names that follow the data, like a
- *   Room's name). Angular's debug name is fixed at creation.
+ *   Room's name). A name function is never called while creating or computing the value, so it
+ *   adds no hidden dependency; Angular's debug name is only set for fixed names.
  */
 export function derived<T>(
   name: string | (() => string),
   compute: () => T,
   equal?: Equality<T>,
 ): Derived<T> {
-  const debugName = typeof name === 'string' ? name : name();
-  const value = equal ? computed(compute, { debugName, equal }) : computed(compute, { debugName });
-  return Object.defineProperty(value, 'label', {
-    get: typeof name === 'string' ? () => name : name,
-    enumerable: true,
-  }) as Derived<T>;
+  const label = typeof name === 'string' ? () => name : name;
+  const tracked = () => {
+    recalculations?.push(label);
+    return compute();
+  };
+  const options = typeof name === 'string' ? { debugName: name } : {};
+  const value = equal ? computed(tracked, { ...options, equal }) : computed(tracked, options);
+  return Object.defineProperty(value, 'label', { get: label, enumerable: true }) as Derived<T>;
+}
+
+let recalculations: (() => string)[] | null = null;
+
+/**
+ * The recalculation log: runs `read` and returns the names of the Derived values that were
+ * recalculated meanwhile. Names are looked up afterwards, outside any Derived value.
+ */
+export function recordRecalculations(read: () => void): string[] {
+  const outer = recalculations;
+  const log: (() => string)[] = [];
+  recalculations = log;
+  try {
+    read();
+  } finally {
+    recalculations = outer;
+  }
+  outer?.push(...log);
+  return log.map((label) => label());
 }

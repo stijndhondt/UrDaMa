@@ -1,7 +1,16 @@
 /**
  * Draws one Level of the plan (Canvas2D, ADR 0005): only what is on screen, Walls batched into one path.
  */
-import type { LevelSlice, Opening, RoomId, Vec, Wall, WallId, WallOutline } from '@lakudemis/core';
+import type {
+  LevelId,
+  LevelSlice,
+  Opening,
+  RoomId,
+  Vec,
+  Wall,
+  WallId,
+  WallOutline,
+} from '@lakudemis/core';
 import type { EditorHost } from './host';
 import type { View } from './view';
 
@@ -13,6 +22,8 @@ export const PLAN_COLORS = {
   areaChanged: '#e3ecfc',
   wallFill: '#cfd3da',
   wallStroke: '#2b313b',
+  levelBelow: 'rgba(120, 130, 150, 0.18)',
+  levelBelowStroke: 'rgba(120, 130, 150, 0.45)',
   label: '#1d232b',
   muted: '#6b7280',
   warn: '#c2410c',
@@ -55,6 +66,8 @@ export function tracePolygon(
 export interface DrawOptions {
   /** Rooms to highlight (changed by the last edit). */
   readonly highlight?: ReadonlySet<RoomId>;
+  /** A Level to show faded underneath, as a tracing aid. */
+  readonly below?: LevelId | null;
 }
 
 export function drawPlan(
@@ -90,6 +103,8 @@ export function drawPlan(
       ctx.fill('evenodd');
     }
   }
+
+  if (options.below) drawLevelBelow(ctx, view, host, options.below, box);
 
   // Walls: one batched path; a thick stroke under the fill merges touching outlines into one.
   ctx.beginPath();
@@ -242,6 +257,27 @@ export function drawWallDetails(
       }
     }
   }
+  ctx.restore();
+}
+
+/** The Level below, faded: its Walls only, light and without detail, to trace over. */
+function drawLevelBelow(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  host: EditorHost,
+  level: LevelId,
+  box: Box,
+): void {
+  const outlines = host.store.values.level(level).outlines();
+  ctx.save();
+  ctx.beginPath();
+  for (const outline of outlines.values())
+    if (overlaps(outline, box)) tracePolygon(ctx, view, outline);
+  ctx.fillStyle = PLAN_COLORS.levelBelow;
+  ctx.fill('nonzero');
+  ctx.strokeStyle = PLAN_COLORS.levelBelowStroke;
+  ctx.lineWidth = 1;
+  ctx.stroke();
   ctx.restore();
 }
 

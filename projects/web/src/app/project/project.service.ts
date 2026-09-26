@@ -41,6 +41,17 @@ export class ProjectService {
   readonly unsaved = computed(() => this.text() !== this.savedText());
   readonly name = computed(() => this.store.committedModel().project.name);
 
+  /** The Levels, lowest first. */
+  readonly levels = computed(() =>
+    Object.values(this.store.model().levels).sort((a, b) => a.order - b.order),
+  );
+  /** The Level below the edited one (shown faded), or null. */
+  readonly levelBelow = computed<LevelId | null>(() => {
+    const levels = this.levels();
+    const i = levels.findIndex((l) => l.id === this.level());
+    return i > 0 ? levels[i - 1]!.id : null;
+  });
+
   /** The Level being edited: the chosen one, or the lowest. */
   readonly level = computed<LevelId>(() => {
     const levels = Object.values(this.store.model().levels).sort((a, b) => a.order - b.order);

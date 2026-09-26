@@ -72,7 +72,8 @@
   "warnings": {
     "notEnclosed": "{room} is not enclosed: close the gap or connect the Wall ends.",
     "sharingArea": "{rooms} share one area: delete one or add a Room separator.",
-    "unconnectedEnds": "{count, plural, one {# Wall end is} other {# Wall ends are}} connected to nothing (red squares)."
+    "unconnectedEnds": "{count, plural, one {# Wall end is} other {# Wall ends are}} connected to nothing (red squares).",
+    "ceilingIntoSlab": "The Ceiling of {room} runs {mm} mm into the Slab above."
   },
   "rooms": {
     "defaultName": "Room {n}"
@@ -95,7 +96,17 @@
     }
   },
   "levels": {
-    "groundFloor": "Ground floor"
+    "groundFloor": "Ground floor",
+    "tabs": "Levels",
+    "addAbove": "Level above",
+    "addBelow": "Level below",
+    "addAboveTitle": "Add a Level above",
+    "addBelowTitle": "Add a Level below",
+    "name": "Name",
+    "storeyHeight": "Storey height (floor to floor)",
+    "elevationNote": "Its floor will be at {elevation}. Levels are stacked: the Levels above follow.",
+    "add": "Add Level",
+    "defaultName": "Level {n}"
   },
   "commands": {
     "drawRoom": {
@@ -165,6 +176,17 @@
       "addWindow": "Add window",
       "update": "Change door or window",
       "badSize": "Refused: width and height must be more than 0 and the sill can't be negative."
+    },
+    "level": {
+      "add": "Add Level {name}",
+      "update": "Change Level {name}",
+      "delete": "Delete Level {name}",
+      "slab": "Change Slab thickness",
+      "emptyName": "Refused: a Level needs a name.",
+      "badStoreyHeight": "Refused: the storey height must be more than 0.",
+      "badSlab": "Refused: the Slab thickness must be more than 0.",
+      "elevationDerived": "Refused: only the lowest Level's elevation can be set; the others follow from the storey heights.",
+      "lastLevel": "Refused: a project keeps at least one Level."
     }
   },
   "invariants": {
@@ -227,7 +249,14 @@
       "floorFinishArea": "Floor finish area",
       "ceilingArea": "Ceiling area",
       "netWallArea": "Net wall area",
-      "revealArea": "Reveals (separate)"
+      "revealArea": "Reveals (separate)",
+      "floorBuildUp": "Floor build-up",
+      "floorFinish": "Floor finish",
+      "floorFinishPlaceholder": "e.g. tiles, parquet",
+      "floorLevel": "Floor level",
+      "ceilingLevel": "Ceiling level",
+      "ceilingVoid": "Ceiling void",
+      "voidUnknown": "unknown (no Level above)"
     },
     "wall": {
       "title": "Wall",
@@ -255,6 +284,20 @@
       "sill": "Sill height",
       "flipHinge": "Hinge side",
       "flipSwing": "Swing"
+    },
+    "level": {
+      "title": "Level",
+      "name": "Name",
+      "elevation": "Elevation (finished floor)",
+      "elevationLowest": "the lowest Level: the others follow",
+      "elevationDerived": "follows from the storey heights below",
+      "storeyHeight": "Storey height",
+      "storeyHint": "floor to floor; the Levels above move with it",
+      "slabThickness": "Slab thickness",
+      "grossFloorArea": "Gross floor area",
+      "netFloorArea": "Net floor area (total)",
+      "delete": "Delete Level",
+      "confirmDelete": "Delete {name} and everything on it?"
     }
   },
   "presets": {

@@ -11,6 +11,8 @@ export interface EditorHost {
   readonly store: ProjectStore;
   /** The Level being edited. */
   readonly level: () => LevelId;
+  /** The Level below the edited one, shown faded as a tracing aid (null for the lowest). */
+  readonly levelBelow?: () => LevelId | null;
   /** Translated text for a key (ngx-translate in the web app). */
   readonly text: (key: string, params?: Readonly<Record<string, string | number>>) => string;
   /** Locale-aware formatting (m with 2 decimals, m² with 2 decimals, …). */

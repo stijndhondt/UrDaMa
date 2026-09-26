@@ -148,6 +148,7 @@ export class PlanEditor {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawPlan(this.ctx, this.view, this.host, this.width, this.height, {
       highlight: this.highlight,
+      below: this.host.levelBelow?.() ?? null,
     });
     this.tool?.drawOverlay(this.ctx);
   }

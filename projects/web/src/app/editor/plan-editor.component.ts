@@ -55,6 +55,7 @@ export class PlanEditorComponent {
       const host: EditorHost = {
         store: this.project.store,
         level: () => this.project.level(),
+        levelBelow: () => this.project.levelBelow(),
         text: (key, params) => this.translate.instant(key, params),
         format: { length: this.format.length, area: this.format.area },
         nextRoomName: (offset) => this.project.nextRoomName(offset),
