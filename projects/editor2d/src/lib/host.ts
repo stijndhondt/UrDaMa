@@ -1,5 +1,11 @@
 import type { LevelId, Message, ProjectStore } from '@lakudemis/core';
 
+/** The selected element: a Wall or a Room (Slice 1 spec, "Select / move / delete"). */
+export interface Selection {
+  readonly kind: 'wall' | 'room';
+  readonly id: string;
+}
+
 /** What the editor needs from the app around it. */
 export interface EditorHost {
   readonly store: ProjectStore;
@@ -14,6 +20,9 @@ export interface EditorHost {
   };
   /** The name for a new Room, e.g. "Room 3"; `offset` gives the 2nd, 3rd, … name when several are made at once. */
   readonly nextRoomName: (offset?: number) => string;
+  /** The current selection, and a way to change it. */
+  readonly selection: () => Selection | null;
+  readonly select: (selection: Selection | null) => void;
   /** A command was refused: show its reason near the cursor and in the message bar. */
   readonly refused: (reason: Message, at: { x: number; y: number }) => void;
 }

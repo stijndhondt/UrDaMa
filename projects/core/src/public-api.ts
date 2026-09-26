@@ -23,3 +23,7 @@ export * from './lib/commands/add-room';
 export * from './lib/commands/seeds';
 export * from './lib/file/project-file';
 export * from './lib/commands/draw-wall';
+export * from './lib/commands/move-wall';
+export * from './lib/commands/delete-elements';
+export * from './lib/commands/update-room';
+export * from './lib/commands/update-wall';

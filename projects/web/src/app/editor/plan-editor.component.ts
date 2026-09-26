@@ -17,6 +17,7 @@ import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
+import { SelectionService } from './selection.service';
 
 /** Hosts the Canvas2D plan editor for the current Level. */
 @Component({
@@ -46,6 +47,7 @@ export class PlanEditorComponent {
   private readonly format = inject(FormatService);
   private readonly language = inject(LanguageService);
   private readonly messages = inject(MessagesService);
+  private readonly selection = inject(SelectionService);
   private editor: PlanEditor | null = null;
 
   constructor() {
@@ -56,6 +58,8 @@ export class PlanEditorComponent {
         text: (key, params) => this.translate.instant(key, params),
         format: { length: this.format.length, area: this.format.area },
         nextRoomName: (offset) => this.project.nextRoomName(offset),
+        selection: () => this.selection.current(),
+        select: (selection) => this.selection.current.set(selection),
         refused: (reason, at) => this.messages.refused(reason, at),
       };
       this.editor = new PlanEditor(this.canvas().nativeElement, host);
@@ -82,8 +86,9 @@ export class PlanEditorComponent {
       );
       untracked(() => this.editor?.setHighlight(rooms));
     });
-    // Redraw whenever the model, the Level or the language changes.
+    // Redraw whenever the model, the Level, the selection or the language changes.
     effect(() => {
+      this.selection.current();
       this.project.store.model();
       this.project.level();
       this.language.current();

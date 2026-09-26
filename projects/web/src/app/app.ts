@@ -1,7 +1,10 @@
 import { Component, HostListener, computed, effect, inject, viewChild } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ToolName } from '@lakudemis/editor2d';
+import { deleteElements, type RoomId, type WallId } from '@lakudemis/core';
 import { ChangeSummaryComponent } from './editor/change-summary.component';
+import { PropertiesPanelComponent } from './editor/properties-panel.component';
+import { SelectionService } from './editor/selection.service';
 import { PlanEditorComponent } from './editor/plan-editor.component';
 import { LANGUAGES, LanguageService } from './language';
 import { MessagesService } from './messages.service';
@@ -16,13 +19,20 @@ interface ToolButton {
 
 /** Tools available so far, with their keyboard shortcuts (the same in every language). */
 const TOOLS: readonly ToolButton[] = [
+  { name: 'select', key: 'V' },
   { name: 'room', key: 'R' },
   { name: 'wall', key: 'W' },
 ];
 
 @Component({
   selector: 'lk-root',
-  imports: [TranslatePipe, PlanEditorComponent, NewProjectDialogComponent, ChangeSummaryComponent],
+  imports: [
+    TranslatePipe,
+    PlanEditorComponent,
+    NewProjectDialogComponent,
+    ChangeSummaryComponent,
+    PropertiesPanelComponent,
+  ],
   template: `
     <header class="bar">
       <h1 class="brand">Lakudemis</h1>
@@ -106,15 +116,20 @@ const TOOLS: readonly ToolButton[] = [
         </select>
       </label>
     </header>
-    <main class="stage" (pointerdown)="messages.clear()">
-      <lk-plan-editor [label]="'app.planLabel' | translate" />
-      @if (messages.current(); as shown) {
-        @if (shown.at) {
-          <div class="note" [style.left.px]="shown.at.x + 14" [style.top.px]="shown.at.y + 14">
-            {{ shown.message.key | translate: shown.message.params }}
-          </div>
+    <main class="work">
+      <div class="stage" (pointerdown)="messages.clear()">
+        <lk-plan-editor [label]="'app.planLabel' | translate" />
+        @if (messages.current(); as shown) {
+          @if (shown.at) {
+            <div class="note" [style.left.px]="shown.at.x + 14" [style.top.px]="shown.at.y + 14">
+              {{ shown.message.key | translate: shown.message.params }}
+            </div>
+          }
         }
-      }
+      </div>
+      <aside class="panel" [attr.aria-label]="'panel.label' | translate">
+        <lk-properties-panel />
+      </aside>
     </main>
     <footer class="status" role="status" aria-live="polite">
       @if (messages.current(); as shown) {
@@ -124,7 +139,7 @@ const TOOLS: readonly ToolButton[] = [
       } @else if (hasChange()) {
         <lk-change-summary />
       } @else {
-        <span class="hint">{{ 'app.hint' | translate }}</span>
+        <span class="hint">{{ 'app.hints.' + (editor()?.tool() ?? 'room') | translate }}</span>
       }
     </footer>
     <lk-new-project-dialog />
@@ -194,6 +209,10 @@ const TOOLS: readonly ToolButton[] = [
         monospace;
       opacity: 0.7;
     }
+    .menu button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
     .spacer {
       flex: 1;
     }
@@ -202,6 +221,16 @@ const TOOLS: readonly ToolButton[] = [
       align-items: center;
       gap: 6px;
       color: var(--muted);
+    }
+    .work {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      min-height: 0;
+    }
+    .panel {
+      border-left: 1px solid var(--line);
+      background: var(--panel);
+      overflow: auto;
     }
     .stage {
       position: relative;
@@ -244,6 +273,7 @@ export class App {
   protected readonly editor = viewChild(PlanEditorComponent);
   protected readonly newDialog = viewChild.required(NewProjectDialogComponent);
   protected readonly store = this.project.store;
+  private readonly selection = inject(SelectionService);
   protected readonly hasChange = computed(() => (this.store.lastChange()?.rooms.length ?? 0) > 0);
 
   constructor() {
@@ -255,6 +285,17 @@ export class App {
   protected selectTool(name: ToolName): void {
     this.messages.clear();
     this.editor()?.setTool(name);
+  }
+
+  protected deleteSelection(): void {
+    const s = this.selection.current();
+    if (!s) return;
+    const result = this.store.run(deleteElements, {
+      walls: s.kind === 'wall' ? [s.id as WallId] : [],
+      rooms: s.kind === 'room' ? [s.id as RoomId] : [],
+    });
+    if (!result.ok) this.messages.refused(result.reason);
+    else this.selection.current.set(null);
   }
 
   protected undo(): void {
@@ -318,6 +359,15 @@ export class App {
     // The active tool gets the key first (typed values, S, Esc, …).
     if (editor.keyDown(e)) {
       e.preventDefault();
+      return;
+    }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      this.deleteSelection();
+      return;
+    }
+    if (e.key === 'Escape') {
+      this.selectTool('select');
       return;
     }
     const tool = TOOLS.find((t) => t.key.toLowerCase() === e.key.toLowerCase());

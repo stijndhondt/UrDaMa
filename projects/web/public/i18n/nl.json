@@ -8,7 +8,11 @@
     },
     "planLabel": "Grondplan",
     "tools": "Gereedschap",
-    "hint": "Sleep een ruimte op de binnenmaat die je gemeten hebt, of klik en typ breedte, Tab, diepte, Enter. S: binnen-/buitenmaat. Wieltje: zoomen, middelste knop: verschuiven, F: alles tonen."
+    "hints": {
+      "select": "Klik een muur of ruimte om ze te selecteren. Sleep een muur om ze te verplaatsen (Shift: 100 mm, Ctrl: 1 mm). Delete verwijdert. Wieltje: zoomen, middelste knop: verschuiven, F: alles tonen.",
+      "room": "Sleep een ruimte op de binnenmaat die je gemeten hebt, of klik en typ breedte, Tab, diepte, Enter. S: binnen-/buitenmaat. Begin op de buitenkant van een muur om ze te delen.",
+      "wall": "Sleep een muur, of klik en typ een lengte (en draai met de muis), Tab: hoek, Enter. S: kant van de dikte. Shift: 45°, Ctrl: 1°."
+    }
   },
   "tools": {
     "room": {
@@ -18,6 +22,10 @@
     "wall": {
       "name": "Muur",
       "hint": "Teken één muur: slepen, of klikken en een lengte typen"
+    },
+    "select": {
+      "name": "Selecteren",
+      "hint": "Selecteren, verplaatsen en verwijderen: klik een muur of ruimte, sleep een muur om ze te verplaatsen"
     }
   },
   "editor": {
@@ -85,6 +93,23 @@
       "label": "Muur tekenen",
       "tooShort": "Een muur moet minstens {min} mm lang zijn.",
       "insideWall": "Deze muur zou volledig in een andere muur liggen."
+    },
+    "moveWall": {
+      "label": "Muur verplaatsen",
+      "nothing": "De muur is niet verplaatst."
+    },
+    "delete": {
+      "label": "{count, plural, one {# element verwijderen} other {# elementen verwijderen}}",
+      "nothing": "Niets geselecteerd om te verwijderen."
+    },
+    "updateRoom": {
+      "label": "Ruimte wijzigen ({name})",
+      "emptyName": "Een ruimte heeft een naam nodig.",
+      "badHeight": "De ruimtehoogte moet groter zijn dan 0 mm."
+    },
+    "updateWall": {
+      "label": "Muur wijzigen",
+      "badHeight": "De muurhoogte moet groter zijn dan 0 mm."
     }
   },
   "invariants": {
@@ -120,5 +145,26 @@
     "redo": "Opnieuw gedaan:",
     "new": "nieuw,",
     "removed": "verwijderd"
+  },
+  "panel": {
+    "label": "Eigenschappen",
+    "nothingSelected": "Selecteer een muur of ruimte (V) om haar eigenschappen te zien en te wijzigen.",
+    "preset": "uit de standaard",
+    "custom": "aangepast",
+    "followsStorey": "volgt de verdiepingshoogte",
+    "room": {
+      "title": "Ruimte",
+      "name": "Naam",
+      "height": "Ruimtehoogte (vloer tot plafond)",
+      "netFloorArea": "Netto vloeroppervlakte"
+    },
+    "wall": {
+      "title": "Muur",
+      "length": "Lengte",
+      "thickness": "Dikte",
+      "side": "Kant van de dikte",
+      "height": "Muurhoogte",
+      "roomBounding": "Begrenst ruimtes"
+    }
   }
 }

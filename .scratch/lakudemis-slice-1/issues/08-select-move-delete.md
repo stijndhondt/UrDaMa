@@ -4,11 +4,11 @@
 
 **Blocked by:** 07 Wall tool
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Click priority works as described; the selection is visible on the plan and in the panel.
-- [ ] Dragging a Wall keeps its connected Walls attached, and the Rooms update live while dragging (a temporary change: Esc cancels, release commits one undo step).
-- [ ] Deleting a Wall never deletes a Room silently.
-- [ ] Renaming a Room and changing its Room height are single undo steps.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] Click priority works as described; the selection is visible on the plan and in the panel.
+- [x] Dragging a Wall keeps its connected Walls attached, and the Rooms update live while dragging (a temporary change: Esc cancels, release commits one undo step).
+- [x] Deleting a Wall never deletes a Room silently.
+- [x] Renaming a Room and changing its Room height are single undo steps.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.

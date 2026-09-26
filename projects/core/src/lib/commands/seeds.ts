@@ -4,7 +4,9 @@
  *
  * After a command, a Room whose Seed point is no longer enclosed, or now shares an area with a
  * Room that has priority, moves its Seed point to the new area that overlaps its old area the
- * most, among the areas no other Room occupies. It keeps its name and properties.
+ * most, among the areas no other Room occupies. It keeps its name and properties. When Rooms
+ * end up sharing one area, the Room with priority, else the one whose old area overlaps it most,
+ * keeps it.
  */
 import { levelGeometry } from '../geometry/level-geometry';
 import { interiorPoint, intersectionArea } from '../geometry/polygon';
@@ -20,13 +22,34 @@ export function reseatSeeds(
   const now = levelGeometry(after, level).footprint;
   let rooms = after.rooms;
 
+  // Of Rooms that now share one area, the one whose old area overlaps it most keeps it.
+  const keeper = new Map<number, RoomId>();
+  now.areas.forEach((area, index) => {
+    if (area.rooms.length < 2) return;
+    const withPriority = area.rooms.find((r) => priority.has(r));
+    if (withPriority) {
+      keeper.set(index, withPriority);
+      return;
+    }
+    let best: { room: RoomId; overlap: number } | null = null;
+    for (const r of area.rooms) {
+      const previous = old.rooms.get(r);
+      const overlap =
+        previous && previous.status !== 'notEnclosed' ? intersectionArea(previous.area, area) : 0;
+      if (!best || overlap > best.overlap) best = { room: r, overlap };
+    }
+    if (best) keeper.set(index, best.room);
+  });
+
   for (const room of Object.values(after.rooms)) {
     if (room.level !== level || priority.has(room.id)) continue;
     const detection = now.rooms.get(room.id);
+    const areaIndex =
+      detection && detection.status !== 'notEnclosed' ? now.areas.indexOf(detection.area) : -1;
     const displaced =
       !detection ||
       detection.status === 'notEnclosed' ||
-      (detection.status === 'sharingArea' && detection.others.some((o) => priority.has(o)));
+      (detection.status === 'sharingArea' && keeper.get(areaIndex) !== room.id);
     if (!displaced) continue;
 
     const previous = old.rooms.get(room.id);

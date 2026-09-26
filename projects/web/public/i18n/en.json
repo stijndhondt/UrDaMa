@@ -8,7 +8,11 @@
     },
     "planLabel": "Floor plan",
     "tools": "Tools",
-    "hint": "Drag a Room at the inside size you measured, or click and type width, Tab, depth, Enter. S: inside / outside size. Wheel: zoom, middle button: pan, F: fit."
+    "hints": {
+      "select": "Click a Wall or a Room to select it. Drag a Wall to move it (Shift: 100 mm, Ctrl: 1 mm). Delete removes it. Wheel: zoom, middle button: pan, F: fit.",
+      "room": "Drag a Room at the inside size you measured, or click and type width, Tab, depth, Enter. S: inside / outside size. Start on a Wall's far face to share it.",
+      "wall": "Drag a Wall, or click and type a length (then rotate with the mouse), Tab: angle, Enter. S: side of the thickness. Shift: 45°, Ctrl: 1°."
+    }
   },
   "tools": {
     "room": {
@@ -18,6 +22,10 @@
     "wall": {
       "name": "Wall",
       "hint": "Draw a single Wall: drag, or click and type a length"
+    },
+    "select": {
+      "name": "Select",
+      "hint": "Select, move and delete: click a Wall or a Room, drag a Wall to move it"
     }
   },
   "editor": {
@@ -85,6 +93,23 @@
       "label": "Draw wall",
       "tooShort": "A Wall must be at least {min} mm long.",
       "insideWall": "This Wall would lie entirely inside another Wall."
+    },
+    "moveWall": {
+      "label": "Move wall",
+      "nothing": "The wall did not move."
+    },
+    "delete": {
+      "label": "{count, plural, one {Delete # element} other {Delete # elements}}",
+      "nothing": "Nothing selected to delete."
+    },
+    "updateRoom": {
+      "label": "Change room ({name})",
+      "emptyName": "A Room needs a name.",
+      "badHeight": "The Room height must be more than 0 mm."
+    },
+    "updateWall": {
+      "label": "Change wall",
+      "badHeight": "The Wall height must be more than 0 mm."
     }
   },
   "invariants": {
@@ -120,5 +145,26 @@
     "redo": "Redone:",
     "new": "new,",
     "removed": "removed"
+  },
+  "panel": {
+    "label": "Properties",
+    "nothingSelected": "Select a Wall or a Room (V) to see and change its properties.",
+    "preset": "from the Preset",
+    "custom": "custom",
+    "followsStorey": "follows the storey height",
+    "room": {
+      "title": "Room",
+      "name": "Name",
+      "height": "Room height (floor to ceiling)",
+      "netFloorArea": "Net floor area"
+    },
+    "wall": {
+      "title": "Wall",
+      "length": "Length",
+      "thickness": "Thickness",
+      "side": "Thickness side",
+      "height": "Wall height",
+      "roomBounding": "Bounds Rooms"
+    }
   }
 }

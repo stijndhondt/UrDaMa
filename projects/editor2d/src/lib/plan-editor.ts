@@ -7,6 +7,7 @@ import { drawPlan } from './draw-plan';
 import type { EditorHost } from './host';
 import { RoomTool } from './tools/room-tool';
 import { WallTool } from './tools/wall-tool';
+import { SelectTool } from './tools/select-tool';
 import type { PointerInfo, Tool, ToolContext, ToolName } from './tools/tool';
 import { TypedInput } from './typed-input';
 import { View } from './view';
@@ -43,7 +44,11 @@ export class PlanEditor {
       typed: this.typed,
       invalidate: () => this.invalidate(),
     };
-    this.tools = { room: new RoomTool(toolContext), wall: new WallTool(toolContext) };
+    this.tools = {
+      select: new SelectTool(toolContext),
+      room: new RoomTool(toolContext),
+      wall: new WallTool(toolContext),
+    };
     this.setTool('room');
 
     this.listen(canvas, 'pointerdown', (e) => this.onPointerDown(e as PointerEvent));
