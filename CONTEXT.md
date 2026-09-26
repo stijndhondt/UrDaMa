@@ -60,7 +60,7 @@ _Avoid_: Wall side, surface (unqualified)
 
 **Façade**:
 All outside Wall faces of the building on one side (front, back, left side or right side, as seen standing in front of the house), counted relative to the building's own front, not to compass directions. A Façade that is not flat, such as the front of an L- or T-shaped house, splits into Façade parts that each lie in one plane.
-_Avoid_: Exterior wall (for the surface), gevel (in code and UI text), elevation (for the surface)
+_Avoid_: Exterior wall (for the surface), gevel (in code; the Dutch UI says Gevel), elevation (for the surface)
 
 **Wall height**:
 The height of a Wall itself. Usually greater than the Room height of the Rooms it bounds; a partial-height wall (divider, bar wall) has its own, lower Wall height.
@@ -100,7 +100,7 @@ _Avoid_: Computed property, cached value, result
 
 **Elevation**:
 A flat, straight-on drawing of the building seen from one side (front, back, left or right), all Levels stacked, showing what is visible from outside: Wall faces, Openings, Slab edges and heights.
-_Avoid_: Side view, façade view, gevelaanzicht (in code and UI text)
+_Avoid_: Side view, façade view, gevelaanzicht (in code; the Dutch UI says Gevelaanzicht)
 
 **Section plane**:
 A plane that slices the building in a view: everything between the viewer and the plane is cut away, so the inside shows.
