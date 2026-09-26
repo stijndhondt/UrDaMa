@@ -10,7 +10,7 @@
  */
 import { levelGeometry, wallFaces } from '../geometry/level-geometry';
 import { distanceToSegment } from '../geometry/polygon';
-import { wallDirection } from '../geometry/wall-outlines';
+import { wallDirection, type WallOutline } from '../geometry/wall-outlines';
 import { add, cross, dot, normalize, scale, sub, distance } from '../geometry/vec';
 import { put, putAll } from '../model/edit';
 import { message } from '../model/message';
@@ -61,10 +61,16 @@ export const drawRoom: Command<DrawRoomArgs> = (model, args, { ids }) => {
   }
   const t = model.project.presets.wallThickness;
   const inset = args.size === 'outside' ? t : 0;
-  const x0 = Math.min(args.from.x, args.to.x) + inset;
-  const x1 = Math.max(args.from.x, args.to.x) - inset;
-  const y0 = Math.min(args.from.y, args.to.y) + inset;
-  const y1 = Math.max(args.from.y, args.to.y) - inset;
+  const existing = levelGeometry(model, args.level);
+  const { x0, x1, y0, y1 } = clearOfWalls(
+    {
+      x0: Math.min(args.from.x, args.to.x) + inset,
+      x1: Math.max(args.from.x, args.to.x) - inset,
+      y0: Math.min(args.from.y, args.to.y) + inset,
+      y1: Math.max(args.from.y, args.to.y) - inset,
+    },
+    existing.outlines.values(),
+  );
   if (x1 - x0 < MIN_ROOM_SIZE || y1 - y0 < MIN_ROOM_SIZE) {
     return refuse(message('commands.drawRoom.tooSmall', { min: MIN_ROOM_SIZE }));
   }
@@ -76,7 +82,6 @@ export const drawRoom: Command<DrawRoomArgs> = (model, args, { ids }) => {
     { x: x1, y: y1 },
     { x: x0, y: y1 },
   ];
-  const existing = levelGeometry(model, args.level);
   const faces = [...existing.outlines.values()].flatMap((o) => wallFaces(o));
   const pieces = corners.flatMap((start, edge) =>
     uncoveredPieces(edge, start, corners[(edge + 1) % 4]!, faces),
@@ -145,6 +150,47 @@ export const drawRoom: Command<DrawRoomArgs> = (model, args, { ids }) => {
   next = reseatSeeds(model, next, args.level, new Set([room.id]));
   return { ok: true, model: next, label: message('commands.drawRoom.label', { name: args.name }) };
 };
+
+interface Box {
+  readonly x0: number;
+  readonly x1: number;
+  readonly y0: number;
+  readonly y1: number;
+}
+
+/**
+ * A rectangle started on a Wall's inner face and drawn away from it reaches through that Wall. It
+ * is moved clear of the Wall, keeping its size, so it ends up against the Wall's far face.
+ */
+function clearOfWalls(box: Box, outlines: Iterable<WallOutline>): Box {
+  let b = box;
+  const list = [...outlines];
+  for (let pass = 0; pass < 4; pass++) {
+    let moved = false;
+    for (const outline of list) {
+      const xs = outline.map((p) => p.x);
+      const ys = outline.map((p) => p.y);
+      const xl = Math.min(...xs),
+        xh = Math.max(...xs),
+        yl = Math.min(...ys),
+        yh = Math.max(...ys);
+      const overlapX = Math.min(xh, b.x1) - Math.max(xl, b.x0);
+      const overlapY = Math.min(yh, b.y1) - Math.max(yl, b.y0);
+      if (overlapX <= SAME_LINE || overlapY <= SAME_LINE) continue;
+      const horizontal = xh - xl >= yh - yl;
+      let shift = { x: 0, y: 0 };
+      if (horizontal && Math.abs(yl - b.y0) <= SAME_LINE) shift = { x: 0, y: yh - b.y0 };
+      else if (horizontal && Math.abs(yh - b.y1) <= SAME_LINE) shift = { x: 0, y: yl - b.y1 };
+      else if (!horizontal && Math.abs(xl - b.x0) <= SAME_LINE) shift = { x: xh - b.x0, y: 0 };
+      else if (!horizontal && Math.abs(xh - b.x1) <= SAME_LINE) shift = { x: xl - b.x1, y: 0 };
+      if (!shift.x && !shift.y) continue;
+      b = { x0: b.x0 + shift.x, x1: b.x1 + shift.x, y0: b.y0 + shift.y, y1: b.y1 + shift.y };
+      moved = true;
+    }
+    if (!moved) break;
+  }
+  return b;
+}
 
 /** The parts of an edge not already covered by an existing Wall face on the same line. */
 function uncoveredPieces(

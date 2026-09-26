@@ -27,3 +27,7 @@ export * from './lib/commands/move-wall';
 export * from './lib/commands/delete-elements';
 export * from './lib/commands/update-room';
 export * from './lib/commands/update-wall';
+export * from './lib/commands/push';
+export * from './lib/commands/set-wall-thickness';
+export * from './lib/commands/set-presets';
+export * from './lib/commands/resize-room';

@@ -110,6 +110,26 @@
     "updateWall": {
       "label": "Change wall",
       "badHeight": "The Wall height must be more than 0 mm."
+    },
+    "thickness": {
+      "label": "Change wall thickness",
+      "bad": "The thickness must be more than 0 mm."
+    },
+    "presets": {
+      "label": "Change Presets",
+      "nothing": "Nothing to change.",
+      "bad": "Preset values must be more than 0 mm."
+    },
+    "push": {
+      "skewed": "Refused: wall {wall} is at an angle and cannot stretch with this push."
+    },
+    "resizeRoom": {
+      "label": "Resize room ({name})",
+      "bad": "The size must be more than 0.",
+      "notEnclosed": "Only an enclosed Room can be resized.",
+      "notRectangular": "Only a rectangular Room can be resized by typing its size; drag its Walls instead.",
+      "sameSize": "The Room already has this size.",
+      "noWall": "No Wall bounds the Room on that side."
     }
   },
   "invariants": {
@@ -156,7 +176,15 @@
       "title": "Room",
       "name": "Name",
       "height": "Room height (floor to ceiling)",
-      "netFloorArea": "Net floor area"
+      "netFloorArea": "Net floor area",
+      "insideSize": "Inside size",
+      "width": "Width",
+      "depth": "Depth",
+      "moves": "Side that moves",
+      "movesRight": "right side moves",
+      "movesLeft": "left side moves",
+      "movesBottom": "bottom side moves",
+      "movesTop": "top side moves"
     },
     "wall": {
       "title": "Wall",
@@ -165,6 +193,21 @@
       "side": "Thickness side",
       "height": "Wall height",
       "roomBounding": "Bounds Rooms"
-    }
+    },
+    "resetToPreset": "Reset to Preset"
+  },
+  "presets": {
+    "title": "Project Presets",
+    "hint": "New elements take these values; elements without their own value follow a change. Walls keep the measured Room sizes.",
+    "wallThickness": "Wall thickness",
+    "slabThickness": "Slab thickness",
+    "floorBuildUp": "Floor build-up",
+    "roomHeight": "Room height",
+    "ceilingThickness": "Ceiling thickness",
+    "doorWidth": "Door width",
+    "doorHeight": "Door height",
+    "windowWidth": "Window width",
+    "windowHeight": "Window height",
+    "windowSill": "Window sill height"
   }
 }

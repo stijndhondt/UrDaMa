@@ -1,6 +1,8 @@
 import { Component, computed, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
+  resizeRoom,
+  setWallThickness,
   updateRoom,
   updateWall,
   wallLength,
@@ -13,6 +15,7 @@ import { parseLength } from '@lakudemis/editor2d';
 import { FormatService } from '../format.service';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
+import { PresetsPanelComponent } from './presets-panel.component';
 import { SelectionService } from './selection.service';
 
 /**
@@ -21,7 +24,7 @@ import { SelectionService } from './selection.service';
  */
 @Component({
   selector: 'lk-properties-panel',
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, PresetsPanelComponent],
   template: `
     @if (selection.room(); as room) {
       <h2>{{ 'panel.room.title' | translate }}</h2>
@@ -52,21 +55,76 @@ import { SelectionService } from './selection.service';
         <dt>{{ 'panel.room.netFloorArea' | translate }}</dt>
         <dd>{{ roomArea() }}</dd>
       </dl>
+      @if (roomSize(); as size) {
+        <h3>{{ 'panel.room.insideSize' | translate }}</h3>
+        <label>
+          {{ 'panel.room.width' | translate }}
+          <span class="field">
+            <input
+              [value]="(size.width / 1000).toFixed(2)"
+              (change)="resize('x', $any($event.target))"
+              (keydown.enter)="$any($event.target).blur()"
+            />
+            m
+            <select
+              [value]="widthSide"
+              (change)="widthSide = $any($event.target).value"
+              [attr.aria-label]="'panel.room.moves' | translate"
+            >
+              <option value="max">{{ 'panel.room.movesRight' | translate }}</option>
+              <option value="min">{{ 'panel.room.movesLeft' | translate }}</option>
+            </select>
+          </span>
+        </label>
+        <label>
+          {{ 'panel.room.depth' | translate }}
+          <span class="field">
+            <input
+              [value]="(size.depth / 1000).toFixed(2)"
+              (change)="resize('y', $any($event.target))"
+              (keydown.enter)="$any($event.target).blur()"
+            />
+            m
+            <select
+              [value]="depthSide"
+              (change)="depthSide = $any($event.target).value"
+              [attr.aria-label]="'panel.room.moves' | translate"
+            >
+              <option value="max">{{ 'panel.room.movesBottom' | translate }}</option>
+              <option value="min">{{ 'panel.room.movesTop' | translate }}</option>
+            </select>
+          </span>
+        </label>
+      }
     } @else if (selection.wall(); as wall) {
       <h2>{{ 'panel.wall.title' | translate }}</h2>
       <dl>
         <dt>{{ 'panel.wall.length' | translate }}</dt>
         <dd>{{ format.length(wallLength(wall)) }}</dd>
-        <dt>{{ 'panel.wall.thickness' | translate }}</dt>
-        <dd>
-          {{ format.millimetres(thickness(wall)) }}
-          <small>{{
-            (wall.thickness === undefined ? 'panel.preset' : 'panel.custom') | translate
-          }}</small>
-        </dd>
+
         <dt>{{ 'panel.wall.side' | translate }}</dt>
         <dd>{{ 'editor.wall.side.' + wall.side | translate }}</dd>
       </dl>
+      <label>
+        {{ 'panel.wall.thickness' | translate }}
+        <span class="field">
+          <input
+            [value]="thickness(wall)"
+            [class.preset]="wall.thickness === undefined"
+            (change)="setThickness(wall.id, $any($event.target))"
+            (keydown.enter)="$any($event.target).blur()"
+          />
+          mm
+          @if (wall.thickness !== undefined) {
+            <button type="button" (click)="resetThickness(wall.id)">
+              {{ 'panel.resetToPreset' | translate }}
+            </button>
+          }
+        </span>
+        <small>{{
+          (wall.thickness === undefined ? 'panel.preset' : 'panel.custom') | translate
+        }}</small>
+      </label>
       <label>
         {{ 'panel.wall.height' | translate }}
         <span class="field">
@@ -92,6 +150,7 @@ import { SelectionService } from './selection.service';
       </label>
     } @else {
       <p class="empty">{{ 'panel.nothingSelected' | translate }}</p>
+      <lk-presets-panel />
     }
   `,
   styles: `
@@ -103,6 +162,21 @@ import { SelectionService } from './selection.service';
     h2 {
       font-size: 14px;
       margin: 0 0 10px;
+    }
+    h3 {
+      font-size: 12px;
+      margin: 12px 0 6px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    select,
+    button {
+      font-size: 12px;
+      padding: 2px 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
     }
     label {
       display: grid;
@@ -168,6 +242,48 @@ export class PropertiesPanelComponent {
     const area = room ? this.project.store.values.room(room.id).netFloorArea() : null;
     return area === null ? '—' : this.format.area(area);
   });
+
+  protected widthSide: 'min' | 'max' = 'max';
+  protected depthSide: 'min' | 'max' = 'max';
+
+  /** Inside width and depth of a rectangular Room (null for other shapes). */
+  protected readonly roomSize = computed(() => {
+    const room = this.selection.room();
+    const d = room ? this.project.store.values.room(room.id).detection() : undefined;
+    if (!d || d.status !== 'enclosed' || d.area.islands.length) return null;
+    const xs = d.area.outline.map((p) => p.x);
+    const ys = d.area.outline.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const rectangular = d.area.outline.every(
+      (p) =>
+        (Math.abs(p.x - minX) < 0.5 || Math.abs(p.x - maxX) < 0.5) &&
+        (Math.abs(p.y - minY) < 0.5 || Math.abs(p.y - maxY) < 0.5),
+    );
+    return rectangular ? { width: maxX - minX, depth: maxY - minY } : null;
+  });
+
+  protected resize(axis: 'x' | 'y', input: HTMLInputElement): void {
+    const room = this.selection.room();
+    const size = parseLength(input.value);
+    const current = this.roomSize();
+    if (!room || !current || size === null) return;
+    const side = axis === 'x' ? this.widthSide : this.depthSide;
+    const previous = ((axis === 'x' ? current.width : current.depth) / 1000).toFixed(2);
+    this.run(resizeRoom, { room: room.id, axis, size, side }, input, previous);
+  }
+
+  protected setThickness(wall: WallId, input: HTMLInputElement): void {
+    const thickness = parseLength(input.value);
+    if (thickness === null) return;
+    this.run(setWallThickness, { wall, thickness }, input, '');
+  }
+
+  protected resetThickness(wall: WallId): void {
+    this.run(setWallThickness, { wall, thickness: null }, null, '');
+  }
 
   protected thickness(wall: Parameters<typeof wallThickness>[0]): number {
     return wallThickness(wall, this.presets().wallThickness);

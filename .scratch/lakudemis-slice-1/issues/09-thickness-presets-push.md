@@ -4,11 +4,11 @@
 
 **Blocked by:** 08 Select, move, delete
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] **Re-typing the Keuken's inside width from 2.67 to 2.70 m gives 3.73 × 2.70 = 10.07 m², and every other Room keeps its size.**
-- [ ] Changing the wall-thickness Preset updates every Wall that follows it and keeps all measured Room sizes.
-- [ ] The panel shows "preset" vs "custom" and offers "reset to preset".
-- [ ] An impossible push is refused with a reason and changes nothing.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] **Re-typing the Keuken's inside width from 2.67 to 2.70 m gives 3.73 × 2.70 = 10.07 m², and every other Room keeps its size.**
+- [x] Changing the wall-thickness Preset updates every Wall that follows it and keeps all measured Room sizes.
+- [x] The panel shows "preset" vs "custom" and offers "reset to preset".
+- [x] An impossible push is refused with a reason and changes nothing.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.

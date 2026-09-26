@@ -73,6 +73,16 @@ describe('Rooms side by side (ticket 04)', () => {
     expect(wallsOverlap(store.model())).toBe(false);
   });
 
+  it('moves a Room drawn through an existing Wall clear of it, keeping its typed size', () => {
+    const { store, draw, area } = setup();
+    draw('Keuken', 0, 0, 2670, 3730);
+    // Started on the Keuken's inside corner, drawn away from it: the rectangle reaches through its top Wall.
+    draw('Achterhal', 0, 0, 2670, -3940);
+    expect(area('Keuken')).toBe(9.96);
+    expect(area('Achterhal')).toBe(10.52);
+    expect(wallsOverlap(store.model())).toBe(false);
+  });
+
   it('creates Walls only for the uncovered part of a partly shared edge', () => {
     const { store, draw, area } = setup();
     draw('Achterhal', 0, 0, 2670, 3940);

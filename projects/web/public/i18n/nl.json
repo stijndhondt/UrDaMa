@@ -110,6 +110,26 @@
     "updateWall": {
       "label": "Muur wijzigen",
       "badHeight": "De muurhoogte moet groter zijn dan 0 mm."
+    },
+    "thickness": {
+      "label": "Muurdikte wijzigen",
+      "bad": "De dikte moet groter zijn dan 0 mm."
+    },
+    "presets": {
+      "label": "Standaarden wijzigen",
+      "nothing": "Niets te wijzigen.",
+      "bad": "Standaardwaarden moeten groter zijn dan 0 mm."
+    },
+    "push": {
+      "skewed": "Geweigerd: muur {wall} staat schuin en kan niet mee uitrekken."
+    },
+    "resizeRoom": {
+      "label": "Ruimte van maat veranderen ({name})",
+      "bad": "De maat moet groter zijn dan 0.",
+      "notEnclosed": "Alleen een afgesloten ruimte kan van maat veranderen.",
+      "notRectangular": "Alleen een rechthoekige ruimte kan je van maat veranderen door te typen; sleep anders haar muren.",
+      "sameSize": "De ruimte heeft al deze maat.",
+      "noWall": "Aan die kant begrenst geen muur de ruimte."
     }
   },
   "invariants": {
@@ -156,7 +176,15 @@
       "title": "Ruimte",
       "name": "Naam",
       "height": "Ruimtehoogte (vloer tot plafond)",
-      "netFloorArea": "Netto vloeroppervlakte"
+      "netFloorArea": "Netto vloeroppervlakte",
+      "insideSize": "Binnenmaat",
+      "width": "Breedte",
+      "depth": "Diepte",
+      "moves": "Kant die verschuift",
+      "movesRight": "rechterkant schuift",
+      "movesLeft": "linkerkant schuift",
+      "movesBottom": "onderkant schuift",
+      "movesTop": "bovenkant schuift"
     },
     "wall": {
       "title": "Muur",
@@ -165,6 +193,21 @@
       "side": "Kant van de dikte",
       "height": "Muurhoogte",
       "roomBounding": "Begrenst ruimtes"
-    }
+    },
+    "resetToPreset": "Terug naar standaard"
+  },
+  "presets": {
+    "title": "Projectstandaarden",
+    "hint": "Nieuwe elementen nemen deze waarden; elementen zonder eigen waarde volgen een wijziging. Muren behouden de gemeten maten van de ruimtes.",
+    "wallThickness": "Muurdikte",
+    "slabThickness": "Vloerplaatdikte",
+    "floorBuildUp": "Vloeropbouw",
+    "roomHeight": "Ruimtehoogte",
+    "ceilingThickness": "Plafonddikte",
+    "doorWidth": "Deurbreedte",
+    "doorHeight": "Deurhoogte",
+    "windowWidth": "Raambreedte",
+    "windowHeight": "Raamhoogte",
+    "windowSill": "Borstweringshoogte"
   }
 }
