@@ -152,10 +152,10 @@ export function drawPlan(
     ctx.font = '12px system-ui, sans-serif';
     if (!detection || detection.status === 'notEnclosed') {
       ctx.fillStyle = PLAN_COLORS.bad;
-      ctx.fillText(host.text('warnings.notEnclosed.short'), s.x, s.y + 9);
+      ctx.fillText(host.text('warnings.short.notEnclosed'), s.x, s.y + 9);
     } else if (detection.status === 'sharingArea') {
       ctx.fillStyle = PLAN_COLORS.warn;
-      ctx.fillText(host.text('warnings.sharingArea.short'), s.x, s.y + 9);
+      ctx.fillText(host.text('warnings.short.sharingArea'), s.x, s.y + 9);
     } else {
       ctx.fillStyle = options.highlight?.has(room.id) ? PLAN_COLORS.accent : PLAN_COLORS.muted;
       ctx.fillText(host.format.area(detection.area.area), s.x, s.y + 9);

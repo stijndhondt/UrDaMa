@@ -73,7 +73,11 @@
     "notEnclosed": "{room} is niet afgesloten: dicht de opening of verbind de muuruiteinden.",
     "sharingArea": "{rooms} delen één ruimte: verwijder er één of voeg een scheiding toe.",
     "unconnectedEnds": "{count, plural, one {# muuruiteinde is} other {# muuruiteinden zijn}} nergens mee verbonden (rode vierkantjes).",
-    "ceilingIntoSlab": "Het plafond van {room} steekt {mm} mm in de vloerplaat erboven."
+    "ceilingIntoSlab": "Het plafond van {room} steekt {mm} mm in de vloerplaat erboven.",
+    "short": {
+      "notEnclosed": "niet afgesloten",
+      "sharingArea": "deelt een ruimte"
+    }
   },
   "rooms": {
     "defaultName": "Ruimte {n}"

@@ -8,6 +8,6 @@
 
 **Status:** ready-for-agent
 
-- [ ] A Room that is not enclosed shows "not enclosed" / "niet afgesloten" on the plan.
-- [ ] Rooms sharing an area show "shares an area" / "deelt een ruimte".
-- [ ] Every translation key used in code exists in English and Dutch (checked by a test).
+- [x] A Room that is not enclosed shows "not enclosed" / "niet afgesloten" on the plan.
+- [x] Rooms sharing an area show "shares an area" / "deelt een ruimte".
+- [x] Every translation key used in code exists in English and Dutch (`scripts/check-i18n.mjs`, run first by `pnpm test`).

@@ -13,6 +13,9 @@ const hasSpec = (dir) =>
     return statSync(path).isDirectory() ? hasSpec(path) : name.endsWith('.spec.ts');
   });
 
+const i18n = spawnSync(process.execPath, [join('scripts', 'check-i18n.mjs')], { stdio: 'inherit' });
+if (i18n.status !== 0) process.exit(i18n.status ?? 1);
+
 for (const [name, project] of Object.entries(workspace.projects)) {
   if (!hasSpec(project.sourceRoot)) {
     console.log(`- ${name}: no tests yet, skipped`);

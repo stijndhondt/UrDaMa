@@ -73,7 +73,11 @@
     "notEnclosed": "{room} is not enclosed: close the gap or connect the Wall ends.",
     "sharingArea": "{rooms} share one area: delete one or add a Room separator.",
     "unconnectedEnds": "{count, plural, one {# Wall end is} other {# Wall ends are}} connected to nothing (red squares).",
-    "ceilingIntoSlab": "The Ceiling of {room} runs {mm} mm into the Slab above."
+    "ceilingIntoSlab": "The Ceiling of {room} runs {mm} mm into the Slab above.",
+    "short": {
+      "notEnclosed": "not enclosed",
+      "sharingArea": "shares an area"
+    }
   },
   "rooms": {
     "defaultName": "Room {n}"
