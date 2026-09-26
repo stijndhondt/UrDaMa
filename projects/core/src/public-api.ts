@@ -36,3 +36,5 @@ export * from './lib/commands/draw-room-separator';
 export * from './lib/commands/merge-rooms';
 export * from './lib/commands/add-opening';
 export * from './lib/commands/update-opening';
+export * from './lib/values/surfaces';
+export * from './lib/report/quantities';

@@ -179,7 +179,8 @@
     "noRoom": "no Room"
   },
   "common": {
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "close": "Close"
   },
   "file": {
     "saved": "Saved as {name}.",
@@ -221,7 +222,12 @@
       "movesRight": "right side moves",
       "movesLeft": "left side moves",
       "movesBottom": "bottom side moves",
-      "movesTop": "top side moves"
+      "movesTop": "top side moves",
+      "volume": "Volume",
+      "floorFinishArea": "Floor finish area",
+      "ceilingArea": "Ceiling area",
+      "netWallArea": "Net wall area",
+      "revealArea": "Reveals (separate)"
     },
     "wall": {
       "title": "Wall",
@@ -264,5 +270,26 @@
     "windowWidth": "Window width",
     "windowHeight": "Window height",
     "windowSill": "Window sill height"
+  },
+  "quantities": {
+    "title": "Quantities",
+    "rule": "Measurement rule",
+    "rules": {
+      "exact": "Exact",
+      "belgianMasonry": "Belgian masonry (openings < 0.25 m² not subtracted)"
+    },
+    "name": "Room / Level",
+    "levelTotal": "{level} (total)",
+    "columns": {
+      "grossFloorArea": "Gross floor area",
+      "netFloorArea": "Net floor area",
+      "volume": "Volume",
+      "floorFinishArea": "Floor finish",
+      "ceilingArea": "Ceiling",
+      "netWallArea": "Net wall area",
+      "revealArea": "Reveals"
+    },
+    "export": "Export CSV",
+    "fileName": "quantities"
   }
 }

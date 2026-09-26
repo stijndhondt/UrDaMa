@@ -179,7 +179,8 @@
     "noRoom": "geen ruimte"
   },
   "common": {
-    "cancel": "Annuleren"
+    "cancel": "Annuleren",
+    "close": "Sluiten"
   },
   "file": {
     "saved": "Opgeslagen als {name}.",
@@ -221,7 +222,12 @@
       "movesRight": "rechterkant schuift",
       "movesLeft": "linkerkant schuift",
       "movesBottom": "onderkant schuift",
-      "movesTop": "bovenkant schuift"
+      "movesTop": "bovenkant schuift",
+      "volume": "Volume",
+      "floorFinishArea": "Oppervlakte vloerafwerking",
+      "ceilingArea": "Plafondoppervlakte",
+      "netWallArea": "Netto wandoppervlakte",
+      "revealArea": "Dagkanten (apart)"
     },
     "wall": {
       "title": "Muur",
@@ -264,5 +270,26 @@
     "windowWidth": "Raambreedte",
     "windowHeight": "Raamhoogte",
     "windowSill": "Borstweringshoogte"
+  },
+  "quantities": {
+    "title": "Hoeveelheden",
+    "rule": "Meetregel",
+    "rules": {
+      "exact": "Exact",
+      "belgianMasonry": "Belgisch metselwerk (openingen < 0,25 m² niet afgetrokken)"
+    },
+    "name": "Ruimte / bouwlaag",
+    "levelTotal": "{level} (totaal)",
+    "columns": {
+      "grossFloorArea": "Bruto vloeroppervlakte",
+      "netFloorArea": "Netto vloeroppervlakte",
+      "volume": "Volume",
+      "floorFinishArea": "Vloerafwerking",
+      "ceilingArea": "Plafond",
+      "netWallArea": "Netto wandoppervlakte",
+      "revealArea": "Dagkanten"
+    },
+    "export": "CSV exporteren",
+    "fileName": "hoeveelheden"
   }
 }

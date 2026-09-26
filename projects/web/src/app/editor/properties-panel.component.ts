@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
   mergeRooms,
+  netWallArea,
   resizeRoom,
   setWallThickness,
   updateOpening,
@@ -16,6 +17,7 @@ import {
 } from '@lakudemis/core';
 import { parseLength } from '@lakudemis/editor2d';
 import { FormatService } from '../format.service';
+import { MeasurementService } from '../quantities/measurement.service';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { PresetsPanelComponent } from './presets-panel.component';
@@ -57,6 +59,21 @@ import { SelectionService } from './selection.service';
       <dl>
         <dt>{{ 'panel.room.netFloorArea' | translate }}</dt>
         <dd>{{ roomArea() }}</dd>
+        @if (roomFigures(); as f) {
+          <dt>{{ 'panel.room.volume' | translate }}</dt>
+          <dd>{{ f.volume }}</dd>
+          <dt>{{ 'panel.room.floorFinishArea' | translate }}</dt>
+          <dd>{{ f.floorFinish }}</dd>
+          <dt>{{ 'panel.room.ceilingArea' | translate }}</dt>
+          <dd>{{ f.ceiling }}</dd>
+          <dt>{{ 'panel.room.netWallArea' | translate }}</dt>
+          <dd>
+            {{ f.netWall }}
+            <small>{{ 'quantities.rules.' + measurement.rule() | translate }}</small>
+          </dd>
+          <dt>{{ 'panel.room.revealArea' | translate }}</dt>
+          <dd>{{ f.reveals }}</dd>
+        }
       </dl>
       @if (roomSize(); as size) {
         <h3>{{ 'panel.room.insideSize' | translate }}</h3>
@@ -345,6 +362,26 @@ export class PropertiesPanelComponent {
     const room = this.selection.room();
     const area = room ? this.project.store.values.room(room.id).netFloorArea() : null;
     return area === null ? '—' : this.format.area(area);
+  });
+
+  protected readonly measurement = inject(MeasurementService);
+  /** Volume, finishes and wall surfaces of the selected Room, under the chosen Measurement rule. */
+  protected readonly roomFigures = computed(() => {
+    const room = this.selection.room();
+    if (!room) return null;
+    const v = this.project.store.values.room(room.id);
+    const s = v.surfaces();
+    const volume = v.volume();
+    const floor = v.floorFinishArea();
+    const ceiling = v.ceilingArea();
+    if (!s || volume === null || floor === null || ceiling === null) return null;
+    return {
+      volume: this.format.volume(volume),
+      floorFinish: this.format.area(floor),
+      ceiling: this.format.area(ceiling),
+      netWall: this.format.area(netWallArea(s, this.measurement.rule())),
+      reveals: this.format.area(s.revealArea),
+    };
   });
 
   protected readonly warnings = computed(() =>

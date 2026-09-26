@@ -10,6 +10,7 @@ import { derived, type Derived } from '../reactive';
 import { message, type Message } from '../model/message';
 import { footprint, type Footprint, type RoomDetection } from '../geometry/footprint';
 import { wallOutlines, type WallOutline } from '../geometry/wall-outlines';
+import { levelRoomSurfaces, type RoomSurfaces, type SurfaceInput } from './surfaces';
 import type {
   Level,
   LevelId,
@@ -53,6 +54,10 @@ export interface LevelValues {
   readonly footprint: Derived<Footprint>;
   /** mm², inside the outer faces of the merged footprint */
   readonly grossArea: Derived<number>;
+  /** mm², the Net floor areas of the enclosed areas that hold Rooms */
+  readonly netFloorArea: Derived<number>;
+  /** The surfaces around each enclosed Room (a door's reveals are shared, hence per Level). */
+  readonly roomSurfaces: Derived<ReadonlyMap<RoomId, RoomSurfaces>>;
   /** Things to fix: Rooms not enclosed or sharing one area, Wall ends connected to nothing. */
   readonly warnings: Derived<readonly Message[]>;
 }
@@ -80,6 +85,16 @@ export interface RoomValues {
   readonly detection: Derived<RoomDetection | undefined>;
   /** mm², or null when the Room is not enclosed */
   readonly netFloorArea: Derived<number | null>;
+  /** mm: the Room's own height, or the Preset */
+  readonly height: Derived<number>;
+  /** mm³: Net floor area × Room height */
+  readonly volume: Derived<number | null>;
+  /** mm² (= Net floor area in Slice 1) */
+  readonly floorFinishArea: Derived<number | null>;
+  /** mm² (= Net floor area in Slice 1) */
+  readonly ceilingArea: Derived<number | null>;
+  /** Wall perimeter, Openings and reveals; null when the Room is not enclosed */
+  readonly surfaces: Derived<RoomSurfaces | null>;
 }
 
 export class BuildingValues {
@@ -175,6 +190,27 @@ export class BuildingValues {
       () => `${name()} · Gross floor area`,
       () => fp().grossArea,
     );
+    const netFloorArea = derived(
+      () => `${name()} · Net floor area`,
+      () => fp().areas.reduce((sum, a) => (a.rooms.length ? sum + a.area : sum), 0),
+    );
+    const roomSurfaces = derived(
+      () => `${name()} · Room surfaces`,
+      () => {
+        const s = slice();
+        const f = fp();
+        const rooms = new Map<RoomId, SurfaceInput>();
+        for (const r of s.rooms) {
+          const d = f.rooms.get(r.id);
+          if (!d || d.status === 'notEnclosed') continue;
+          rooms.set(r.id, {
+            rings: [d.area.outline, ...d.area.islands],
+            height: r.height ?? s.presets.roomHeight,
+          });
+        }
+        return levelRoomSurfaces(rooms, s.walls, outlines(), s.separators, s.openings);
+      },
+    );
     const warnings = derived(
       () => `${name()} · warnings`,
       (): readonly Message[] => {
@@ -211,7 +247,7 @@ export class BuildingValues {
         return out;
       },
     );
-    return { slice, outlines, footprint: fp, grossArea, warnings };
+    return { slice, outlines, footprint: fp, grossArea, netFloorArea, roomSurfaces, warnings };
   }
 
   private createWall(id: WallId): WallValues {
@@ -263,6 +299,33 @@ export class BuildingValues {
         return d && d.status !== 'notEnclosed' ? d.area.area : null;
       },
     );
-    return { room, detection, netFloorArea };
+    const height = derived(
+      () => `${name()} · Room height`,
+      () => room()?.height ?? this.model().project.presets.roomHeight,
+    );
+    const volume = derived(
+      () => `${name()} · volume`,
+      () => {
+        const area = netFloorArea();
+        return area === null ? null : area * height();
+      },
+    );
+    const surfaces = derived(
+      () => `${name()} · surfaces`,
+      () => {
+        const r = room();
+        return (r && this.level(r.level).roomSurfaces().get(id)) ?? null;
+      },
+    );
+    return {
+      room,
+      detection,
+      netFloorArea,
+      height,
+      volume,
+      floorFinishArea: netFloorArea,
+      ceilingArea: netFloorArea,
+      surfaces,
+    };
   }
 }

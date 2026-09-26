@@ -18,6 +18,7 @@ import { LANGUAGES, LanguageService } from './language';
 import { MessagesService } from './messages.service';
 import { FileService, type FileResult } from './project/file.service';
 import { NewProjectDialogComponent } from './project/new-project-dialog.component';
+import { QuantitiesDialogComponent } from './quantities/quantities-dialog.component';
 import { ProjectService } from './project/project.service';
 
 interface ToolButton {
@@ -41,6 +42,7 @@ const TOOLS: readonly ToolButton[] = [
     TranslatePipe,
     PlanEditorComponent,
     NewProjectDialogComponent,
+    QuantitiesDialogComponent,
     ChangeSummaryComponent,
     PropertiesPanelComponent,
   ],
@@ -115,6 +117,9 @@ const TOOLS: readonly ToolButton[] = [
         }
       </nav>
       <span class="spacer"></span>
+      <button type="button" class="quantities" (click)="quantities().open()" [title]="'Q'">
+        {{ 'quantities.title' | translate }}
+      </button>
       <label class="lang">
         {{ 'app.language' | translate }}
         <select
@@ -154,6 +159,7 @@ const TOOLS: readonly ToolButton[] = [
       }
     </footer>
     <lk-new-project-dialog />
+    <lk-quantities-dialog />
   `,
   styles: `
     :host {
@@ -283,6 +289,7 @@ export class App {
   protected readonly tools = TOOLS;
   protected readonly editor = viewChild(PlanEditorComponent);
   protected readonly newDialog = viewChild.required(NewProjectDialogComponent);
+  protected readonly quantities = viewChild.required(QuantitiesDialogComponent);
   protected readonly store = this.project.store;
   private readonly selection = inject(SelectionService);
   protected readonly hasChange = computed(() => (this.store.lastChange()?.rooms.length ?? 0) > 0);
@@ -393,6 +400,11 @@ export class App {
     }
     if (e.key === 'Escape') {
       this.selectTool('select');
+      return;
+    }
+    if (e.key === 'q' || e.key === 'Q') {
+      e.preventDefault();
+      this.quantities().open();
       return;
     }
     if (e.key === 'm' || e.key === 'M') {

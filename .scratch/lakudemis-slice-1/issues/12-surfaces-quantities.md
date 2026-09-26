@@ -4,11 +4,11 @@
 
 **Blocked by:** 10 Room separators and Merge Rooms, 11 Doors and windows
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Living's Net wall area stops at the Room separator to the Eetkamer.
-- [ ] Switching the Measurement rule changes wall areas as expected for an opening below 0.25 m².
-- [ ] The CSV opens correctly in Dutch Excel (columns split, "9,96", "m²" shown).
-- [ ] All values in the table match the properties panels.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] Living's Net wall area stops at the Room separator to the Eetkamer.
+- [x] Switching the Measurement rule changes wall areas as expected for an opening below 0.25 m².
+- [x] The CSV opens correctly in Dutch Excel (columns split, "9,96", "m²" shown).
+- [x] All values in the table match the properties panels.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.

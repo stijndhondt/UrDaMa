@@ -6,9 +6,9 @@
 
 **Status:** done
 
-- [ ] Placing a window 0.58 m from the inside corner is exact, whether typed or snapped.
-- [ ] Overlapping Openings or Openings crossing a Wall end are refused with a reason.
-- [ ] Wall face Net area = Gross area minus the Openings in that face.
-- [ ] Doors render with their swing on the plan.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] Placing a window 0.58 m from the inside corner is exact, whether typed or snapped.
+- [x] Overlapping Openings or Openings crossing a Wall end are refused with a reason.
+- [x] Wall face Net area = Gross area minus the Openings in that face.
+- [x] Doors render with their swing on the plan.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
