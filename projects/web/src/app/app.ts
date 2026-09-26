@@ -157,7 +157,10 @@ const TOOLS: readonly ToolButton[] = [
         }
       </div>
       @if (show3d()) {
-        <lk-view3d />
+        <!-- three.js loads only when the 3D view is first shown. -->
+        @defer {
+          <lk-view3d />
+        }
       }
       <aside class="panel" [attr.aria-label]="'panel.label' | translate">
         <lk-properties-panel />

@@ -4,14 +4,43 @@
     {
       "name": "web",
       "runtimeExecutable": "volta",
-      "runtimeArgs": ["run", "--node", "24.21.0", "pnpm", "start"],
+      "runtimeArgs": [
+        "run",
+        "--node",
+        "24.21.0",
+        "pnpm",
+        "start"
+      ],
       "port": 4200
     },
     {
       "name": "web-acceptance",
       "runtimeExecutable": "volta",
-      "runtimeArgs": ["run", "--node", "24.21.0", "pnpm", "exec", "ng", "serve", "web", "--port", "4300"],
+      "runtimeArgs": [
+        "run",
+        "--node",
+        "24.21.0",
+        "pnpm",
+        "exec",
+        "ng",
+        "serve",
+        "web",
+        "--port",
+        "4300"
+      ],
       "port": 4300
+    },
+    {
+      "name": "web-dist",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4400",
+        "--directory",
+        "dist/web/browser"
+      ],
+      "port": 4400
     }
   ]
 }
