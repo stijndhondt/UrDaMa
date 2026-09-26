@@ -6,7 +6,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] When storing the handle fails, the working copy is stored without it (text, saved text, file name).
-- [ ] After a reload the project comes back; Save then asks where to save.
+- [x] When storing the handle fails, the working copy is stored without it (text, saved text, file name).
+- [x] After a reload the project comes back; Save then asks where to save.

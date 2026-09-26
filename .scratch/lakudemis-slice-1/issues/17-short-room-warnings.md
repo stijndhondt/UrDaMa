@@ -6,7 +6,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] A Room that is not enclosed shows "not enclosed" / "niet afgesloten" on the plan.
 - [x] Rooms sharing an area show "shares an area" / "deelt een ruimte".

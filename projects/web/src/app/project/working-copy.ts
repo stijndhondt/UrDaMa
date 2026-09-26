@@ -45,7 +45,14 @@ export async function writeWorkingCopy(copy: WorkingCopy): Promise<void> {
     const db = await open();
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(copy, KEY);
+      const store = tx.objectStore(STORE);
+      try {
+        store.put(copy, KEY);
+      } catch {
+        // The file handle can't be stored (not cloneable): keep the project without it, so a
+        // reload still brings it back; Save then asks where to save.
+        store.put({ ...copy, fileHandle: null }, KEY);
+      }
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
