@@ -43,12 +43,11 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm²' | 'm³' }[]
         <h2>{{ 'quantities.title' | translate }}</h2>
         <label>
           {{ 'quantities.rule' | translate }}
-          <select
-            [value]="measurement.rule()"
-            (change)="measurement.rule.set($any($event.target).value)"
-          >
+          <select (change)="measurement.rule.set($any($event.target).value)">
             @for (r of rules; track r) {
-              <option [value]="r">{{ 'quantities.rules.' + r | translate }}</option>
+              <option [value]="r" [selected]="r === measurement.rule()">
+                {{ 'quantities.rules.' + r | translate }}
+              </option>
             }
           </select>
         </label>

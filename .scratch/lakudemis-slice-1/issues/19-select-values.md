@@ -6,8 +6,8 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] After a reload in Dutch, the language picker shows "Nederlands".
-- [ ] The Measurement-rule select shows the rule in use when the Quantities table opens.
-- [ ] The Room panel's "moves" selects show their current choice.
+- [x] After a reload in Dutch, the language picker shows "Nederlands".
+- [x] The Measurement-rule select shows the rule in use when the Quantities table opens.
+- [x] The Room panel's "moves" selects show their current choice.

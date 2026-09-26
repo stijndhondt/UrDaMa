@@ -122,12 +122,15 @@ import { SelectionService } from './selection.service';
             />
             m
             <select
-              [value]="widthSide"
               (change)="widthSide = $any($event.target).value"
               [attr.aria-label]="'panel.room.moves' | translate"
             >
-              <option value="max">{{ 'panel.room.movesRight' | translate }}</option>
-              <option value="min">{{ 'panel.room.movesLeft' | translate }}</option>
+              <option value="max" [selected]="widthSide === 'max'">
+                {{ 'panel.room.movesRight' | translate }}
+              </option>
+              <option value="min" [selected]="widthSide === 'min'">
+                {{ 'panel.room.movesLeft' | translate }}
+              </option>
             </select>
           </span>
         </label>
@@ -141,12 +144,15 @@ import { SelectionService } from './selection.service';
             />
             m
             <select
-              [value]="depthSide"
               (change)="depthSide = $any($event.target).value"
               [attr.aria-label]="'panel.room.moves' | translate"
             >
-              <option value="max">{{ 'panel.room.movesBottom' | translate }}</option>
-              <option value="min">{{ 'panel.room.movesTop' | translate }}</option>
+              <option value="max" [selected]="depthSide === 'max'">
+                {{ 'panel.room.movesBottom' | translate }}
+              </option>
+              <option value="min" [selected]="depthSide === 'min'">
+                {{ 'panel.room.movesTop' | translate }}
+              </option>
             </select>
           </span>
         </label>

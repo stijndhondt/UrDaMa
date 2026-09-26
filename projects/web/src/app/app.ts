@@ -143,12 +143,11 @@ const TOOLS: readonly ToolButton[] = [
       </button>
       <label class="lang">
         {{ 'app.language' | translate }}
-        <select
-          [value]="language.current()"
-          (change)="language.current.set($any($event.target).value)"
-        >
+        <select (change)="language.current.set($any($event.target).value)">
           @for (l of languages; track l) {
-            <option [value]="l">{{ 'app.languages.' + l | translate }}</option>
+            <option [value]="l" [selected]="l === language.current()">
+              {{ 'app.languages.' + l | translate }}
+            </option>
           }
         </select>
       </label>
