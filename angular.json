@@ -93,7 +93,8 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "projects/render3d/tsconfig.spec.json"
+            "tsConfig": "projects/render3d/tsconfig.spec.json",
+            "runnerConfig": "projects/render3d/vitest.config.mts"
           }
         },
         "lint": {
@@ -120,6 +121,10 @@
               {
                 "glob": "**/*",
                 "input": "projects/web/public"
+              },
+              {
+                "glob": "manifold.wasm",
+                "input": "node_modules/manifold-3d"
               }
             ],
             "styles": ["projects/web/src/styles.css"],

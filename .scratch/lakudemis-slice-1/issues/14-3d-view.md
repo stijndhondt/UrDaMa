@@ -4,11 +4,11 @@
 
 **Blocked by:** 11 Doors and windows, 13 Levels, Slab, build-up and Ceiling
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] All six presets and orbit work; per-Level visibility works.
-- [ ] Openings appear as clean holes; solids are watertight (manifold).
-- [ ] Selecting in 3D selects the same element in 2D and the panel, and vice versa.
-- [ ] Editing in 2D updates 3D without blocking the editor.
-- [ ] All new UI text exists in English and Dutch.
-- [ ] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.
+- [x] All six presets and orbit work; per-Level visibility works.
+- [x] Openings appear as clean holes; solids are watertight (manifold).
+- [x] Selecting in 3D selects the same element in 2D and the panel, and vice versa.
+- [x] Editing in 2D updates 3D without blocking the editor.
+- [x] All new UI text exists in English and Dutch.
+- [x] `core` has no DOM or Angular UI imports (only `signal` / `computed` in the wrapper), enforced by lint.

@@ -26,9 +26,11 @@
     "@ngx-translate/core": "^18.0.0",
     "@ngx-translate/http-loader": "^18.0.0",
     "clipper2-ts": "2.0.1-18",
+    "manifold-3d": "^3.5.4",
     "ngx-translate-messageformat-compiler": "^7.3.0",
     "robust-predicates": "^3.0.3",
     "rxjs": "~7.8.0",
+    "three": "^0.186.1",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
@@ -38,6 +40,7 @@
     "@angular/compiler-cli": "^22.2.0",
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.13.6",
+    "@types/three": "^0.186.0",
     "angular-eslint": "22.5.0",
     "eslint": "^10.9.1",
     "husky": "^9.1.7",

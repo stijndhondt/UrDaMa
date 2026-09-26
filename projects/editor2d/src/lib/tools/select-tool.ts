@@ -14,7 +14,7 @@ import {
   type Vec,
   type WallId,
 } from '@lakudemis/core';
-import { openingOutline, tracePolygon } from '../draw-plan';
+import { drawSelected, openingOutline } from '../draw-plan';
 import type { Selection } from '../host';
 import { increment } from '../snap';
 import type { PointerInfo, Tool, ToolContext } from './tool';
@@ -102,36 +102,8 @@ export class SelectTool implements Tool {
   }
 
   drawOverlay(ctx: CanvasRenderingContext2D): void {
-    const items: [Selection, string, number][] = [
-      ...(this.hover
-        ? [[this.hover, 'rgba(47,111,222,.45)', 2] as [Selection, string, number]]
-        : []),
-      ...this.ctx.host.selection().map((s) => [s, '#2f6fde', 3] as [Selection, string, number]),
-    ];
-    for (const [item, color, width] of items) {
-      ctx.save();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = width;
-      if (item.kind === 'separator') {
-        const sep = this.ctx.host.store.model().roomSeparators[item.id as never];
-        if (sep) {
-          const a = this.ctx.view.toScreen(sep.start);
-          const b = this.ctx.view.toScreen(sep.end);
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
-        }
-      } else {
-        const ring = this.outlineOf(item);
-        if (ring) {
-          ctx.beginPath();
-          tracePolygon(ctx, this.ctx.view, ring);
-          ctx.stroke();
-        }
-      }
-      ctx.restore();
-    }
+    if (this.hover)
+      drawSelected(ctx, this.ctx.view, this.ctx.host, this.hover, 'rgba(47,111,222,.45)', 2);
     if (this.drag && this.drag.offset !== 0) {
       const wall = this.ctx.host.store.model().walls[this.drag.wall];
       if (wall) {
@@ -174,25 +146,5 @@ export class SelectTool implements Tool {
         return { kind: 'room', id: area.rooms[0]! };
     }
     return null;
-  }
-
-  private outlineOf(item: Selection): readonly Vec[] | null {
-    const level = this.ctx.host.level();
-    if (item.kind === 'opening') {
-      const model = this.ctx.host.store.model();
-      const o = model.openings[item.id as never];
-      return o
-        ? openingOutline(model, this.ctx.host.store.values.level(level).outlines(), o)
-        : null;
-    }
-    if (item.kind === 'wall')
-      return (
-        this.ctx.host.store.values
-          .level(level)
-          .outlines()
-          .get(item.id as WallId) ?? null
-      );
-    const d = this.ctx.host.store.values.room(item.id as never).detection();
-    return d && d.status !== 'notEnclosed' ? d.area.outline : null;
   }
 }

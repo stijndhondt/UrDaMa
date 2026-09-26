@@ -11,7 +11,7 @@ import type {
   WallId,
   WallOutline,
 } from '@lakudemis/core';
-import type { EditorHost } from './host';
+import type { EditorHost, Selection } from './host';
 import type { View } from './view';
 
 export const PLAN_COLORS = {
@@ -161,6 +161,9 @@ export function drawPlan(
       ctx.fillText(host.format.area(detection.area.area), s.x, s.y + 9);
     }
   }
+
+  // The selection, whichever tool is active (it may have been made in the 3D view).
+  for (const item of host.selection()) drawSelected(ctx, view, host, item, PLAN_COLORS.accent, 3);
 }
 
 /** "no Room · 9.96 m²" in the middle of each enclosed area without a Room (click it to make a Room). */
@@ -257,6 +260,46 @@ export function drawWallDetails(
       }
     }
   }
+  ctx.restore();
+}
+
+/** The outline of a selected (or hovered) element on the edited Level. */
+export function drawSelected(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  host: EditorHost,
+  item: Selection,
+  color: string,
+  width: number,
+): void {
+  const model = host.store.model();
+  const values = host.store.values.level(host.level());
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  if (item.kind === 'separator') {
+    const sep = model.roomSeparators[item.id];
+    if (sep) {
+      const a = view.toScreen(sep.start);
+      const b = view.toScreen(sep.end);
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+    }
+  } else {
+    let ring: readonly Vec[] | null;
+    if (item.kind === 'opening') {
+      const o = model.openings[item.id];
+      ring = o ? openingOutline(model, values.outlines(), o) : null;
+    } else if (item.kind === 'wall') {
+      ring = values.outlines().get(item.id as WallId) ?? null;
+    } else {
+      const d = host.store.values.room(item.id as RoomId).detection();
+      ring = d && d.status !== 'notEnclosed' ? d.area.outline : null;
+    }
+    if (ring) tracePolygon(ctx, view, ring);
+  }
+  ctx.stroke();
   ctx.restore();
 }
 

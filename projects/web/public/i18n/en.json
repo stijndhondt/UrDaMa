@@ -334,5 +334,22 @@
     },
     "export": "Export CSV",
     "fileName": "quantities"
+  },
+  "view3d": {
+    "toggle": "3D",
+    "label": "3D view of the building",
+    "camera": "Camera",
+    "levels": "Levels shown",
+    "updating": "updating…",
+    "failed": "The 3D view could not be built.",
+    "presets": {
+      "orbit": "Orbit",
+      "top": "Top",
+      "front": "Front",
+      "back": "Back",
+      "left": "Left",
+      "right": "Right",
+      "bottom": "Bottom"
+    }
   }
 }

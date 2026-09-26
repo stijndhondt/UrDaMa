@@ -1,4 +1,12 @@
-import { Component, HostListener, computed, effect, inject, viewChild } from '@angular/core';
+import {
+  Component,
+  HostListener,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ToolName } from '@lakudemis/editor2d';
 import {
@@ -13,6 +21,7 @@ import {
 import { ChangeSummaryComponent } from './editor/change-summary.component';
 import { PropertiesPanelComponent } from './editor/properties-panel.component';
 import { LevelTabsComponent } from './editor/level-tabs.component';
+import { View3dComponent } from './editor/view3d.component';
 import { SelectionService } from './editor/selection.service';
 import { PlanEditorComponent } from './editor/plan-editor.component';
 import { LANGUAGES, LanguageService } from './language';
@@ -45,6 +54,7 @@ const TOOLS: readonly ToolButton[] = [
     NewProjectDialogComponent,
     QuantitiesDialogComponent,
     LevelTabsComponent,
+    View3dComponent,
     ChangeSummaryComponent,
     PropertiesPanelComponent,
   ],
@@ -119,6 +129,15 @@ const TOOLS: readonly ToolButton[] = [
         }
       </nav>
       <span class="spacer"></span>
+      <button
+        type="button"
+        class="toggle3d"
+        [class.on]="show3d()"
+        [attr.aria-pressed]="show3d()"
+        (click)="show3d.set(!show3d())"
+      >
+        {{ 'view3d.toggle' | translate }}
+      </button>
       <button type="button" class="quantities" (click)="quantities().open()" [title]="'Q'">
         {{ 'quantities.title' | translate }}
       </button>
@@ -134,7 +153,7 @@ const TOOLS: readonly ToolButton[] = [
         </select>
       </label>
     </header>
-    <main class="work">
+    <main class="work" [class.with3d]="show3d()">
       <div class="stage" (pointerdown)="messages.clear()">
         <lk-plan-editor [label]="'app.planLabel' | translate" />
         <lk-level-tabs class="levels" />
@@ -146,6 +165,9 @@ const TOOLS: readonly ToolButton[] = [
           }
         }
       </div>
+      @if (show3d()) {
+        <lk-view3d />
+      }
       <aside class="panel" [attr.aria-label]="'panel.label' | translate">
         <lk-properties-panel />
       </aside>
@@ -247,6 +269,14 @@ const TOOLS: readonly ToolButton[] = [
       grid-template-columns: 1fr 260px;
       min-height: 0;
     }
+    .work.with3d {
+      grid-template-columns: 1fr 1fr 260px;
+    }
+    .toggle3d.on {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: #fff;
+    }
     .panel {
       border-left: 1px solid var(--line);
       background: var(--panel);
@@ -303,6 +333,8 @@ export class App {
   protected readonly newDialog = viewChild.required(NewProjectDialogComponent);
   protected readonly quantities = viewChild.required(QuantitiesDialogComponent);
   private readonly levelTabs = viewChild.required(LevelTabsComponent);
+  /** The 3D view beside the plan. */
+  protected readonly show3d = signal(false);
   protected readonly store = this.project.store;
   private readonly selection = inject(SelectionService);
   protected readonly hasChange = computed(() => (this.store.lastChange()?.rooms.length ?? 0) > 0);

@@ -334,5 +334,22 @@
     },
     "export": "CSV exporteren",
     "fileName": "hoeveelheden"
+  },
+  "view3d": {
+    "toggle": "3D",
+    "label": "3D-weergave van het gebouw",
+    "camera": "Camera",
+    "levels": "Getoonde bouwlagen",
+    "updating": "bijwerken…",
+    "failed": "De 3D-weergave kon niet opgebouwd worden.",
+    "presets": {
+      "orbit": "Vrij",
+      "top": "Boven",
+      "front": "Voor",
+      "back": "Achter",
+      "left": "Links",
+      "right": "Rechts",
+      "bottom": "Onder"
+    }
   }
 }
