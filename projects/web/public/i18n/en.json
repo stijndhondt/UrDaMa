@@ -208,7 +208,8 @@
     "openingsOverlap": "Refused: two doors or windows would overlap in the same Wall."
   },
   "areas": {
-    "noRoom": "no Room"
+    "noRoom": "no Room",
+    "addRoom": "Room"
   },
   "common": {
     "cancel": "Cancel",

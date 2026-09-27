@@ -4,6 +4,7 @@
 import {
   boundingBox,
   boxesOverlap,
+  interiorPoint,
   openingRect,
   wallFrame,
   type Box,
@@ -161,26 +162,83 @@ export function drawEmptyAreaLabels(
   ctx: CanvasRenderingContext2D,
   view: View,
   host: EditorHost,
-  areas: readonly { outline: readonly Vec[]; rooms: readonly RoomId[]; area: number }[],
+  areas: readonly EmptyAreaInput[],
 ): void {
+  ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '12px system-ui, sans-serif';
-  for (const area of areas) {
-    if (area.rooms.length) continue;
-    const xs = area.outline.map((p) => p.x);
-    const ys = area.outline.map((p) => p.y);
-    const c = view.toScreen({
-      x: (Math.min(...xs) + Math.max(...xs)) / 2,
-      y: (Math.min(...ys) + Math.max(...ys)) / 2,
-    });
-    const text = `${host.text('areas.noRoom')} · ${host.format.area(area.area)}`;
+  for (const b of emptyAreaButtons(areas, view)) {
+    ctx.font = '12px system-ui, sans-serif';
+    const text = `${host.text('areas.noRoom')} · ${host.format.area(b.area)}`;
     const w = ctx.measureText(text).width + 8;
     ctx.fillStyle = 'rgba(251,250,247,.9)';
-    ctx.fillRect(c.x - w / 2, c.y - 9, w, 18);
+    ctx.fillRect(b.label.x - w / 2, b.label.y - 9, w, 18);
     ctx.fillStyle = PLAN_COLORS.muted;
-    ctx.fillText(text, c.x, c.y);
+    ctx.fillText(text, b.label.x, b.label.y);
+    // The "+ Room" button: one click makes this area a Room, whatever tool is active.
+    ctx.fillStyle = PLAN_COLORS.accent;
+    ctx.beginPath();
+    ctx.roundRect(b.button.x, b.button.y, b.button.w, b.button.h, b.button.h / 2);
+    ctx.fill();
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(
+      `+ ${host.text('areas.addRoom')}`,
+      b.button.x + b.button.w / 2,
+      b.button.y + b.button.h / 2,
+    );
   }
+  ctx.restore();
+}
+
+/** An enclosed area as the footprint gives it. */
+export interface EmptyAreaInput {
+  readonly outline: readonly Vec[];
+  readonly islands: readonly (readonly Vec[])[];
+  readonly rooms: readonly RoomId[];
+  readonly area: number;
+}
+
+/** Where an empty area's label and "+ Room" button sit on screen, and the model point inside it. */
+export interface EmptyAreaButton {
+  /** mm, a point inside the area: the new Room's Seed point */
+  readonly seed: Vec;
+  /** mm² */
+  readonly area: number;
+  readonly label: Vec;
+  readonly button: {
+    readonly x: number;
+    readonly y: number;
+    readonly w: number;
+    readonly h: number;
+  };
+}
+
+/** Every enclosed area without a Room, with its label and button placed at a point inside it. */
+export function emptyAreaButtons(areas: readonly EmptyAreaInput[], view: View): EmptyAreaButton[] {
+  return areas
+    .filter((a) => !a.rooms.length)
+    .map((a) => {
+      const seed = interiorPoint(a.outline, a.islands);
+      const s = view.toScreen(seed);
+      return { seed, area: a.area, label: s, button: { x: s.x - 40, y: s.y + 14, w: 80, h: 22 } };
+    });
+}
+
+/** The "+ Room" button under a screen point, if any. */
+export function emptyAreaButtonAt(
+  buttons: readonly EmptyAreaButton[],
+  p: Vec,
+): EmptyAreaButton | null {
+  return (
+    buttons.find(
+      (b) =>
+        p.x >= b.button.x &&
+        p.x <= b.button.x + b.button.w &&
+        p.y >= b.button.y &&
+        p.y <= b.button.y + b.button.h,
+    ) ?? null
+  );
 }
 
 /**

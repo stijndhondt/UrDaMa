@@ -208,7 +208,8 @@
     "openingsOverlap": "Geweigerd: twee deuren of ramen zouden overlappen in dezelfde muur."
   },
   "areas": {
-    "noRoom": "geen ruimte"
+    "noRoom": "geen ruimte",
+    "addRoom": "Ruimte"
   },
   "common": {
     "cancel": "Annuleren",

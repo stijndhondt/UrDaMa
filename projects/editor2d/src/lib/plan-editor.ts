@@ -2,8 +2,8 @@
  * The plan editor (ADR 0005): a framework-free Canvas2D editor for one Level.
  * The app around it supplies an EditorHost and calls `invalidate()` when the model changes.
  */
-import type { RoomId } from '@lakudemis/core';
-import { drawPlan } from './draw-plan';
+import { addRoom, type RoomId, type Vec } from '@lakudemis/core';
+import { drawPlan, emptyAreaButtonAt, emptyAreaButtons } from './draw-plan';
 import type { EditorHost } from './host';
 import { RoomTool } from './tools/room-tool';
 import { WallTool } from './tools/wall-tool';
@@ -187,7 +187,35 @@ export class PlanEditor {
     }
     if (e.button !== 0) return;
     this.last = this.info(e);
+    if (this.addRoomAt(this.last.screen)) return;
     this.tool?.pointerDown(this.last);
+  }
+
+  /** A click on an empty area's "+ Room" button makes it a Room, whatever tool is active. */
+  private addRoomAt(screen: Vec): boolean {
+    const level = this.host.level();
+    const button = emptyAreaButtonAt(
+      emptyAreaButtons(this.host.store.values.level(level).footprint().areas, this.view),
+      screen,
+    );
+    if (!button) return false;
+    this.tool?.cancel();
+    const before = new Set(Object.keys(this.host.store.committedModel().rooms));
+    const result = this.host.store.run(addRoom, {
+      level,
+      seed: button.seed,
+      name: this.host.nextRoomName(),
+    });
+    if (!result.ok) {
+      this.host.refused(result.reason, screen);
+      return true;
+    }
+    const added = Object.values(this.host.store.committedModel().rooms).find(
+      (r) => !before.has(r.id),
+    );
+    if (added) this.host.select([{ kind: 'room', id: added.id }]);
+    this.invalidate();
+    return true;
   }
 
   private onPointerMove(e: PointerEvent): void {
