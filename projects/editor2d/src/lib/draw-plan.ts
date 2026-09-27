@@ -204,7 +204,58 @@ export function drawWallDetails(
   ctx.font = '11px system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  for (const label of faceLabels(slice.walls, outlines, view, box)) {
+    ctx.save();
+    ctx.translate(label.pos.x, label.pos.y);
+    ctx.rotate(label.angle);
+    const text = host.format.length(label.length);
+    const w = ctx.measureText(text).width + 6;
+    ctx.fillStyle = 'rgba(251,250,247,.85)';
+    ctx.fillRect(-w / 2, -7, w, 14);
+    ctx.fillStyle = PLAN_COLORS.label;
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+  }
   for (const wall of slice.walls) {
+    const outline = outlines.get(wall.id);
+    if (!outline || !overlaps(outline, box)) continue;
+    for (const end of ['start', 'end'] as const) {
+      const s = view.toScreen(wall[end]);
+      const kind = ends.get(`${wall.id}:${end}`);
+      if (!kind) {
+        ctx.strokeStyle = PLAN_COLORS.bad;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(s.x - 4, s.y - 4, 8, 8);
+      } else {
+        ctx.fillStyle = kind === 'corner' ? '#1f9d55' : PLAN_COLORS.accent;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+/** A face length label on the plan: which Wall face it measures, where it sits on screen. */
+export interface FaceLabel {
+  readonly wall: WallId;
+  /** mm, the face's length */
+  readonly length: number;
+  /** Screen position of the label's centre, and its rotation (radians, kept readable) */
+  readonly pos: Vec;
+  readonly angle: number;
+}
+
+/** Labels for both faces of every Wall in view that is long enough on screen to carry one. */
+export function faceLabels(
+  walls: readonly Wall[],
+  outlines: ReadonlyMap<WallId, WallOutline>,
+  view: View,
+  box: Box,
+): FaceLabel[] {
+  const labels: FaceLabel[] = [];
+  for (const wall of walls) {
     const outline = outlines.get(wall.id);
     if (!outline || !overlaps(outline, box)) continue;
     const centre = {
@@ -224,33 +275,22 @@ export function drawWallDetails(
       const pos = { x: s.x + (out.x / outLength) * 10, y: s.y + (out.y / outLength) * 10 };
       let angle = Math.atan2(b.y - a.y, b.x - a.x);
       if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
-      ctx.save();
-      ctx.translate(pos.x, pos.y);
-      ctx.rotate(angle);
-      const text = host.format.length(length);
-      const w = ctx.measureText(text).width + 6;
-      ctx.fillStyle = 'rgba(251,250,247,.85)';
-      ctx.fillRect(-w / 2, -7, w, 14);
-      ctx.fillStyle = PLAN_COLORS.label;
-      ctx.fillText(text, 0, 0);
-      ctx.restore();
-    }
-    for (const end of ['start', 'end'] as const) {
-      const s = view.toScreen(wall[end]);
-      const kind = ends.get(`${wall.id}:${end}`);
-      if (!kind) {
-        ctx.strokeStyle = PLAN_COLORS.bad;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(s.x - 4, s.y - 4, 8, 8);
-      } else {
-        ctx.fillStyle = kind === 'corner' ? '#1f9d55' : PLAN_COLORS.accent;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      labels.push({ wall: wall.id, length, pos, angle });
     }
   }
-  ctx.restore();
+  return labels;
+}
+
+/** The face label under a screen point, if any (labels are about 60 × 14 px). */
+export function faceLabelAt(labels: readonly FaceLabel[], p: Vec): FaceLabel | null {
+  for (const label of labels) {
+    const dx = p.x - label.pos.x;
+    const dy = p.y - label.pos.y;
+    const along = dx * Math.cos(label.angle) + dy * Math.sin(label.angle);
+    const across = -dx * Math.sin(label.angle) + dy * Math.cos(label.angle);
+    if (Math.abs(along) <= 30 && Math.abs(across) <= 8) return label;
+  }
+  return null;
 }
 
 /** The outline of a selected (or hovered) element on the edited Level. */

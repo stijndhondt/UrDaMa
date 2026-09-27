@@ -10,12 +10,19 @@ import {
   insideRing,
   levelWallOutlines,
   moveWall,
+  setWallLength,
+  wallLength,
   wallNormal,
   type Vec,
   type WallId,
 } from '@lakudemis/core';
-import { drawSelected, openingOutline } from '../draw-plan';
+import { drawSelected, faceLabelAt, faceLabels, openingOutline } from '../draw-plan';
+import { parseLength } from '../units';
+import { growOptions } from '../wall-length';
 import type { Selection } from '../host';
+
+/** Face labels are only drawn where they are visible; clicks can only land on those. */
+const EVERYWHERE = { min: { x: -Infinity, y: -Infinity }, max: { x: Infinity, y: Infinity } };
 import { increment } from '../snap';
 import type { PointerInfo, Tool, ToolContext } from './tool';
 
@@ -33,6 +40,7 @@ export class SelectTool implements Tool {
   constructor(private readonly ctx: ToolContext) {}
 
   pointerDown(p: PointerInfo): void {
+    if (!p.shift && this.editLength(p)) return;
     const hit = this.hitTest(p.model, p);
     const current = this.ctx.host.selection();
     if (p.shift && hit) {
@@ -123,6 +131,71 @@ export class SelectTool implements Tool {
         ctx.restore();
       }
     }
+  }
+
+  /**
+   * Clicking a face length label opens a small editor next to it: the face's length, which way
+   * the Wall grows and what moves (as in the properties panel). Enter applies it.
+   */
+  private editLength(p: PointerInfo): boolean {
+    const host = this.ctx.host;
+    const values = host.store.values.level(host.level());
+    const walls = values.slice().walls;
+    const label = faceLabelAt(
+      faceLabels(walls, values.outlines(), this.ctx.view, EVERYWHERE),
+      p.screen,
+    );
+    if (!label) return false;
+    const wall = host.store.committedModel().walls[label.wall];
+    if (!wall) return false;
+    host.select([{ kind: 'wall', id: wall.id }]);
+    const grow = growOptions(wall);
+    this.ctx.typed.open(
+      [
+        {
+          label: host.text('panel.wall.length'),
+          value: host.format.length(label.length).replace(/\s*m$/, ''),
+        },
+        {
+          label: host.text('panel.wall.grows'),
+          value: '2',
+          options: grow.map((o, i) => ({
+            value: String(i),
+            label: host.text('panel.wall.grow.' + o.label),
+          })),
+        },
+        {
+          label: host.text('panel.wall.lengthMode'),
+          value: 'room',
+          options: [
+            { value: 'room', label: host.text('panel.wall.modes.room') },
+            { value: 'wall', label: host.text('panel.wall.modes.wall') },
+          ],
+        },
+      ],
+      p.screen,
+      {
+        change: () => undefined,
+        cancel: () => this.ctx.invalidate(),
+        commit: ([typed, side, mode]) => {
+          const face = parseLength(typed ?? '');
+          const choice = grow[Number(side)];
+          if (face === null || !choice) return;
+          // The typed length is the face's; the Baseline changes by the same amount.
+          const length = wallLength(wall) + (face - label.length);
+          const result = host.store.run(setWallLength, {
+            wall: wall.id,
+            length,
+            end: choice.end,
+            mode: mode === 'wall' ? 'wall' : 'room',
+          });
+          if (!result.ok) host.refused(result.reason, p.screen);
+          this.ctx.invalidate();
+        },
+      },
+    );
+    this.ctx.invalidate();
+    return true;
   }
 
   /** A Room separator (near its line), then a Wall's body, then the Room around the point. */

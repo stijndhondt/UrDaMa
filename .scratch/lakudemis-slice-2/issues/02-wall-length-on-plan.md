@@ -4,9 +4,9 @@
 
 **Blocked by:** 01 Type a Wall's length in the properties panel
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Clicking a Wall's length label opens the inline field at that label, with the Wall selected.
-- [ ] Enter applies the same command as the panel (same direction and mode choices); Esc closes the field without changing anything.
-- [ ] Verified in the browser on the reference house.
-- [ ] All new UI text exists in English and Dutch.
+- [x] Clicking a Wall's length label opens the inline field at that label, with the Wall selected.
+- [x] Enter applies the same command as the panel (same direction and mode choices); Esc closes the field without changing anything.
+- [x] Verified in the browser on the reference house.
+- [x] All new UI text exists in English and Dutch.

@@ -5,6 +5,8 @@
 export interface TypedField {
   readonly label: string;
   readonly value?: string;
+  /** A choice instead of a typed value; `value` is the chosen option's value. */
+  readonly options?: readonly { readonly value: string; readonly label: string }[];
 }
 
 export interface TypedInputHandlers {
@@ -15,7 +17,7 @@ export interface TypedInputHandlers {
 
 export class TypedInput {
   private readonly root: HTMLDivElement;
-  private inputs: HTMLInputElement[] = [];
+  private inputs: (HTMLInputElement | HTMLSelectElement)[] = [];
   private handlers: TypedInputHandlers | null = null;
 
   constructor(parent: HTMLElement) {
@@ -59,16 +61,12 @@ export class TypedInput {
       const label = document.createElement('label');
       Object.assign(label.style, { display: 'flex', flexDirection: 'column', color: '#6b7280' });
       label.textContent = field.label;
-      const input = document.createElement('input');
-      Object.assign(input.style, {
-        width: '84px',
-        font: '600 14px system-ui, sans-serif',
-        padding: '3px 5px',
-      });
-      input.value = i === 0 ? first + (field.value ?? '') : (field.value ?? '');
-      input.autocomplete = 'off';
-      input.addEventListener('input', () => this.handlers?.change(this.values()));
-      input.addEventListener('keydown', (e) => this.onKey(e, i));
+      const input = field.options ? this.choice(field) : this.text(field, i === 0 ? first : '');
+      const element: HTMLElement = input;
+      element.addEventListener(field.options ? 'change' : 'input', () =>
+        this.handlers?.change(this.values()),
+      );
+      element.addEventListener('keydown', (e) => this.onKey(e, i));
       label.appendChild(input);
       this.root.appendChild(label);
       return input;
@@ -79,9 +77,37 @@ export class TypedInput {
     const firstInput = this.inputs[0];
     if (firstInput) {
       firstInput.focus();
-      firstInput.setSelectionRange(firstInput.value.length, firstInput.value.length);
+      if (firstInput instanceof HTMLInputElement) {
+        firstInput.setSelectionRange(0, firstInput.value.length);
+        if (first) firstInput.setSelectionRange(firstInput.value.length, firstInput.value.length);
+      }
     }
     this.handlers.change(this.values());
+  }
+
+  private text(field: TypedField, first: string): HTMLInputElement {
+    const input = document.createElement('input');
+    Object.assign(input.style, {
+      width: '84px',
+      font: '600 14px system-ui, sans-serif',
+      padding: '3px 5px',
+    });
+    input.value = first + (field.value ?? '');
+    input.autocomplete = 'off';
+    return input;
+  }
+
+  private choice(field: TypedField): HTMLSelectElement {
+    const select = document.createElement('select');
+    Object.assign(select.style, { font: '13px system-ui, sans-serif', padding: '3px 4px' });
+    for (const o of field.options ?? []) {
+      const option = document.createElement('option');
+      option.value = o.value;
+      option.textContent = o.label;
+      option.selected = o.value === field.value;
+      select.appendChild(option);
+    }
+    return select;
   }
 
   close(): void {
@@ -114,7 +140,7 @@ export class TypedInput {
       const next =
         this.inputs[(index + (e.shiftKey ? -1 : 1) + this.inputs.length) % this.inputs.length];
       next?.focus();
-      next?.select();
+      if (next instanceof HTMLInputElement) next.select();
     }
   }
 }
