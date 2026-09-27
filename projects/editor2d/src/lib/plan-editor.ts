@@ -5,6 +5,7 @@
 import { addRoom, type RoomId, type Vec } from '@lakudemis/core';
 import { drawPlan, emptyAreaButtonAt, emptyAreaButtons } from './draw-plan';
 import type { EditorHost } from './host';
+import { targetAt } from './hit-test';
 import { RoomTool } from './tools/room-tool';
 import { WallTool } from './tools/wall-tool';
 import { SelectTool } from './tools/select-tool';
@@ -183,12 +184,27 @@ export class PlanEditor {
     }
     if (e.button === 2) {
       this.tool?.cancel();
+      this.openContextMenu(this.info(e));
       return;
     }
     if (e.button !== 0) return;
     this.last = this.info(e);
     if (this.addRoomAt(this.last.screen)) return;
     this.tool?.pointerDown(this.last);
+  }
+
+  /** Right-click: select what is under the pointer (unless it is already selected) and ask for the menu. */
+  private openContextMenu(p: PointerInfo): void {
+    const target = targetAt(this.host, this.view, p.model);
+    if (!target) return;
+    if (target.kind !== 'empty') {
+      const selected = this.host
+        .selection()
+        .some((s) => s.kind === target.kind && s.id === target.id);
+      if (!selected) this.host.select([target]);
+    }
+    this.invalidate();
+    this.host.contextMenu?.(p.screen, target);
   }
 
   /** A click on an empty area's "+ Room" button makes it a Room, whatever tool is active. */

@@ -2,7 +2,6 @@ import { Component, computed, inject } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   deleteLevel,
-  mergeRooms,
   netWallArea,
   resizeRoom,
   setWallLength,
@@ -25,6 +24,7 @@ import { MeasurementService } from '../quantities/measurement.service';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { PresetsPanelComponent } from './presets-panel.component';
+import { EditorActionsService } from './editor-actions.service';
 import { SelectionService } from './selection.service';
 
 /**
@@ -504,6 +504,7 @@ export class PropertiesPanelComponent {
   protected readonly format = inject(FormatService);
   private readonly project = inject(ProjectService);
   private readonly messages = inject(MessagesService);
+  private readonly actions = inject(EditorActionsService);
   private readonly translate = inject(TranslateService);
   protected readonly wallLength = wallLength;
   protected readonly presets = computed(() => this.project.store.model().project.presets);
@@ -663,10 +664,7 @@ export class PropertiesPanelComponent {
   }
 
   protected merge(): void {
-    const rooms = this.selection.rooms();
-    if (rooms.length !== 2) return;
-    this.run(mergeRooms, { keep: rooms[0]!.id, other: rooms[1]!.id }, null, '');
-    this.selection.current.set([{ kind: 'room', id: rooms[0]!.id }]);
+    this.actions.merge();
   }
 
   protected widthSide: 'min' | 'max' = 'max';

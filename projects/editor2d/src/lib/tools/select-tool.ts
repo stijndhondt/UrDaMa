@@ -5,10 +5,6 @@
  * while dragging; release commits one undo step, Esc cancels. Rooms themselves are not dragged.
  */
 import {
-  distanceToSegment,
-  insideArea,
-  insideRing,
-  levelWallOutlines,
   moveWall,
   setWallLength,
   wallLength,
@@ -16,7 +12,8 @@ import {
   type Vec,
   type WallId,
 } from '@lakudemis/core';
-import { drawSelected, faceLabelAt, faceLabels, openingOutline } from '../draw-plan';
+import { drawSelected, faceLabelAt, faceLabels } from '../draw-plan';
+import { elementAt } from '../hit-test';
 import { parseLength } from '../units';
 import { growOptions } from '../wall-length';
 import type { Selection } from '../host';
@@ -41,7 +38,7 @@ export class SelectTool implements Tool {
 
   pointerDown(p: PointerInfo): void {
     if (!p.shift && this.editLength(p)) return;
-    const hit = this.hitTest(p.model, p);
+    const hit = this.hitTest(p.model);
     const current = this.ctx.host.selection();
     if (p.shift && hit) {
       // Shift+click adds to (or removes from) the selection, e.g. two Rooms to merge.
@@ -56,7 +53,7 @@ export class SelectTool implements Tool {
 
   pointerMove(p: PointerInfo): void {
     if (!this.drag) {
-      const hover = this.hitTest(p.model, p);
+      const hover = this.hitTest(p.model);
       if (hover?.id !== this.hover?.id) {
         this.hover = hover;
         this.ctx.invalidate();
@@ -198,26 +195,7 @@ export class SelectTool implements Tool {
     return true;
   }
 
-  /** A Room separator (near its line), then a Wall's body, then the Room around the point. */
-  private hitTest(p: Vec, info: PointerInfo): Selection | null {
-    const level = this.ctx.host.level();
-    const near = 6 / this.ctx.view.scale;
-    for (const s of Object.values(this.ctx.host.store.committedModel().roomSeparators)) {
-      if (s.level === level && distanceToSegment(p, s.start, s.end) <= near)
-        return { kind: 'separator', id: s.id };
-    }
-    void info;
-    const model = this.ctx.host.store.committedModel();
-    const outlines = levelWallOutlines(model, level);
-    for (const o of Object.values(model.openings)) {
-      const ring = openingOutline(model, outlines, o);
-      if (ring && insideRing(p, ring)) return { kind: 'opening', id: o.id };
-    }
-    for (const [id, outline] of outlines) if (insideRing(p, outline)) return { kind: 'wall', id };
-    for (const area of this.ctx.host.store.values.level(level).footprint().areas) {
-      if (area.rooms.length && insideArea(p, area.outline, area.islands))
-        return { kind: 'room', id: area.rooms[0]! };
-    }
-    return null;
+  private hitTest(p: Vec): Selection | null {
+    return elementAt(this.ctx.host, this.ctx.view, p);
   }
 }

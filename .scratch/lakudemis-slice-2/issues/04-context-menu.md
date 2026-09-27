@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Right-clicking an empty enclosed area offers "Create Room here", which creates the Room.
-- [ ] Right-clicking a Wall, Room, Room separator or Opening selects it and offers the actions that apply to it, with their shortcuts.
-- [ ] With two Rooms selected, the menu offers Merge Rooms.
-- [ ] Every action is the same command as its button or shortcut (one undo step each); refusals show their reason.
-- [ ] All new UI text exists in English and Dutch.
+- [x] Right-clicking an empty enclosed area offers "Create Room here", which creates the Room.
+- [x] Right-clicking a Wall, Room, Room separator or Opening selects it and offers the actions that apply to it, with their shortcuts.
+- [x] With two Rooms selected, the menu offers Merge Rooms.
+- [x] Every action is the same command as its button or shortcut (one undo step each); refusals show their reason.
+- [x] All new UI text exists in English and Dutch.

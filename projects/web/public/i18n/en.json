@@ -377,5 +377,21 @@
       "right": "Right",
       "bottom": "Bottom"
     }
+  },
+  "contextMenu": {
+    "close": "Close menu",
+    "emptyArea": "Empty area",
+    "room": "Room",
+    "wall": "Wall",
+    "door": "Door",
+    "window": "Window",
+    "separator": "Room separator",
+    "createRoom": "Create Room here",
+    "mergeRooms": "Merge the two selected Rooms",
+    "resetHeights": "Reset heights to Preset",
+    "resetThickness": "Reset thickness to Preset",
+    "flipHinge": "Hinge on the other side",
+    "flipSwing": "Open to the other side",
+    "delete": "Delete"
   }
 }

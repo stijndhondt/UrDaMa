@@ -18,6 +18,7 @@ import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { SelectionService } from './selection.service';
+import { ContextMenuService } from './context-menu.component';
 
 /** Hosts the Canvas2D plan editor for the current Level. */
 @Component({
@@ -48,6 +49,7 @@ export class PlanEditorComponent {
   private readonly language = inject(LanguageService);
   private readonly messages = inject(MessagesService);
   private readonly selection = inject(SelectionService);
+  private readonly contextMenus = inject(ContextMenuService);
   private editor: PlanEditor | null = null;
 
   constructor() {
@@ -62,6 +64,7 @@ export class PlanEditorComponent {
         selection: () => this.selection.current(),
         select: (selection) => this.selection.current.set(selection),
         refused: (reason, at) => this.messages.refused(reason, at),
+        contextMenu: (at, target) => this.contextMenus.open(at, target),
       };
       this.editor = new PlanEditor(this.canvas().nativeElement, host);
       // Development only: lets end-to-end checks convert between mm and screen positions.

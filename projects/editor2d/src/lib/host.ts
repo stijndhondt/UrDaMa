@@ -7,6 +7,7 @@ import type {
   RoomSeparatorId,
   WallId,
 } from '@lakudemis/core';
+import type { PlanTarget } from './hit-test';
 
 /** A selected element (Slice 1 spec, "Select / move / delete"): its kind, with the matching ID type. */
 export type Selection =
@@ -34,6 +35,11 @@ export interface EditorHost {
   /** The current selection, and a way to change it. */
   readonly selection: () => readonly Selection[];
   readonly select: (selection: readonly Selection[]) => void;
+  /**
+   * A right-click on the plan: what is under it (already selected), at a position in the canvas.
+   * The app shows its context menu there.
+   */
+  readonly contextMenu?: (at: { x: number; y: number }, target: PlanTarget) => void;
   /** A command was refused: show its reason near the cursor and in the message bar. */
   readonly refused: (reason: Message, at: { x: number; y: number }) => void;
 }

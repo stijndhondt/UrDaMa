@@ -36,6 +36,7 @@ const PREFIXES = [
   'rooms',
   'areas',
   'changes',
+  'contextMenu',
 ];
 const literal = new RegExp(`['\`]((?:${PREFIXES.join('|')})\\.[A-Za-z0-9_.]+)['\`]`, 'g');
 const sources = (dir) =>

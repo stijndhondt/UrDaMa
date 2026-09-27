@@ -377,5 +377,21 @@
       "right": "Rechts",
       "bottom": "Onder"
     }
+  },
+  "contextMenu": {
+    "close": "Menu sluiten",
+    "emptyArea": "Lege ruimte",
+    "room": "Ruimte",
+    "wall": "Muur",
+    "door": "Deur",
+    "window": "Raam",
+    "separator": "Scheiding",
+    "createRoom": "Hier een ruimte maken",
+    "mergeRooms": "De twee geselecteerde ruimtes samenvoegen",
+    "resetHeights": "Hoogtes terug naar standaard",
+    "resetThickness": "Dikte terug naar standaard",
+    "flipHinge": "Scharnier aan de andere kant",
+    "flipSwing": "Naar de andere kant opendraaien",
+    "delete": "Verwijderen"
   }
 }

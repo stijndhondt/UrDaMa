@@ -9,10 +9,11 @@ import {
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ToolName } from '@lakudemis/editor2d';
-import { deleteElements, mergeRooms, updateOpening } from '@lakudemis/core';
 import { ChangeSummaryComponent } from './editor/change-summary.component';
 import { PropertiesPanelComponent } from './editor/properties-panel.component';
 import { LevelTabsComponent } from './editor/level-tabs.component';
+import { ContextMenuComponent, ContextMenuService } from './editor/context-menu.component';
+import { EditorActionsService } from './editor/editor-actions.service';
 import { View3dComponent } from './editor/view3d.component';
 import { SelectionService } from './editor/selection.service';
 import { PlanEditorComponent } from './editor/plan-editor.component';
@@ -46,6 +47,7 @@ const TOOLS: readonly ToolButton[] = [
     NewProjectDialogComponent,
     QuantitiesDialogComponent,
     LevelTabsComponent,
+    ContextMenuComponent,
     View3dComponent,
     ChangeSummaryComponent,
     PropertiesPanelComponent,
@@ -148,6 +150,7 @@ const TOOLS: readonly ToolButton[] = [
       <div class="stage" (pointerdown)="messages.clear()">
         <lk-plan-editor [label]="'app.planLabel' | translate" />
         <lk-level-tabs class="levels" />
+        <lk-context-menu />
         @if (messages.current(); as shown) {
           @if (shown.at) {
             <div class="note" [style.left.px]="shown.at.x + 14" [style.top.px]="shown.at.y + 14">
@@ -331,6 +334,8 @@ export class App {
   protected readonly show3d = signal(false);
   protected readonly store = this.project.store;
   private readonly selection = inject(SelectionService);
+  private readonly actions = inject(EditorActionsService);
+  private readonly contextMenus = inject(ContextMenuService);
   protected readonly hasChange = computed(() => (this.store.lastChange()?.rooms.length ?? 0) > 0);
 
   constructor() {
@@ -342,30 +347,6 @@ export class App {
   protected selectTool(name: ToolName): void {
     this.messages.clear();
     this.editor()?.setTool(name);
-  }
-
-  protected deleteSelection(): void {
-    const s = this.selection.current();
-    if (!s.length) return;
-    const result = this.store.run(deleteElements, {
-      walls: s.flatMap((x) => (x.kind === 'wall' ? [x.id] : [])),
-      rooms: s.flatMap((x) => (x.kind === 'room' ? [x.id] : [])),
-      separators: s.flatMap((x) => (x.kind === 'separator' ? [x.id] : [])),
-      openings: s.flatMap((x) => (x.kind === 'opening' ? [x.id] : [])),
-    });
-    if (!result.ok) this.messages.refused(result.reason);
-    else this.selection.clear();
-  }
-
-  protected merge(): void {
-    const rooms = this.selection.rooms();
-    if (rooms.length !== 2) {
-      this.messages.refused({ key: 'commands.merge.twoRooms' });
-      return;
-    }
-    const result = this.store.run(mergeRooms, { keep: rooms[0]!.id, other: rooms[1]!.id });
-    if (!result.ok) this.messages.refused(result.reason);
-    else this.selection.current.set([{ kind: 'room', id: rooms[0]!.id }]);
   }
 
   protected undo(): void {
@@ -424,6 +405,11 @@ export class App {
     )
       return;
     if (target?.closest('dialog')) return;
+    // An open right-click menu has the keyboard: Esc closes it, its buttons do the rest.
+    if (this.contextMenus.menu()) {
+      if (e.key === 'Escape') this.contextMenus.close();
+      return;
+    }
     const editor = this.editor();
     if (!editor || e.altKey) return;
     // The active tool gets the key first (typed values, S, Esc, …).
@@ -433,7 +419,7 @@ export class App {
     }
     if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
-      this.deleteSelection();
+      this.actions.deleteSelection();
       return;
     }
     if (e.key === 'Escape') {
@@ -452,7 +438,7 @@ export class App {
     }
     if (e.key === 'm' || e.key === 'M') {
       e.preventDefault();
-      this.merge();
+      this.actions.merge();
       return;
     }
     const tool = TOOLS.find((t) => t.key.toLowerCase() === e.key.toLowerCase());
@@ -462,15 +448,7 @@ export class App {
     } else if (e.key === 'f' || e.key === 'F') {
       e.preventDefault();
       // F / Shift+F flip a selected door (hinge side / swing); otherwise F fits the plan.
-      const selected = this.selection.current();
-      const only = selected.length === 1 ? selected[0]! : null;
-      if (only?.kind === 'opening') {
-        const result = this.store.run(updateOpening, {
-          opening: only.id,
-          ...(e.shiftKey ? { flipSwing: true } : { flipHinge: true }),
-        });
-        if (!result.ok) this.messages.refused(result.reason);
-      } else editor.fit();
+      if (!this.actions.flipOpening(e.shiftKey ? 'swing' : 'hinge')) editor.fit();
     }
   }
 

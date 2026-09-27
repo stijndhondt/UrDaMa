@@ -10,3 +10,4 @@ export * from './lib/draw-plan';
 export * from './lib/tools/tool';
 export * from './lib/plan-editor';
 export * from './lib/wall-length';
+export * from './lib/hit-test';
