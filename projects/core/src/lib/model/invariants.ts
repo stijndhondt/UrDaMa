@@ -11,6 +11,7 @@ import {
   type Path64,
 } from 'clipper2-ts';
 import { message, type Message } from './message';
+import { resolveOpening } from './opening-types';
 import type { LevelId, Model, WallId } from './types';
 import { distance } from '../geometry/vec';
 import { levelWallOutlines } from '../geometry/level-geometry';
@@ -161,8 +162,14 @@ export function checkInvariants(model: Model, before?: Model): Message | null {
   }
   const byWall = new Map<string, { start: number; end: number; id: string }[]>();
   const outlinesOf = new Map<LevelId, ReadonlyMap<WallId, WallOutline>>();
-  for (const o of Object.values(model.openings)) {
-    if (!has('walls', o.wall)) return missing('wall', o.wall);
+  for (const t of Object.values(model.openingTypes)) {
+    if (!has('openingFamilies', t.family)) return missing('openingFamily', t.family);
+    if (!(t.width > 0 && t.height > 0)) return message('commands.opening.badSize');
+  }
+  for (const opening of Object.values(model.openings)) {
+    if (!has('walls', opening.wall)) return missing('wall', opening.wall);
+    if (!has('openingTypes', opening.type)) return missing('openingType', opening.type);
+    const o = resolveOpening(model, opening)!;
     const wall = model.walls[o.wall]!;
     let outlines = outlinesOf.get(wall.level);
     if (!outlines) {

@@ -6,11 +6,12 @@
  */
 import { checkInvariants } from '../model/invariants';
 import { message, type Message } from '../model/message';
+import { BUILT_IN_FAMILIES } from '../model/opening-types';
 import { COLLECTIONS } from '../model/patch';
-import type { CollectionName, Model } from '../model/types';
+import type { CollectionName, Model, OpeningKind } from '../model/types';
 
 export const FILE_FORMAT = 'lakudemis';
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 export const FILE_EXTENSION = '.lakudemis.json';
 
 type Doc = Record<string, unknown>;
@@ -19,7 +20,49 @@ type Doc = Record<string, unknown>;
  * Migration steps: MIGRATIONS[n] upgrades a version-n document to version n+1.
  * Each is a pure function, tested with a fixture file of version n.
  */
-export const MIGRATIONS: Readonly<Record<number, (doc: Doc) => Doc>> = {};
+export const MIGRATIONS: Readonly<Record<number, (doc: Doc) => Doc>> = {
+  1: openingTypesFromSizes,
+};
+
+/**
+ * Version 1 → 2 (ticket 16, ADR 0007): doors and windows become Openings of the built-in door and
+ * window families. Every size in use, and each family's Preset size, becomes an Opening type; an
+ * Opening keeps its Wall, position, sill, hinge and swing and refers to the type of its size.
+ * Types made here get IDs from their kind and size (a migration has no ID generator).
+ */
+function openingTypesFromSizes(doc: Doc): Doc {
+  const presets = ((doc['project'] as Doc | undefined)?.['presets'] ?? {}) as Record<
+    string,
+    number
+  >;
+  const types = new Map<string, Doc>();
+  const typeFor = (kind: string, width: number, height: number): string => {
+    const id = `oty_${kind}_${width}x${height}`.replace(/\./g, '-');
+    if (!types.has(id))
+      types.set(id, { id, family: BUILT_IN_FAMILIES[kind as OpeningKind], width, height });
+    return id;
+  };
+  typeFor('door', presets['doorWidth'] ?? 930, presets['doorHeight'] ?? 2115);
+  typeFor('window', presets['windowWidth'] ?? 1200, presets['windowHeight'] ?? 1200);
+  const openings = ((doc['openings'] ?? []) as Doc[]).map((o) => {
+    const { kind, width, height, ...rest } = o as Doc & {
+      kind: string;
+      width: number;
+      height: number;
+    };
+    return { ...rest, type: typeFor(kind, width, height) };
+  });
+  return {
+    ...doc,
+    schemaVersion: 2,
+    openingFamilies: (['door', 'window'] as const).map((kind) => ({
+      id: BUILT_IN_FAMILIES[kind],
+      kind,
+    })),
+    openingTypes: [...types.values()],
+    openings,
+  };
+}
 
 /** The fixed key order of every element kind; keys not listed never appear in a file. */
 const KEY_ORDER: Readonly<
@@ -43,7 +86,9 @@ const KEY_ORDER: Readonly<
   levels: ['id', 'building', 'name', 'order', 'storeyHeight'],
   walls: ['id', 'level', 'start', 'end', 'side', 'thickness', 'height', 'roomBounding'],
   wallConnections: ['id', 'wall', 'end', 'kind', 'to', 'toEnd', 'at'],
-  openings: ['id', 'wall', 'kind', 'offset', 'width', 'height', 'sill', 'hinge', 'swing'],
+  openingFamilies: ['id', 'kind', 'name'],
+  openingTypes: ['id', 'family', 'name', 'width', 'height'],
+  openings: ['id', 'wall', 'type', 'offset', 'sill', 'hinge', 'swing'],
   rooms: ['id', 'level', 'name', 'seed', 'height', 'floorBuildUp', 'floorFinish'],
   roomSeparators: ['id', 'level', 'start', 'end', 'startWall', 'endWall'],
   slabs: ['id', 'level', 'thickness'],

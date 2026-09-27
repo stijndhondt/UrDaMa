@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { addOpening } from '../commands/add-opening';
 import { drawRoom } from '../commands/draw-room';
+import { updateOpening } from '../commands/update-opening';
 import { counterIds } from '../model/ids';
 import { createProject } from '../model/new-project';
+import { BUILT_IN_FAMILIES, resolveOpening } from '../model/opening-types';
 import type { LevelId, Model, Wall, WallId } from '../model/types';
 import { ProjectStore } from '../store/project-store';
 import { CURRENT_SCHEMA_VERSION, MIGRATIONS, parseProject, serializeProject } from './project-file';
@@ -26,6 +30,13 @@ function drawnHouse(): Model {
     size: 'inside',
     name: 'Achterhal',
   });
+  const bottom = Object.values(store.model().walls).find(
+    (w) => w.start.y === 3730 && w.end.y === 3730,
+  )!;
+  store.run(addOpening, { wall: bottom.id, kind: 'door', offset: 580 });
+  store.run(addOpening, { wall: bottom.id, kind: 'window', offset: 1600, width: 600 });
+  const door = Object.values(store.model().openings)[0]!;
+  store.run(updateOpening, { opening: door.id, width: 830 });
   return store.model();
 }
 
@@ -108,5 +119,63 @@ describe('project file (ADR 0004)', () => {
   it('has a migration step for every version before the current one', () => {
     for (let v = 1; v < CURRENT_SCHEMA_VERSION; v++) expect(MIGRATIONS[v]).toBeTypeOf('function');
     expect(Object.keys(MIGRATIONS).every((k) => Number(k) < CURRENT_SCHEMA_VERSION)).toBe(true);
+  });
+
+  describe('Opening families and types (ticket 16)', () => {
+    const v1 = readFileSync(new URL('./fixtures/v1-house.lakudemis.json', import.meta.url), 'utf8');
+
+    it("turns a Slice 1 file's doors and windows into Openings of the default families, same sizes", () => {
+      const before = JSON.parse(v1).openings as {
+        id: string;
+        kind: string;
+        width: number;
+        height: number;
+        sill: number;
+        offset: number;
+        hinge: string;
+        swing: string;
+        wall: string;
+      }[];
+      const opened = parseProject(v1);
+      expect(opened.ok).toBe(true);
+      if (!opened.ok) return;
+      const model = opened.model;
+      expect(Object.keys(model.openingFamilies).sort()).toEqual(
+        [BUILT_IN_FAMILIES.door, BUILT_IN_FAMILIES.window].sort(),
+      );
+      for (const old of before) {
+        const o = resolveOpening(model, model.openings[old.id]!)!;
+        expect(o).toMatchObject({
+          kind: old.kind,
+          width: old.width,
+          height: old.height,
+          sill: old.sill,
+          offset: old.offset,
+          hinge: old.hinge,
+          swing: old.swing,
+          wall: old.wall,
+        });
+        expect(model.openingFamilies[model.openingTypes[o.type]!.family]!.kind).toBe(old.kind);
+      }
+      // The Preset-sized door and window share their family's default type; the small window has its own.
+      expect(Object.keys(model.openingTypes)).toHaveLength(3);
+    });
+
+    it('saves a migrated file as the current version, byte-identically on the next save', () => {
+      const opened = parseProject(v1);
+      if (!opened.ok) throw new Error('not opened');
+      const text = serializeProject(opened.model);
+      expect(JSON.parse(text).schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+      const again = parseProject(text);
+      expect(again.ok && serializeProject(again.model)).toBe(text);
+    });
+
+    it('writes families and types as flat collections sorted by ID', () => {
+      const doc = JSON.parse(serializeProject(drawnHouse()));
+      const ids = (list: { id: string }[]) => list.map((x) => x.id);
+      expect(ids(doc.openingTypes)).toEqual([...ids(doc.openingTypes)].sort());
+      expect(doc.openingFamilies.map((f: { kind: string }) => f.kind)).toEqual(['door', 'window']);
+      expect(doc.openings.every((o: object) => !('width' in o) && !('kind' in o))).toBe(true);
+    });
   });
 });

@@ -9,3 +9,4 @@ pnpm-lock.yaml
 .agents
 Docs
 *.md
+projects/core/src/lib/file/fixtures

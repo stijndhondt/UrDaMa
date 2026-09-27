@@ -10,6 +10,8 @@ export const COLLECTIONS: readonly CollectionName[] = [
   'levels',
   'walls',
   'wallConnections',
+  'openingFamilies',
+  'openingTypes',
   'openings',
   'rooms',
   'roomSeparators',

@@ -1,5 +1,6 @@
 import { Component, ElementRef, computed, effect, inject, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { resolveOpening } from '@lakudemis/core';
 import { ContextMenuService } from './context-menu.service';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
@@ -222,7 +223,8 @@ export class ContextMenuComponent {
         break;
       }
       case 'opening': {
-        const door = model.openings[target.id]?.kind === 'door';
+        const opening = model.openings[target.id];
+        const door = !!opening && resolveOpening(model, opening)?.kind === 'door';
         headingKey = door ? 'contextMenu.door' : 'contextMenu.window';
         items = [
           {

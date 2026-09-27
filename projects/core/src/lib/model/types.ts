@@ -15,6 +15,8 @@ export type LevelId = Id<'level'>;
 export type WallId = Id<'wall'>;
 export type WallConnectionId = Id<'wallConnection'>;
 export type OpeningId = Id<'opening'>;
+export type OpeningFamilyId = Id<'openingFamily'>;
+export type OpeningTypeId = Id<'openingType'>;
 export type RoomId = Id<'room'>;
 export type RoomSeparatorId = Id<'roomSeparator'>;
 export type SlabId = Id<'slab'>;
@@ -132,14 +134,41 @@ export interface Room {
 
 export type OpeningKind = 'door' | 'window';
 
+/**
+ * A design of an Opening (ADR 0007), such as "interior door, single leaf". Its parts come with
+ * ticket 19; for now a family is its kind. The built-in families have no name: the UI shows the
+ * kind in the user's language.
+ */
+export interface OpeningFamily {
+  readonly id: OpeningFamilyId;
+  readonly kind: OpeningKind;
+  readonly name?: string;
+}
+
+/**
+ * A named set of sizes within an Opening family, such as "90 × 211". Without a name the UI shows
+ * its sizes.
+ */
+export interface OpeningType {
+  readonly id: OpeningTypeId;
+  readonly family: OpeningFamilyId;
+  readonly name?: string;
+  /** mm */
+  readonly width: number;
+  /** mm */
+  readonly height: number;
+}
+
+/**
+ * An Opening placed in a Wall: an instance of an Opening type. It keeps what differs per
+ * placement; its kind and sizes come from its type (see resolveOpening).
+ */
 export interface Opening {
   readonly id: OpeningId;
   readonly wall: WallId;
-  readonly kind: OpeningKind;
+  readonly type: OpeningTypeId;
   /** mm along the host Wall's Baseline from its start to the Opening's near edge */
   readonly offset: number;
-  readonly width: number;
-  readonly height: number;
   /** mm above the finished floor */
   readonly sill: number;
   /** Doors: which jamb the hinges are on, seen along the Baseline, and which face it opens towards. */
@@ -168,6 +197,8 @@ export interface Model {
   readonly levels: Readonly<Record<string, Level>>;
   readonly walls: Readonly<Record<string, Wall>>;
   readonly wallConnections: Readonly<Record<string, WallConnection>>;
+  readonly openingFamilies: Readonly<Record<string, OpeningFamily>>;
+  readonly openingTypes: Readonly<Record<string, OpeningType>>;
   readonly openings: Readonly<Record<string, Opening>>;
   readonly rooms: Readonly<Record<string, Room>>;
   readonly roomSeparators: Readonly<Record<string, RoomSeparator>>;

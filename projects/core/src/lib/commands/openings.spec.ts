@@ -1,5 +1,6 @@
 import { counterIds } from '../model/ids';
 import { createProject, defaultStoreyHeight } from '../model/new-project';
+import { resolveOpening } from '../model/opening-types';
 import type { LevelId, OpeningId, Wall } from '../model/types';
 import { ProjectStore } from '../store/project-store';
 import { addOpening } from './add-opening';
@@ -25,7 +26,7 @@ function keuken() {
   /** The bottom Wall, from (2670, 3730) to (0, 3730). */
   const bottom = (): Wall =>
     Object.values(store.model().walls).find((w) => w.start.y === 3730 && w.end.y === 3730)!;
-  const opening = () => Object.values(store.model().openings)[0]!;
+  const opening = () => resolveOpening(store.model(), Object.values(store.model().openings)[0]!)!;
   return { store, level, bottom, opening };
 }
 

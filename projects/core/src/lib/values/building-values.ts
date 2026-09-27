@@ -6,6 +6,7 @@
  * for simple values. A Level's Source-data slice compares its elements by reference, so an edit
  * on another Level yields an equal slice and nothing downstream is recalculated.
  */
+import { resolveOpenings, type ResolvedOpening } from '../model/opening-types';
 import { derived, type Derived } from '../reactive';
 import { levelsInOrder } from '../model/levels';
 import { message, type Message } from '../model/message';
@@ -17,7 +18,6 @@ import type {
   Level,
   LevelId,
   Model,
-  Opening,
   Presets,
   Room,
   RoomId,
@@ -36,7 +36,8 @@ export interface LevelSlice {
   readonly connections: readonly WallConnection[];
   readonly separators: readonly RoomSeparator[];
   readonly rooms: readonly Room[];
-  readonly openings: readonly Opening[];
+  /** With each Opening's kind and sizes from its type */
+  readonly openings: readonly ResolvedOpening[];
   readonly ceilings: readonly Ceiling[];
 }
 
@@ -257,9 +258,12 @@ export class BuildingValues {
           rooms: Object.values(m.rooms)
             .filter((r) => r.level === id)
             .sort(byId),
-          openings: Object.values(m.openings)
-            .filter((o) => wallIds.has(o.wall))
-            .sort(byId),
+          openings: resolveOpenings(
+            m,
+            Object.values(m.openings)
+              .filter((o) => wallIds.has(o.wall))
+              .sort(byId),
+          ),
           ceilings: Object.values(m.ceilings)
             .filter((c) => m.rooms[c.room]?.level === id)
             .sort(byId),

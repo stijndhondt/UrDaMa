@@ -5,6 +5,7 @@
  */
 import { put } from '../model/edit';
 import { message, type Message } from '../model/message';
+import { BUILT_IN_FAMILIES, presetSize, typeWithSize } from '../model/opening-types';
 import type { Opening, OpeningId, OpeningKind, WallId } from '../model/types';
 import { refuse, type Command } from './command';
 
@@ -21,31 +22,40 @@ export interface AddOpeningArgs {
 }
 
 /** Why an Opening's size is not possible, if it isn't: sizes above 0, a sill not below the floor. */
-export function openingSizeProblem(o: Pick<Opening, 'width' | 'height' | 'sill'>): Message | null {
+export function openingSizeProblem(o: {
+  readonly width: number;
+  readonly height: number;
+  readonly sill: number;
+}): Message | null {
   return o.width > 0 && o.height > 0 && o.sill >= 0 ? null : message('commands.opening.badSize');
 }
 
 export const addOpening: Command<AddOpeningArgs> = (model, args, { ids }) => {
   if (!model.walls[args.wall])
     return refuse(message('invariants.missingReference', { what: 'wall', id: args.wall }));
-  const p = model.project.presets;
-  const door = args.kind === 'door';
+  const preset = presetSize(model.project.presets, args.kind);
+  const size = {
+    width: args.width ?? preset.width,
+    height: args.height ?? preset.height,
+    sill: args.sill ?? preset.sill,
+  };
+  const problem = openingSizeProblem(size);
+  if (problem) return refuse(problem);
+  // The Opening is an instance of its family's type with this size (a new type if none has it).
+  const typed = typeWithSize(model, BUILT_IN_FAMILIES[args.kind], size.width, size.height, ids);
   const opening: Opening = {
     id: ids('openings') as OpeningId,
     wall: args.wall,
-    kind: args.kind,
+    type: typed.type,
     offset: args.offset,
-    width: args.width ?? (door ? p.doorWidth : p.windowWidth),
-    height: args.height ?? (door ? p.doorHeight : p.windowHeight),
-    sill: args.sill ?? (door ? 0 : p.windowSill),
+    sill: size.sill,
     hinge: args.hinge ?? 'start',
     swing: args.swing ?? 'right',
   };
-  const problem = openingSizeProblem(opening);
-  if (problem) return refuse(problem);
+  const door = args.kind === 'door';
   return {
     ok: true,
-    model: put(model, 'openings', opening),
+    model: put(typed.model, 'openings', opening),
     label: message(door ? 'commands.opening.addDoor' : 'commands.opening.addWindow'),
   };
 };

@@ -7,6 +7,7 @@
  * separators and Openings among them. A Wall merely touching the end of the face stays put. Walls crossing the face line
  * stretch; that only works when they run along the push direction, otherwise the push is refused.
  */
+import { openingWidth } from '../model/opening-types';
 import { faceOffsets, wallDirection, wallNormal } from '../geometry/wall-outlines';
 import { add, cross, dot, perp, scale, sub } from '../geometry/vec';
 import { levelGeometry } from '../geometry/level-geometry';
@@ -165,11 +166,11 @@ export function push(model: Model, spec: PushSpec): PushResult {
     const after = nextWalls[o.wall];
     if (!before || !after || before === after) continue;
     const d = wallDirection(before);
-    const centre = add(before.start, scale(d, o.offset + o.width / 2));
+    const centre = add(before.start, scale(d, o.offset + openingWidth(model, o) / 2));
     const newCentre = inFront(centre) ? add(centre, v) : centre;
     nextOpenings[o.id] = {
       ...o,
-      offset: dot(sub(newCentre, after.start), wallDirection(after)) - o.width / 2,
+      offset: dot(sub(newCentre, after.start), wallDirection(after)) - openingWidth(model, o) / 2,
     };
   }
 

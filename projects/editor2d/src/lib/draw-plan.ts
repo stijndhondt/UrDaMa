@@ -10,6 +10,7 @@ import {
   type Box,
   type LevelId,
   type LevelSlice,
+  type Model,
   type Opening,
   type RoomId,
   type Vec,
@@ -414,13 +415,16 @@ function drawLevelBelow(
 
 /** An Opening's rectangle in the plan: its width along the Wall, across the Wall's full thickness. */
 export function openingOutline(
-  model: { readonly walls: Readonly<Record<string, Wall>> },
+  model: Pick<Model, 'walls' | 'openingTypes'>,
   outlines: ReadonlyMap<WallId, WallOutline>,
   o: Opening,
 ): Vec[] | null {
   const wall = model.walls[o.wall];
   const outline = outlines.get(o.wall);
-  return wall && outline ? [...openingRect(wall, outline, o)] : null;
+  const width = model.openingTypes[o.type]?.width;
+  return wall && outline && width
+    ? [...openingRect(wall, outline, { offset: o.offset, width })]
+    : null;
 }
 
 /** Openings: cut out of their Wall, with a door leaf and swing, or window glass lines. */

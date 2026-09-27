@@ -4,9 +4,10 @@
  * Room separators bound the floor but have no surface. Which Openings are subtracted is decided by
  * a Measurement rule, chosen per report and never stored.
  */
+import type { ResolvedOpening } from '../model/opening-types';
 import { distanceToSegment } from '../geometry/polygon';
 import { wallFrame, type WallFrame, type WallOutline } from '../geometry/wall-outlines';
-import type { Opening, OpeningId, RoomSeparator, Vec, Wall, WallId } from '../model/types';
+import type { OpeningId, RoomSeparator, Vec, Wall, WallId } from '../model/types';
 
 export type MeasurementRule = 'exact' | 'belgianMasonry';
 
@@ -82,7 +83,7 @@ export function levelRoomSurfaces<K>(
   walls: readonly Wall[],
   outlines: ReadonlyMap<WallId, WallOutline>,
   separators: readonly RoomSeparator[],
-  openings: readonly Opening[],
+  openings: readonly ResolvedOpening[],
 ): Map<K, RoomSurfaces> {
   const frames = new Map<string, Frame>();
   for (const w of walls) {
@@ -90,11 +91,11 @@ export function levelRoomSurfaces<K>(
     if (outline) frames.set(w.id, frameOf(w, outline));
   }
   // Per Room: its wall length and, per Opening, the width of it along the Room's edges.
-  const found = new Map<K, { wallLength: number; widths: Map<Opening, number> }>();
-  const roomsPerOpening = new Map<Opening, number>();
+  const found = new Map<K, { wallLength: number; widths: Map<ResolvedOpening, number> }>();
+  const roomsPerOpening = new Map<ResolvedOpening, number>();
   for (const [key, room] of rooms) {
     let wallLength = 0;
-    const widths = new Map<Opening, number>();
+    const widths = new Map<ResolvedOpening, number>();
     for (const ring of room.rings) {
       ring.forEach((a, i) => {
         const b = ring[(i + 1) % ring.length]!;

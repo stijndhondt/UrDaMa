@@ -4,6 +4,7 @@
  * in part is split around that stretch). Straight Walls that met at the removed stretch are joined
  * into one, so the corners stay closed. The first Room keeps its name and properties.
  */
+import { openingWidth } from '../model/opening-types';
 import { levelGeometry, wallFaces } from '../geometry/level-geometry';
 import { insideArea } from '../geometry/polygon';
 import type { EnclosedArea } from '../geometry/footprint';
@@ -227,7 +228,8 @@ function removeStretch(
       openings[o.id] = o;
       continue;
     }
-    if (before && o.offset + o.width <= t0) openings[o.id] = { ...o, wall: before.id };
+    if (before && o.offset + openingWidth(model, o) <= t0)
+      openings[o.id] = { ...o, wall: before.id };
     else if (after && o.offset >= t1)
       openings[o.id] = { ...o, wall: after.id, offset: o.offset - t1 };
     // An Opening on the removed stretch goes with it.
@@ -319,8 +321,15 @@ function join(
       openings[o.id] = o;
       continue;
     }
-    const centre = add(host.start, scale(wallDirection(host), o.offset + o.width / 2));
-    openings[o.id] = { ...o, wall: a.id, offset: dot(sub(centre, joined.start), d) - o.width / 2 };
+    const centre = add(
+      host.start,
+      scale(wallDirection(host), o.offset + openingWidth(model, o) / 2),
+    );
+    openings[o.id] = {
+      ...o,
+      wall: a.id,
+      offset: dot(sub(centre, joined.start), d) - openingWidth(model, o) / 2,
+    };
   }
   return { ...model, walls, wallConnections: connections, openings };
 }

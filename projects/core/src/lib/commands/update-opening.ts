@@ -1,6 +1,7 @@
 /** UpdateOpening: a committed field of an Opening, or a flip of a door (F / Shift+F). One step each. */
 import { put } from '../model/edit';
 import { message } from '../model/message';
+import { resolveOpening, typeWithSize } from '../model/opening-types';
 import type { Opening, OpeningId } from '../model/types';
 import { openingSizeProblem } from './add-opening';
 import { refuse, type Command } from './command';
@@ -17,24 +18,33 @@ export interface UpdateOpeningArgs {
   readonly flipSwing?: boolean;
 }
 
-export const updateOpening: Command<UpdateOpeningArgs> = (model, args) => {
+export const updateOpening: Command<UpdateOpeningArgs> = (model, args, { ids }) => {
   const o = model.openings[args.opening];
-  if (!o)
+  const resolved = o && resolveOpening(model, o);
+  if (!o || !resolved)
     return refuse(message('invariants.missingReference', { what: 'opening', id: args.opening }));
+  const width = args.width ?? resolved.width;
+  const height = args.height ?? resolved.height;
+  const sill = args.sill ?? o.sill;
+  const problem = openingSizeProblem({ width, height, sill });
+  if (problem) return refuse(problem);
+  // A new size changes only this Opening: it moves to the type with that size (ticket 18 adds
+  // the choice to change the whole type instead).
+  const sized =
+    width === resolved.width && height === resolved.height
+      ? { model, type: o.type }
+      : typeWithSize(model, model.openingTypes[o.type]!.family, width, height, ids);
   const next: Opening = {
     ...o,
+    type: sized.type,
     offset: args.offset ?? o.offset,
-    width: args.width ?? o.width,
-    height: args.height ?? o.height,
-    sill: args.sill ?? o.sill,
+    sill,
     hinge: args.flipHinge ? (o.hinge === 'start' ? 'end' : 'start') : o.hinge,
     swing: args.flipSwing ? (o.swing === 'left' ? 'right' : 'left') : o.swing,
   };
-  const problem = openingSizeProblem(next);
-  if (problem) return refuse(problem);
   return {
     ok: true,
-    model: put(model, 'openings', next),
+    model: put(sized.model, 'openings', next),
     label: message('commands.opening.update'),
   };
 };

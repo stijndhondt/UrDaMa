@@ -10,6 +10,8 @@ export const ID_PREFIX = {
   levels: 'lvl',
   walls: 'wal',
   wallConnections: 'wcn',
+  openingFamilies: 'ofm',
+  openingTypes: 'oty',
   openings: 'opn',
   rooms: 'rom',
   roomSeparators: 'rsp',

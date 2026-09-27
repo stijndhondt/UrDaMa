@@ -1,5 +1,5 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import type { Opening, Room, Wall } from '@lakudemis/core';
+import { resolveOpening, type ResolvedOpening, type Room, type Wall } from '@lakudemis/core';
 import type { Selection } from '@lakudemis/editor2d';
 import { ProjectService } from '../project/project.service';
 
@@ -24,10 +24,12 @@ export class SelectionService {
     const s = this.single();
     return s?.kind === 'room' ? (this.project.store.model().rooms[s.id] ?? null) : null;
   });
-  /** The selected Opening, when exactly one door or window is selected. */
-  readonly opening = computed<Opening | null>(() => {
+  /** The selected Opening with its type's kind and sizes, when exactly one is selected. */
+  readonly opening = computed<ResolvedOpening | null>(() => {
     const s = this.single();
-    return s?.kind === 'opening' ? (this.project.store.model().openings[s.id] ?? null) : null;
+    const model = this.project.store.model();
+    const o = s?.kind === 'opening' ? model.openings[s.id] : undefined;
+    return o ? resolveOpening(model, o) : null;
   });
   /** All selected Rooms (two of them can be merged). */
   readonly rooms = computed<readonly Room[]>(() =>

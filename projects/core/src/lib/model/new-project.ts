@@ -1,4 +1,5 @@
 import type { IdGenerator } from './ids';
+import { builtInOpenings } from './opening-types';
 import type {
   Building,
   BuildingId,
@@ -36,7 +37,10 @@ export interface NewProjectOptions {
 export const defaultStoreyHeight = (p: Presets): number =>
   p.floorBuildUp + p.roomHeight + p.ceilingThickness + p.slabThickness;
 
-/** A new project: one Building with one Level ("Ground floor") at elevation 0, and its Slab. */
+/**
+ * A new project: one Building with one Level ("Ground floor") at elevation 0, and its Slab, plus
+ * the built-in door and window families with a default type each.
+ */
 export function createProject(options: NewProjectOptions, ids: IdGenerator): Model {
   const presets: Presets = {
     ...DEFAULT_PRESETS,
@@ -62,6 +66,7 @@ export function createProject(options: NewProjectOptions, ids: IdGenerator): Mod
     levels: { [level.id]: level },
     walls: {},
     wallConnections: {},
+    ...builtInOpenings(presets, ids),
     openings: {},
     rooms: {},
     roomSeparators: {},
