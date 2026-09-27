@@ -18,7 +18,7 @@ import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { SelectionService } from './selection.service';
-import { ContextMenuService } from './context-menu.component';
+import { ContextMenuService } from './context-menu.service';
 
 /** Hosts the Canvas2D plan editor for the current Level. */
 @Component({

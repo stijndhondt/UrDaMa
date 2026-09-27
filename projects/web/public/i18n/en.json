@@ -196,7 +196,8 @@
       "label": "Change a Wall's length",
       "tooShort": "Refused: a Wall must be at least {min} mm long.",
       "same": "The Wall already has that length.",
-      "teeEnd": "Refused: this end sits against another Wall. Use Move Room to move that Wall instead."
+      "teeEnd": "Refused: this end sits against another Wall. Use Move Room to move that Wall instead.",
+      "cannotShift": "Refused: wall {wall} is at an angle and cannot move along. Use Only this Wall instead."
     }
   },
   "invariants": {
@@ -380,7 +381,7 @@
   },
   "contextMenu": {
     "close": "Close menu",
-    "emptyArea": "Empty area",
+    "emptyArea": "Area without a Room",
     "room": "Room",
     "wall": "Wall",
     "door": "Door",
@@ -388,7 +389,7 @@
     "separator": "Room separator",
     "createRoom": "Create Room here",
     "mergeRooms": "Merge the two selected Rooms",
-    "resetHeights": "Reset heights to Preset",
+    "resetHeights": "Reset Room height and Floor build-up to Preset",
     "resetThickness": "Reset thickness to Preset",
     "flipHinge": "Hinge on the other side",
     "flipSwing": "Open to the other side",

@@ -196,7 +196,8 @@
       "label": "Lengte van een muur wijzigen",
       "tooShort": "Geweigerd: een muur moet minstens {min} mm lang zijn.",
       "same": "De muur heeft die lengte al.",
-      "teeEnd": "Geweigerd: dit uiteinde staat tegen een andere muur. Kies 'Ruimte verschuiven' om die muur mee te verplaatsen."
+      "teeEnd": "Geweigerd: dit uiteinde staat tegen een andere muur. Kies 'Ruimte verschuiven' om die muur mee te verplaatsen.",
+      "cannotShift": "Geweigerd: muur {wall} staat schuin en kan niet meeschuiven. Kies 'Alleen deze muur'."
     }
   },
   "invariants": {
@@ -380,7 +381,7 @@
   },
   "contextMenu": {
     "close": "Menu sluiten",
-    "emptyArea": "Lege ruimte",
+    "emptyArea": "Gebied zonder ruimte",
     "room": "Ruimte",
     "wall": "Muur",
     "door": "Deur",
@@ -388,7 +389,7 @@
     "separator": "Scheiding",
     "createRoom": "Hier een ruimte maken",
     "mergeRooms": "De twee geselecteerde ruimtes samenvoegen",
-    "resetHeights": "Hoogtes terug naar standaard",
+    "resetHeights": "Ruimtehoogte en vloeropbouw terug naar standaard",
     "resetThickness": "Dikte terug naar standaard",
     "flipHinge": "Scharnier aan de andere kant",
     "flipSwing": "Naar de andere kant opendraaien",

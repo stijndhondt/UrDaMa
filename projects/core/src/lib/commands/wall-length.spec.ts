@@ -195,4 +195,39 @@ describe("typing a Wall's length (slice 2, ticket 01)", () => {
     store.undo();
     expect(store.model()).toEqual(before);
   });
+
+  it('refuses Move Room when the Wall that must shift cannot follow, and says to use Only this Wall', () => {
+    const ids = counterIds();
+    const store = new ProjectStore(
+      createProject({ name: 'T', levelName: 'Ground floor' }, ids),
+      ids,
+    );
+    const level = Object.keys(store.model().levels)[0] as LevelId;
+    const roomName = () => 'Room';
+    // A triangle: the long side is diagonal, so the Walls around it cannot shift along it.
+    const points = [
+      { x: 0, y: 0 },
+      { x: 4000, y: 0 },
+      { x: 0, y: 3000 },
+    ];
+    points.forEach((p, i) =>
+      store.run(drawWall, { level, start: p, end: points[(i + 1) % 3]!, side: 'left', roomName }),
+    );
+    const diagonal = Object.values(store.model().walls).find(
+      (w) => w.start.x !== w.end.x && w.start.y !== w.end.y,
+    )!;
+    const before = store.model();
+    const result = store.run(setWallLength, {
+      wall: diagonal.id,
+      length: 5200,
+      end: 'end',
+      mode: 'room',
+    });
+    expect(!result.ok && result.reason.key).toBe('commands.wallLength.cannotShift');
+    expect(store.model()).toBe(before);
+    // Only this Wall works on the same Wall.
+    expect(
+      store.run(setWallLength, { wall: diagonal.id, length: 5200, end: 'end', mode: 'wall' }).ok,
+    ).toBe(true);
+  });
 });

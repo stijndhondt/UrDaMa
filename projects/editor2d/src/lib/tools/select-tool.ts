@@ -15,12 +15,11 @@ import {
 import { drawSelected, faceLabelAt, faceLabels } from '../draw-plan';
 import { elementAt } from '../hit-test';
 import { parseLength } from '../units';
-import { growOptions } from '../wall-length';
+import { editableLength, growOptions } from '../wall-length';
 import type { Selection } from '../host';
-
+import { increment } from '../snap';
 /** Face labels are only drawn where they are visible; clicks can only land on those. */
 const EVERYWHERE = { min: { x: -Infinity, y: -Infinity }, max: { x: Infinity, y: Infinity } };
-import { increment } from '../snap';
 import type { PointerInfo, Tool, ToolContext } from './tool';
 
 interface Drag {
@@ -147,12 +146,10 @@ export class SelectTool implements Tool {
     if (!wall) return false;
     host.select([{ kind: 'wall', id: wall.id }]);
     const grow = growOptions(wall);
+    const shown = editableLength(label.length);
     this.ctx.typed.open(
       [
-        {
-          label: host.text('panel.wall.length'),
-          value: host.format.length(label.length).replace(/\s*m$/, ''),
-        },
+        { label: host.text('panel.wall.length'), value: shown },
         {
           label: host.text('panel.wall.grows'),
           value: '2',
@@ -175,6 +172,8 @@ export class SelectTool implements Tool {
         change: () => undefined,
         cancel: () => this.ctx.invalidate(),
         commit: ([typed, side, mode]) => {
+          // The field shows the length rounded; Enter without typing must not move the Wall.
+          if (typed === shown) return;
           const face = parseLength(typed ?? '');
           const choice = grow[Number(side)];
           if (face === null || !choice) return;

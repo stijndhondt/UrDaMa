@@ -24,6 +24,18 @@ export class MessagesService {
     this.current.set({ message, at: null, kind: 'info' });
   }
 
+  /**
+   * Runs an action (such as a right-click menu item); a refusal it shows without a position is
+   * shown at `at` instead, next to what it is about.
+   */
+  showRefusalsAt(at: { x: number; y: number } | undefined, action: () => void): void {
+    const before = this.current();
+    action();
+    const now = this.current();
+    if (at && now && now !== before && now.kind === 'refused' && !now.at)
+      this.current.set({ ...now, at });
+  }
+
   /** The next action clears the previous message. */
   clear(): void {
     if (this.current()) this.current.set(null);

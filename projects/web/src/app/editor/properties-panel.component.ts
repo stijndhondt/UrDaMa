@@ -16,9 +16,10 @@ import {
   type Command,
   type LevelId,
   type OpeningId,
+  type SetWallLengthArgs,
   type WallId,
 } from '@lakudemis/core';
-import { growOptions, parseLength } from '@lakudemis/editor2d';
+import { editableLength, growOptions, parseLength } from '@lakudemis/editor2d';
 import { FormatService } from '../format.service';
 import { MeasurementService } from '../quantities/measurement.service';
 import { MessagesService } from '../messages.service';
@@ -221,7 +222,7 @@ import { SelectionService } from './selection.service';
         {{ 'panel.wall.length' | translate }}
         <span class="field">
           <input
-            [value]="(wallLength(wall) / 1000).toFixed(2)"
+            [value]="editableLength(wallLength(wall))"
             (change)="setLength($any($event.target))"
             (keydown.enter)="$any($event.target).blur()"
           />
@@ -507,6 +508,7 @@ export class PropertiesPanelComponent {
   private readonly actions = inject(EditorActionsService);
   private readonly translate = inject(TranslateService);
   protected readonly wallLength = wallLength;
+  protected readonly editableLength = editableLength;
   protected readonly presets = computed(() => this.project.store.model().project.presets);
   protected readonly roomArea = computed(() => {
     const room = this.selection.room();
@@ -701,7 +703,7 @@ export class PropertiesPanelComponent {
 
   /** Typing a Wall's length: which way it grows (index into growChoices) and what moves. */
   protected growIndex = 2;
-  protected lengthMode: 'room' | 'wall' = 'room';
+  protected lengthMode: SetWallLengthArgs['mode'] = 'room';
   protected readonly growChoices = computed(() => {
     const wall = this.selection.wall();
     return wall ? growOptions(wall) : [];
@@ -712,7 +714,7 @@ export class PropertiesPanelComponent {
     const length = parseLength(input.value);
     const choice = this.growChoices()[this.growIndex];
     if (!wall || length === null || !choice) return;
-    const previous = (wallLength(wall) / 1000).toFixed(2);
+    const previous = editableLength(wallLength(wall));
     this.run(
       setWallLength,
       { wall: wall.id, length, end: choice.end, mode: this.lengthMode },

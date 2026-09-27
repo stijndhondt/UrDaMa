@@ -12,19 +12,19 @@ export interface GrowOption {
   readonly end: WallEnd | 'both';
 }
 
-/** A Wall within this many mm of level counts as horizontal (or vertical). */
-const LEVEL = 0.5;
+/** mm: a Wall whose ends differ by no more than this across counts as horizontal (or vertical). */
+const AXIS_TOLERANCE = 0.5;
 
 /** The three choices, in order: towards the start of the plan's axis, both, towards its end. */
 export function growOptions(wall: Wall): readonly GrowOption[] {
   const dx = wall.end.x - wall.start.x;
   const dy = wall.end.y - wall.start.y;
   const both: GrowOption = { label: 'both', end: 'both' };
-  if (Math.abs(dy) <= LEVEL) {
+  if (Math.abs(dy) <= AXIS_TOLERANCE) {
     const leftEnd: WallEnd = dx >= 0 ? 'start' : 'end';
     return [{ label: 'left', end: leftEnd }, both, { label: 'right', end: other(leftEnd) }];
   }
-  if (Math.abs(dx) <= LEVEL) {
+  if (Math.abs(dx) <= AXIS_TOLERANCE) {
     const upEnd: WallEnd = dy >= 0 ? 'start' : 'end';
     return [{ label: 'up', end: upEnd }, both, { label: 'down', end: other(upEnd) }];
   }
@@ -32,3 +32,6 @@ export function growOptions(wall: Wall): readonly GrowOption[] {
 }
 
 const other = (end: WallEnd): WallEnd => (end === 'start' ? 'end' : 'start');
+
+/** A length as an edit field shows it: metres with two decimals, which parseLength reads back. */
+export const editableLength = (mm: number): string => (mm / 1000).toFixed(2);

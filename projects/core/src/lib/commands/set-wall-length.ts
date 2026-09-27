@@ -92,7 +92,11 @@ function moveNeighbour(model: Model, id: WallId, end: WallEnd, amount: number): 
     from: neighbour.id,
     rigid: [neighbour.id],
   });
-  return result.ok ? { ok: true, model: result.model } : { ok: false, reason: result.reason };
+  if (result.ok) return { ok: true, model: result.model };
+  // A Wall that would have to stretch at an angle cannot follow: only this Wall can move then.
+  if (result.reason.key === 'commands.push.skewed')
+    return { ok: false, reason: message('commands.wallLength.cannotShift', result.reason.params) };
+  return { ok: false, reason: result.reason };
 }
 
 /** Move only this Wall: its end moves along it, and a corner partner's end goes with it. */

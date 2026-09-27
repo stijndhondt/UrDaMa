@@ -1,32 +1,10 @@
-import {
-  Component,
-  ElementRef,
-  Injectable,
-  computed,
-  effect,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, viewChild } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import type { PlanTarget } from '@lakudemis/editor2d';
+import { ContextMenuService } from './context-menu.service';
+import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { EditorActionsService } from './editor-actions.service';
 import { SelectionService } from './selection.service';
-
-/** The open right-click menu: where it is (in the plan's coordinates) and what it acts on. */
-@Injectable({ providedIn: 'root' })
-export class ContextMenuService {
-  readonly menu = signal<{ at: { x: number; y: number }; target: PlanTarget } | null>(null);
-
-  open(at: { x: number; y: number }, target: PlanTarget): void {
-    this.menu.set({ at, target });
-  }
-
-  close(): void {
-    this.menu.set(null);
-  }
-}
 
 interface MenuItem {
   readonly label: string;
@@ -159,6 +137,7 @@ export class ContextMenuComponent {
   private readonly actions = inject(EditorActionsService);
   private readonly selection = inject(SelectionService);
   private readonly project = inject(ProjectService);
+  private readonly messages = inject(MessagesService);
   private readonly list = viewChild<ElementRef<HTMLElement>>('list');
 
   constructor() {
@@ -271,7 +250,9 @@ export class ContextMenuComponent {
   });
 
   protected choose(item: MenuItem): void {
+    const at = this.menus.menu()?.at;
     this.menus.close();
-    item.run();
+    // A refusal shows where the menu was, next to the element it is about.
+    this.messages.showRefusalsAt(at, () => item.run());
   }
 }

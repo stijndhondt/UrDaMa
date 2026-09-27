@@ -5,6 +5,7 @@ import type {
   ProjectStore,
   RoomId,
   RoomSeparatorId,
+  Vec,
   WallId,
 } from '@lakudemis/core';
 import type { PlanTarget } from './hit-test';
@@ -39,7 +40,7 @@ export interface EditorHost {
    * A right-click on the plan: what is under it (already selected), at a position in the canvas.
    * The app shows its context menu there.
    */
-  readonly contextMenu?: (at: { x: number; y: number }, target: PlanTarget) => void;
+  readonly contextMenu?: (at: Vec, target: PlanTarget) => void;
   /** A command was refused: show its reason near the cursor and in the message bar. */
   readonly refused: (reason: Message, at: { x: number; y: number }) => void;
 }
