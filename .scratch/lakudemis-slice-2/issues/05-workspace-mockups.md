@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** needs-info
+**Status:** done
 
 - [x] The mockups are published and clickable (switch panels, layouts and light/dark).
-- [ ] The user has picked one layout, or a mix, and the choice is recorded in this ticket's Comments.
+- [x] The user has picked one layout, or a mix, and the choice is recorded in this ticket's Comments.
 
 ## Comments
 
@@ -18,4 +18,5 @@
 - **C · Collections** (Postman-like): a wide sidebar with Views (plans per Level, the four Elevations, 3D, Quantities), Building and Library; everything opens as a tab in the centre, with Split to show two tabs side by side; properties on the right; warnings as a badge in the header.
 - **Shared parts** (second row, the same in every layout): Plan (click Rooms or the Keuken's right Wall to select; right-click for the context menu; "+ Room" in the empty Achterhal area), Elevation (front/back/left side/right side), 3D, the floating toolbar with the Opening type flyout, the context menu, Building panel (Levels with show/hide), Library panel (this project / my library), properties (Room, Wall with the length direction + mode control, or project), Quantities tree (Level → Room → floor, ceiling, walls → Wall faces; Exterior → Façades → parts).
 
-Waiting for the user to pick a layout, or a mix.
+
+**2026-09-27, decision:** layout **A · Workbench**, with one variation: any single panel can be shown on its own (the panel header's Maximise button fills the centre with that panel; Restore brings the preset layout back), and **Plan only** is the default, since during a first design the other views matter little. The mockup's Workbench artboard is updated to show this. The user noted B and C may have looked worse partly because of unused white space in the mockup; the choice stands.
