@@ -25,7 +25,7 @@ Slice 1 draws a house at its tape sizes, but using it still feels like a prototy
   - start / end / symmetric for a diagonal Wall
   
   They also choose a mode:
-  - **Move Room** (default): the Wall at the moving end shifts along and keeps its angle, so the Room grows or shrinks and every other measured length stays exact.
+  - **Move Room** (the first time; afterwards the last choice is remembered, ticket 23): the Wall at the moving end shifts along and keeps its angle, so the Room grows or shrinks and every other measured length stays exact.
   - **Move only this Wall**: the connected Wall's end goes along and that Wall tilts.
   
   An impossible change is refused with a reason, as all commands are.

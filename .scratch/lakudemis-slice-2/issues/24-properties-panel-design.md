@@ -12,3 +12,10 @@
 ## Comments
 
 **2026-09-27:** from the user's review of the prototypes: "the main concern is this is a bad designed panel". Both prototypes stacked full-width default fields with long labels ("Ruimte verschuiven (de muur aan dat uiteinde schuift mee)") that didn't fit.
+
+**2026-09-27, variants published** on the design canvas (https://claude.ai/artifact/AMPRTHfFEY5VhRfJ4SfGUJ), row "Properties panel — pick one", each switchable between Room, Wall, Door and nothing selected, with a dark tweak:
+
+- **A · Compact raster**: label column and small right-aligned fields with units inside, collapsible sections, a reset icon only on values that differ from the preset, figures as a dense list at the bottom.
+- **B · Paren en tabbladen**: Figma-like pairs of fields with one-letter prefixes (full name as tooltip), and the figures on a separate "Hoeveelheden" tab.
+- **C · Eerst lezen, ter plaatse wijzigen**: values shown as text with a summary of the key figures on top; clicking a value edits it in place, like the length editor.
+- **Lengte wijzigen (dubbelklik)**: the in-place editor of ticket 23 on a piece of the plan, with direction and mode as icon toggles.
