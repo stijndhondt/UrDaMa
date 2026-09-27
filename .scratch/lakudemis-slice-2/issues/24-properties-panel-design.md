@@ -4,10 +4,10 @@
 
 **Blocked by:** 08 Choose the UI library (ADR)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The variants are on the design canvas and clickable (Room / Wall / Opening / nothing selected, light/dark).
-- [ ] The user has picked one (or a mix), recorded in this ticket's Comments.
+- [x] The variants are on the design canvas and clickable (Room / Wall / Opening / nothing selected, light/dark).
+- [x] The user has picked one (or a mix), recorded in this ticket's Comments.
 
 ## Comments
 
@@ -19,3 +19,5 @@
 - **B · Paren en tabbladen**: Figma-like pairs of fields with one-letter prefixes (full name as tooltip), and the figures on a separate "Hoeveelheden" tab.
 - **C · Eerst lezen, ter plaatse wijzigen**: values shown as text with a summary of the key figures on top; clicking a value edits it in place, like the length editor.
 - **Lengte wijzigen (dubbelklik)**: the in-place editor of ticket 23 on a piece of the plan, with direction and mode as icon toggles.
+
+**2026-09-27, decision:** variant **C** (read first, edit in place: values as text, a summary of key figures on top, click a value to edit it there, the Wall's length opens the ticket 23 editor) **with A's reset icons**: a value that differs from its preset shows a reset button (tooltip names the preset value) that puts the preset back; preset values show in grey. The canvas's C artboard is updated to show this.
