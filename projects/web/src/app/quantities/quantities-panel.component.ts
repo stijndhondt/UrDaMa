@@ -1,4 +1,8 @@
-import { Component, ElementRef, computed, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { SelectModule } from '@openng/optimus-ui/select';
+import { IconComponent } from '../shell/icon.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   MEASUREMENT_RULES,
@@ -33,97 +37,98 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm²' | 'm³' }[]
   { key: 'revealArea', unit: 'm²' },
 ];
 
-/** The Quantities table (Slice 1 spec): every Room and Level, with CSV export in the UI language. */
+/**
+ * The Quantities table (Slice 1 spec) in the bottom panel (ticket 09): every Room and Level under
+ * the chosen Measurement rule, with CSV export in the UI language. Ticket 12 makes it a tree.
+ */
 @Component({
-  selector: 'lk-quantities-dialog',
-  imports: [TranslatePipe],
+  selector: 'lk-quantities-panel',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule, TranslatePipe, ButtonModule, SelectModule, IconComponent],
   template: `
-    <dialog #dialog>
-      <header>
-        <h2>{{ 'quantities.title' | translate }}</h2>
-        <label>
-          {{ 'quantities.rule' | translate }}
-          <select (change)="measurement.rule.set($any($event.target).value)">
-            @for (r of rules; track r) {
-              <option [value]="r" [selected]="r === measurement.rule()">
-                {{ 'quantities.rules.' + r | translate }}
-              </option>
+    <div class="head">
+      <div class="rule">
+        <label for="quantities-rule">{{ 'quantities.rule' | translate }}</label>
+        <p-select
+          inputId="quantities-rule"
+          size="small"
+          appendTo="body"
+          [options]="ruleOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="measurement.rule()"
+          (ngModelChange)="measurement.rule.set($event)"
+        />
+      </div>
+      <span class="spacer"></span>
+      <p-button size="small" severity="secondary" (onClick)="exportCsv()">
+        <lk-icon name="file-down" /> {{ 'quantities.export' | translate }}
+      </p-button>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ 'quantities.name' | translate }}</th>
+            @for (c of columns; track c.key) {
+              <th class="num">{{ 'quantities.columns.' + c.key | translate }} ({{ c.unit }})</th>
             }
-          </select>
-        </label>
-      </header>
-      <div class="scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>{{ 'quantities.name' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.room ?? row.level) {
+            <tr [class.level]="row.kind === 'level'">
+              <td>
+                {{
+                  row.kind === 'level'
+                    ? ('quantities.levelTotal' | translate: { level: row.name })
+                    : row.name
+                }}
+              </td>
               @for (c of columns; track c.key) {
-                <th class="num">{{ 'quantities.columns.' + c.key | translate }} ({{ c.unit }})</th>
+                <td class="num">{{ cell(row, c.key) }}</td>
               }
             </tr>
-          </thead>
-          <tbody>
-            @for (row of rows(); track row.room ?? row.level) {
-              <tr [class.level]="row.kind === 'level'">
-                <td>
-                  {{
-                    row.kind === 'level'
-                      ? ('quantities.levelTotal' | translate: { level: row.name })
-                      : row.name
-                  }}
-                </td>
-                @for (c of columns; track c.key) {
-                  <td class="num">{{ cell(row, c.key) }}</td>
-                }
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-      <div class="buttons">
-        <button type="button" (click)="exportCsv()">{{ 'quantities.export' | translate }}</button>
-        <button type="button" class="primary" (click)="dialog.close()">
-          {{ 'common.close' | translate }}
-        </button>
-      </div>
-    </dialog>
+          }
+        </tbody>
+      </table>
+    </div>
   `,
   styles: `
-    dialog {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 16px 18px;
-      max-width: min(1100px, calc(100vw - 32px));
-    }
-    dialog::backdrop {
-      background: rgba(0, 0, 0, 0.25);
-    }
-    header {
+    :host {
       display: flex;
-      align-items: baseline;
-      gap: 16px;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-    h2 {
-      font-size: 17px;
-      margin: 0;
-    }
-    label {
+      flex-direction: column;
+      height: 100%;
       font-size: 13px;
-      color: var(--muted);
+    }
+    .head {
       display: flex;
-      gap: 6px;
       align-items: center;
+      gap: 12px;
+      padding: 6px 12px;
+    }
+    .spacer {
+      flex: 1;
+    }
+    .rule {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      color: var(--muted);
+    }
+    .rule p-select {
+      width: 260px;
+      max-width: 40vw;
     }
     .scroll {
-      max-height: 60vh;
+      flex: 1;
+      min-height: 0;
       overflow: auto;
+      padding: 0 12px 8px;
     }
     table {
       border-collapse: collapse;
-      font-size: 13px;
     }
     th,
     td {
@@ -133,6 +138,9 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm²' | 'm³' }[]
       white-space: nowrap;
     }
     th {
+      position: sticky;
+      top: 0;
+      background: var(--panel);
       font-weight: 600;
       color: var(--muted);
       font-size: 12px;
@@ -143,46 +151,28 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm²' | 'm³' }[]
     }
     tr.level td {
       font-weight: 600;
-      background: #f4f6f9;
-    }
-    .buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    button,
-    select {
-      font-size: 13px;
-      padding: 4px 10px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-    }
-    button.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
+      background: var(--inset);
     }
   `,
 })
-export class QuantitiesDialogComponent {
+export class QuantitiesPanelComponent {
   protected readonly measurement = inject(MeasurementService);
   private readonly project = inject(ProjectService);
   private readonly format = inject(FormatService);
   private readonly language = inject(LanguageService);
   private readonly translate = inject(TranslateService);
-  private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
-  protected readonly rules = Object.keys(MEASUREMENT_RULES) as MeasurementRule[];
+  protected readonly ruleOptions = computed(() => {
+    this.language.loaded();
+    return (Object.keys(MEASUREMENT_RULES) as MeasurementRule[]).map((value) => ({
+      value,
+      label: this.translate.instant('quantities.rules.' + value),
+    }));
+  });
   protected readonly columns = COLUMNS;
   protected readonly rows = computed(() =>
     quantityRows(this.project.store.model(), this.project.store.values, this.measurement.rule()),
   );
-
-  open(): void {
-    this.dialog().nativeElement.showModal();
-  }
 
   protected cell(row: QuantityRow, key: Column): string {
     const value = row[key];

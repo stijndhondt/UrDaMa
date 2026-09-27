@@ -41,6 +41,8 @@ import { ContextMenuService } from './context-menu.service';
 export class PlanEditorComponent {
   readonly label = input('');
   readonly tool = signal<ToolName | null>(null);
+  /** Screen px per mm on the plan (0 until the first draw). */
+  readonly scale = signal(0);
 
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private readonly project = inject(ProjectService);
@@ -65,6 +67,7 @@ export class PlanEditorComponent {
         select: (selection) => this.selection.current.set(selection),
         refused: (reason, at) => this.messages.refused(reason, at),
         contextMenu: (at, target) => this.contextMenus.open(at, target),
+        zoomChanged: (scale) => this.scale.set(scale),
       };
       this.editor = new PlanEditor(this.canvas().nativeElement, host);
       // Development only: lets end-to-end checks convert between mm and screen positions.

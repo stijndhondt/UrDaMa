@@ -144,6 +144,8 @@ export class PlanEditor {
     this.typed.destroy();
   }
 
+  private reportedScale = 0;
+
   private draw(): void {
     const dpr = window.devicePixelRatio || 1;
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -152,6 +154,10 @@ export class PlanEditor {
       below: this.host.levelBelow?.() ?? null,
     });
     this.tool?.drawOverlay(this.ctx);
+    if (this.view.scale !== this.reportedScale) {
+      this.reportedScale = this.view.scale;
+      this.host.zoomChanged?.(this.view.scale);
+    }
   }
 
   private measure(): void {

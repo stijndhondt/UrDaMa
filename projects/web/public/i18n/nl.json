@@ -214,7 +214,10 @@
   },
   "common": {
     "cancel": "Annuleren",
-    "close": "Sluiten"
+    "close": "Sluiten",
+    "yes": "Ja",
+    "no": "Nee",
+    "apply": "Toepassen"
   },
   "file": {
     "saved": "Opgeslagen als {name}.",
@@ -268,7 +271,11 @@
       "floorLevel": "Vloerpeil",
       "ceilingLevel": "Plafondpeil",
       "ceilingVoid": "Plafondruimte",
-      "voidUnknown": "onbekend (geen bouwlaag erboven)"
+      "voidUnknown": "onbekend (geen bouwlaag erboven)",
+      "right": "rechterzijde",
+      "left": "linkerzijde",
+      "top": "bovenzijde",
+      "bottom": "onderzijde"
     },
     "wall": {
       "title": "Muur",
@@ -296,7 +303,8 @@
       "modes": {
         "room": "Ruimte verschuiven (de muur aan dat uiteinde schuift mee)",
         "wall": "Alleen deze muur (de verbonden muur kantelt)"
-      }
+      },
+      "lengthHint": "Klik om de lengte te wijzigen, de richting en wat er beweegt"
     },
     "resetToPreset": "Terug naar standaard",
     "twoRooms": "Twee ruimtes geselecteerd",
@@ -310,7 +318,9 @@
       "height": "Hoogte",
       "sill": "Borstweringshoogte",
       "flipHinge": "Scharnierkant",
-      "flipSwing": "Draairichting"
+      "flipSwing": "Draairichting",
+      "type": "Openingtype",
+      "sizes": "Maten (deze opening)"
     },
     "level": {
       "title": "Bouwlaag",
@@ -324,7 +334,26 @@
       "grossFloorArea": "Bruto vloeroppervlakte",
       "netFloorArea": "Netto vloeroppervlakte (totaal)",
       "delete": "Bouwlaag verwijderen",
-      "confirmDelete": "{name} en alles erop verwijderen?"
+      "confirmDelete": "{name} en alles erop verwijderen?",
+      "grossShort": "m² bruto",
+      "netShort": "m² netto",
+      "countShort": "bouwlagen"
+    },
+    "editKeys": "Enter bewaart · Esc annuleert",
+    "lengthKeys": "Enter past toe · Esc annuleert",
+    "heights": "Hoogtes",
+    "surfaces": "Oppervlakken",
+    "sizes": "Maten",
+    "placement": "Plaatsing",
+    "resetTo": "Terug naar standaard ({value})",
+    "followsStoreyAgain": "Weer de verdiepingshoogte volgen",
+    "summary": {
+      "floor": "m² vloer",
+      "walls": "m² muren",
+      "volume": "m³ volume",
+      "length": "m lang",
+      "drawnFace": "m² getekende zijde",
+      "otherFace": "m² andere zijde"
     }
   },
   "presets": {
@@ -394,5 +423,26 @@
     "flipHinge": "Scharnier aan de andere kant",
     "flipSwing": "Naar de andere kant opendraaien",
     "delete": "Verwijderen"
+  },
+  "shell": {
+    "panels": "Panelen",
+    "building": "Gebouw",
+    "plan": "Plattegrond",
+    "hideBottom": "Onderste paneel verbergen",
+    "noWarnings": "Geen waarschuwingen op deze bouwlaag",
+    "units": "m · mm",
+    "scale": "Tekenschaal bij 96 dpi",
+    "fit": "Hele plattegrond tonen",
+    "menu": {
+      "file": "Bestand",
+      "edit": "Bewerken",
+      "view": "Beeld"
+    },
+    "theme": {
+      "label": "Thema",
+      "system": "Zoals het systeem",
+      "light": "Licht",
+      "dark": "Donker"
+    }
   }
 }

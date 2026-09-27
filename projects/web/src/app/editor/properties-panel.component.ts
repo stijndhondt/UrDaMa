@@ -1,10 +1,19 @@
-import { Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  MEASUREMENT_RULES,
   deleteLevel,
   netWallArea,
   resizeRoom,
-  setWallLength,
+  setPresets,
   setWallThickness,
   updateLevel,
   updateOpening,
@@ -14,509 +23,678 @@ import {
   wallLength,
   wallThickness,
   type Command,
-  type LevelId,
-  type OpeningId,
-  type SetWallLengthArgs,
-  type WallId,
+  type MeasurementRule,
+  type Presets,
 } from '@lakudemis/core';
-import { editableLength, growOptions, parseLength } from '@lakudemis/editor2d';
+import { parseLength } from '@lakudemis/editor2d';
+import { ButtonModule } from '@openng/optimus-ui/button';
 import { FormatService } from '../format.service';
+import { LanguageService } from '../language';
 import { MeasurementService } from '../quantities/measurement.service';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
-import { PresetsPanelComponent } from './presets-panel.component';
+import { IconComponent } from '../shell/icon.component';
 import { EditorActionsService } from './editor-actions.service';
+import { LengthEditorComponent } from './length-editor.component';
+import { PropRowComponent, type PropChoice } from './prop-row.component';
 import { SelectionService } from './selection.service';
 
+const PRESET_FIELDS: readonly (keyof Presets)[] = [
+  'wallThickness',
+  'slabThickness',
+  'floorBuildUp',
+  'roomHeight',
+  'ceilingThickness',
+  'doorWidth',
+  'doorHeight',
+  'windowWidth',
+  'windowHeight',
+  'windowSill',
+];
+
+interface Figure {
+  readonly value: string;
+  readonly label: string;
+}
+
 /**
- * Properties of the selected Wall or Room. Each committed field (Enter or leaving the field) is
- * one command and one undo step.
+ * The properties panel (ticket 24, design C): what is selected, a summary of its key figures,
+ * then its properties as text; a click edits one in place, and each committed edit is one
+ * command and one undo step. Values that follow a Preset are grey; own values have a reset
+ * button. With nothing selected it shows the Level, the Presets and the Measurement rule.
  */
 @Component({
   selector: 'lk-properties-panel',
-  imports: [TranslatePipe, PresetsPanelComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TranslatePipe, ButtonModule, IconComponent, LengthEditorComponent, PropRowComponent],
   template: `
     @if (selection.room(); as room) {
-      <h2>{{ 'panel.room.title' | translate }}</h2>
-      <label>
-        {{ 'panel.room.name' | translate }}
-        <input
+      <header>
+        <span class="badge"><lk-icon name="square" /></span>
+        <div>
+          <h2>{{ room.name }}</h2>
+          <span class="kind">{{ 'panel.room.title' | translate }} · {{ levelName() }}</span>
+        </div>
+      </header>
+      <div class="summary">
+        @for (f of roomSummary(); track f.label) {
+          <div class="tile">
+            <b>{{ f.value }}</b
+            ><span>{{ f.label | translate }}</span>
+          </div>
+        }
+      </div>
+      <section>
+        <h3>{{ 'panel.room.title' | translate }}</h3>
+        <lk-prop
+          [label]="'panel.room.name' | translate"
           [value]="room.name"
-          (change)="rename($any($event.target))"
-          (keydown.enter)="$any($event.target).blur()"
+          (commit)="run(updateRoom, { room: room.id, name: $event })"
         />
-      </label>
-      <label>
-        {{ 'panel.room.height' | translate }}
-        <span class="field">
-          <input
-            [value]="room.height ?? presets().roomHeight"
-            [class.preset]="room.height === undefined"
-            (change)="setRoomHeight($any($event.target))"
-            (keydown.enter)="$any($event.target).blur()"
-          />
-          mm
-        </span>
-        <small>{{
-          (room.height === undefined ? 'panel.preset' : 'panel.custom') | translate
-        }}</small>
-      </label>
-      <label>
-        {{ 'panel.room.floorBuildUp' | translate }}
-        <span class="field">
-          <input
-            [value]="room.floorBuildUp ?? presets().floorBuildUp"
-            [class.preset]="room.floorBuildUp === undefined"
-            (change)="setFloorBuildUp($any($event.target))"
-            (keydown.enter)="$any($event.target).blur()"
-          />
-          mm
-        </span>
-        <small>{{
-          (room.floorBuildUp === undefined ? 'panel.preset' : 'panel.custom') | translate
-        }}</small>
-      </label>
-      <label>
-        {{ 'panel.room.floorFinish' | translate }}
-        <input
+        <lk-prop
+          [label]="'panel.room.floorFinish' | translate"
           [value]="room.floorFinish ?? ''"
-          [placeholder]="'panel.room.floorFinishPlaceholder' | translate"
-          (change)="setFloorFinish($any($event.target))"
-          (keydown.enter)="$any($event.target).blur()"
+          [hint]="'panel.room.floorFinishPlaceholder' | translate"
+          (commit)="run(updateRoom, { room: room.id, floorFinish: $event.trim() || null })"
         />
-      </label>
-      <dl>
-        <dt>{{ 'panel.room.netFloorArea' | translate }}</dt>
-        <dd>{{ roomArea() }}</dd>
-        @if (roomFigures(); as f) {
-          <dt>{{ 'panel.room.volume' | translate }}</dt>
-          <dd>{{ f.volume }}</dd>
-          <dt>{{ 'panel.room.floorFinishArea' | translate }}</dt>
-          <dd>{{ f.floorFinish }}</dd>
-          <dt>{{ 'panel.room.ceilingArea' | translate }}</dt>
-          <dd>{{ f.ceiling }}</dd>
-          <dt>{{ 'panel.room.netWallArea' | translate }}</dt>
-          <dd>
-            {{ f.netWall }}
-            <small>{{ 'quantities.rules.' + measurement.rule() | translate }}</small>
-          </dd>
-          <dt>{{ 'panel.room.revealArea' | translate }}</dt>
-          <dd>{{ f.reveals }}</dd>
-        }
-        @if (roomLevels(); as v) {
-          <dt>{{ 'panel.room.floorLevel' | translate }}</dt>
-          <dd>{{ v.floor }}</dd>
-          <dt>{{ 'panel.room.ceilingLevel' | translate }}</dt>
-          <dd>{{ v.ceiling }}</dd>
-          <dt>{{ 'panel.room.ceilingVoid' | translate }}</dt>
-          <dd [class.bad]="v.clash">{{ v.void ?? ('panel.room.voidUnknown' | translate) }}</dd>
-        }
-      </dl>
+      </section>
       @if (roomSize(); as size) {
-        <h3>{{ 'panel.room.insideSize' | translate }}</h3>
-        <label>
-          {{ 'panel.room.width' | translate }}
-          <span class="field">
-            <input
-              [value]="(size.width / 1000).toFixed(2)"
-              (change)="resize('x', $any($event.target))"
-              (keydown.enter)="$any($event.target).blur()"
-            />
-            m
-            <select
-              (change)="widthSide = $any($event.target).value"
-              [attr.aria-label]="'panel.room.moves' | translate"
-            >
-              <option value="max" [selected]="widthSide === 'max'">
-                {{ 'panel.room.movesRight' | translate }}
-              </option>
-              <option value="min" [selected]="widthSide === 'min'">
-                {{ 'panel.room.movesLeft' | translate }}
-              </option>
-            </select>
-          </span>
-        </label>
-        <label>
-          {{ 'panel.room.depth' | translate }}
-          <span class="field">
-            <input
-              [value]="(size.depth / 1000).toFixed(2)"
-              (change)="resize('y', $any($event.target))"
-              (keydown.enter)="$any($event.target).blur()"
-            />
-            m
-            <select
-              (change)="depthSide = $any($event.target).value"
-              [attr.aria-label]="'panel.room.moves' | translate"
-            >
-              <option value="max" [selected]="depthSide === 'max'">
-                {{ 'panel.room.movesBottom' | translate }}
-              </option>
-              <option value="min" [selected]="depthSide === 'min'">
-                {{ 'panel.room.movesTop' | translate }}
-              </option>
-            </select>
-          </span>
-        </label>
+        <section>
+          <h3>{{ 'panel.room.insideSize' | translate }}</h3>
+          <lk-prop
+            [label]="'panel.room.width' | translate"
+            [value]="metres(size.width)"
+            unit="m"
+            (commit)="resize('x', $event)"
+          />
+          <lk-prop
+            [label]="'panel.room.depth' | translate"
+            [value]="metres(size.depth)"
+            unit="m"
+            (commit)="resize('y', $event)"
+          />
+          <lk-prop
+            [label]="'panel.room.moves' | translate"
+            [value]="sidesText()"
+            [choices]="sideChoices()"
+            [choice]="widthSide() + depthSide()"
+            (commit)="setSides($event)"
+          />
+        </section>
       }
-    } @else if (selection.opening(); as opening) {
-      <h2>{{ 'panel.opening.' + opening.kind | translate }}</h2>
-      <label>
-        {{ 'panel.opening.offset' | translate }}
-        <span class="field">
-          <input
-            [value]="round(opening.offset)"
-            (change)="setOpening(opening.id, 'offset', $any($event.target))"
-            (keydown.enter)="$any($event.target).blur()"
-          />
-          mm
-        </span>
-      </label>
-      <label>
-        {{ 'panel.opening.width' | translate }}
-        <span class="field">
-          <input
-            [value]="round(opening.width)"
-            (change)="setOpening(opening.id, 'width', $any($event.target))"
-            (keydown.enter)="$any($event.target).blur()"
-          />
-          mm
-        </span>
-      </label>
-      <label>
-        {{ 'panel.opening.height' | translate }}
-        <span class="field">
-          <input
-            [value]="round(opening.height)"
-            (change)="setOpening(opening.id, 'height', $any($event.target))"
-            (keydown.enter)="$any($event.target).blur()"
-          />
-          mm
-        </span>
-      </label>
-      @if (opening.kind === 'window') {
-        <label>
-          {{ 'panel.opening.sill' | translate }}
-          <span class="field">
-            <input
-              [value]="round(opening.sill)"
-              (change)="setOpening(opening.id, 'sill', $any($event.target))"
-              (keydown.enter)="$any($event.target).blur()"
-            />
-            mm
-          </span>
-        </label>
-      } @else {
-        <p class="buttons">
-          <button type="button" (click)="flip(opening.id, 'flipHinge')">
-            {{ 'panel.opening.flipHinge' | translate }} (F)
-          </button>
-          <button type="button" (click)="flip(opening.id, 'flipSwing')">
-            {{ 'panel.opening.flipSwing' | translate }} (Shift+F)
-          </button>
-        </p>
-      }
-    } @else if (selection.wall(); as wall) {
-      <h2>{{ 'panel.wall.title' | translate }}</h2>
-      <label>
-        {{ 'panel.wall.length' | translate }}
-        <span class="field">
-          <input
-            [value]="editableLength(wallLength(wall))"
-            (change)="setLength($any($event.target))"
-            (keydown.enter)="$any($event.target).blur()"
-          />
-          m
-          <select
-            (change)="growIndex = +$any($event.target).value"
-            [attr.aria-label]="'panel.wall.grows' | translate"
-          >
-            @for (o of growChoices(); track $index) {
-              <option [value]="$index" [selected]="growIndex === $index">
-                {{ 'panel.wall.grow.' + o.label | translate }}
-              </option>
-            }
-          </select>
-        </span>
-      </label>
-      <label>
-        {{ 'panel.wall.lengthMode' | translate }}
-        <select (change)="lengthMode = $any($event.target).value">
-          <option value="room" [selected]="lengthMode === 'room'">
-            {{ 'panel.wall.modes.room' | translate }}
-          </option>
-          <option value="wall" [selected]="lengthMode === 'wall'">
-            {{ 'panel.wall.modes.wall' | translate }}
-          </option>
-        </select>
-      </label>
-      <dl>
-        <dt>{{ 'panel.wall.side' | translate }}</dt>
-        <dd>{{ 'editor.wall.side.' + wall.side | translate }}</dd>
-      </dl>
-      <label>
-        {{ 'panel.wall.thickness' | translate }}
-        <span class="field">
-          <input
-            [value]="thickness(wall)"
-            [class.preset]="wall.thickness === undefined"
-            (change)="setThickness(wall.id, $any($event.target))"
-            (keydown.enter)="$any($event.target).blur()"
-          />
-          mm
-          @if (wall.thickness !== undefined) {
-            <button type="button" (click)="resetThickness(wall.id)">
-              {{ 'panel.resetToPreset' | translate }}
-            </button>
-          }
-        </span>
-        <small>{{
-          (wall.thickness === undefined ? 'panel.preset' : 'panel.custom') | translate
-        }}</small>
-      </label>
-      <label>
-        {{ 'panel.wall.height' | translate }}
-        <span class="field">
-          <input
-            [value]="wall.height ?? storeyHeight(wall.level)"
-            [class.preset]="wall.height === undefined"
-            (change)="setWallHeight(wall.id, $any($event.target))"
-            (keydown.enter)="$any($event.target).blur()"
-          />
-          mm
-        </span>
-        <small>{{
-          (wall.height === undefined ? 'panel.followsStorey' : 'panel.custom') | translate
-        }}</small>
-      </label>
-      <label class="check">
-        <input
-          type="checkbox"
-          [checked]="wall.roomBounding"
-          (change)="setRoomBounding(wall.id, $any($event.target).checked)"
+      <section>
+        <h3>{{ 'panel.heights' | translate }}</h3>
+        <lk-prop
+          [label]="'panel.room.height' | translate"
+          [value]="mm(room.height ?? presets().roomHeight)"
+          unit="mm"
+          [preset]="room.height === undefined"
+          [resetLabel]="room.height === undefined ? null : resetText(presets().roomHeight)"
+          (commit)="commitMm($event, updateRoom, { room: room.id }, 'height')"
+          (restore)="run(updateRoom, { room: room.id, height: null })"
         />
-        {{ 'panel.wall.roomBounding' | translate }}
-      </label>
-      @if (wallFaces(); as faces) {
-        <h3>{{ 'panel.wall.faces' | translate }}</h3>
-        <dl>
-          @for (f of faces; track f.key) {
-            <dt>{{ f.key | translate }}</dt>
-            <dd>
-              {{ format.length(f.face.length) }} · {{ 'panel.wall.gross' | translate }}
-              {{ format.area(f.face.gross) }} · {{ 'panel.wall.net' | translate }}
-              {{ format.area(f.face.net) }}
-            </dd>
+        <lk-prop
+          [label]="'panel.room.floorBuildUp' | translate"
+          [value]="mm(room.floorBuildUp ?? presets().floorBuildUp)"
+          unit="mm"
+          [preset]="room.floorBuildUp === undefined"
+          [resetLabel]="room.floorBuildUp === undefined ? null : resetText(presets().floorBuildUp)"
+          (commit)="commitMm($event, updateRoom, { room: room.id }, 'floorBuildUp')"
+          (restore)="run(updateRoom, { room: room.id, floorBuildUp: null })"
+        />
+        @if (roomLevels(); as v) {
+          <lk-prop
+            [label]="'panel.room.floorLevel' | translate"
+            [value]="v.floor"
+            [editable]="false"
+          />
+          <lk-prop
+            [label]="'panel.room.ceilingLevel' | translate"
+            [value]="v.ceiling"
+            [editable]="false"
+          />
+          <lk-prop
+            [label]="'panel.room.ceilingVoid' | translate"
+            [value]="v.void ?? ('panel.room.voidUnknown' | translate)"
+            [editable]="false"
+            [class.bad]="v.clash"
+          />
+        }
+      </section>
+      <section>
+        <h3>{{ 'panel.surfaces' | translate }}</h3>
+        @for (f of roomFigures(); track f.label) {
+          <lk-prop [label]="f.label | translate" [value]="f.value" [editable]="false" />
+        }
+      </section>
+    } @else if (selection.opening(); as opening) {
+      <header>
+        <span class="badge">
+          <lk-icon [name]="opening.kind === 'door' ? 'door-open' : 'app-window'" />
+        </span>
+        <div>
+          <h2>{{ 'panel.opening.' + opening.kind | translate }} {{ typeName() }}</h2>
+          <span class="kind">{{ 'panel.opening.type' | translate }} · {{ levelName() }}</span>
+        </div>
+      </header>
+      <section>
+        <h3>{{ 'panel.placement' | translate }}</h3>
+        <lk-prop
+          [label]="'panel.opening.offset' | translate"
+          [value]="mm(opening.offset)"
+          unit="mm"
+          (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'offset')"
+        />
+        @if (opening.kind === 'window') {
+          <lk-prop
+            [label]="'panel.opening.sill' | translate"
+            [value]="mm(opening.sill)"
+            unit="mm"
+            (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'sill')"
+          />
+        } @else {
+          <div class="actions">
+            <p-button
+              size="small"
+              severity="secondary"
+              [label]="('panel.opening.flipHinge' | translate) + ' (F)'"
+              (onClick)="run(updateOpening, { opening: opening.id, flipHinge: true })"
+            />
+            <p-button
+              size="small"
+              severity="secondary"
+              [label]="('panel.opening.flipSwing' | translate) + ' (Shift+F)'"
+              (onClick)="run(updateOpening, { opening: opening.id, flipSwing: true })"
+            />
+          </div>
+        }
+      </section>
+      <section>
+        <h3>{{ 'panel.opening.sizes' | translate }}</h3>
+        <lk-prop
+          [label]="'panel.opening.width' | translate"
+          [value]="mm(opening.width)"
+          unit="mm"
+          (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'width')"
+        />
+        <lk-prop
+          [label]="'panel.opening.height' | translate"
+          [value]="mm(opening.height)"
+          unit="mm"
+          (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'height')"
+        />
+      </section>
+    } @else if (selection.wall(); as wall) {
+      <header>
+        <span class="badge"><lk-icon name="brick-wall" /></span>
+        <div>
+          <h2>{{ 'panel.wall.title' | translate }}</h2>
+          <span class="kind"
+            >{{ 'editor.wall.side.' + wall.side | translate }} · {{ levelName() }}</span
+          >
+        </div>
+      </header>
+      @if (wallSummary(); as figures) {
+        <div class="summary">
+          @for (f of figures; track f.label) {
+            <div class="tile">
+              <b>{{ f.value }}</b
+              ><span>{{ f.label | translate }}</span>
+            </div>
           }
-        </dl>
+        </div>
+      }
+      <section>
+        <h3>{{ 'panel.sizes' | translate }}</h3>
+        @if (editingLength()) {
+          <lk-length-editor [wall]="wall" (closed)="editingLength.set(false)" />
+        } @else {
+          <lk-prop
+            [label]="'panel.wall.length' | translate"
+            [value]="metres(wallLength(wall))"
+            unit="m"
+            [hint]="'panel.wall.lengthHint' | translate"
+            [opens]="true"
+            (open)="editingLength.set(true)"
+          />
+        }
+        <lk-prop
+          [label]="'panel.wall.thickness' | translate"
+          [value]="mm(thickness(wall))"
+          unit="mm"
+          [preset]="wall.thickness === undefined"
+          [resetLabel]="wall.thickness === undefined ? null : resetText(presets().wallThickness)"
+          (commit)="commitMm($event, setWallThickness, { wall: wall.id }, 'thickness')"
+          (restore)="run(setWallThickness, { wall: wall.id, thickness: null })"
+        />
+        <lk-prop
+          [label]="'panel.wall.height' | translate"
+          [value]="mm(wall.height ?? storeyHeight(wall.level))"
+          unit="mm"
+          [preset]="wall.height === undefined"
+          [resetLabel]="wall.height === undefined ? null : ('panel.followsStoreyAgain' | translate)"
+          (commit)="commitMm($event, updateWall, { wall: wall.id }, 'height')"
+          (restore)="run(updateWall, { wall: wall.id, height: null })"
+        />
+        <lk-prop
+          [label]="'panel.wall.roomBounding' | translate"
+          [value]="(wall.roomBounding ? 'common.yes' : 'common.no') | translate"
+          [choices]="yesNo()"
+          [choice]="wall.roomBounding ? 'yes' : 'no'"
+          (commit)="run(updateWall, { wall: wall.id, roomBounding: $event === 'yes' })"
+        />
+      </section>
+      @if (wallFaces(); as faces) {
+        <section>
+          <h3>{{ 'panel.wall.faces' | translate }}</h3>
+          @for (f of faces; track f.label) {
+            <lk-prop [label]="f.label | translate" [value]="f.value" [editable]="false" />
+          }
+        </section>
       }
     } @else if (selection.rooms().length === 2) {
-      <h2>{{ 'panel.twoRooms' | translate }}</h2>
-      <p>{{ selection.rooms()[0]!.name }} + {{ selection.rooms()[1]!.name }}</p>
-      <button type="button" class="primary" (click)="merge()">
-        {{ 'panel.merge' | translate }} (M)
-      </button>
+      <header>
+        <span class="badge"><lk-icon name="merge" /></span>
+        <div>
+          <h2>{{ 'panel.twoRooms' | translate }}</h2>
+          <span class="kind"
+            >{{ selection.rooms()[0]!.name }} + {{ selection.rooms()[1]!.name }}</span
+          >
+        </div>
+      </header>
+      <div class="actions">
+        <p-button
+          size="small"
+          [label]="('panel.merge' | translate) + ' (M)'"
+          (onClick)="actions.merge()"
+        />
+      </div>
     } @else {
-      <p class="empty">{{ 'panel.nothingSelected' | translate }}</p>
+      <header>
+        <span class="badge"><lk-icon name="layers" /></span>
+        <div>
+          <h2>{{ project.name() }}</h2>
+          <span class="kind">{{ 'panel.nothingSelected' | translate }}</span>
+        </div>
+      </header>
       @if (level(); as l) {
-        <h2>{{ 'panel.level.title' | translate }}</h2>
-        <label>
-          {{ 'panel.level.name' | translate }}
-          <input
+        <div class="summary">
+          <div class="tile">
+            <b>{{ l.gross }}</b
+            ><span>{{ 'panel.level.grossShort' | translate }}</span>
+          </div>
+          <div class="tile">
+            <b>{{ l.net }}</b
+            ><span>{{ 'panel.level.netShort' | translate }}</span>
+          </div>
+          <div class="tile">
+            <b>{{ l.count }}</b
+            ><span>{{ 'panel.level.countShort' | translate }}</span>
+          </div>
+        </div>
+        <section>
+          <h3>{{ 'panel.level.title' | translate }} · {{ l.level.name }}</h3>
+          <lk-prop
+            [label]="'panel.level.name' | translate"
             [value]="l.level.name"
-            (change)="renameLevel($any($event.target))"
-            (keydown.enter)="$any($event.target).blur()"
+            (commit)="run(updateLevel, { level: l.level.id, name: $event })"
           />
-        </label>
-        <label>
-          {{ 'panel.level.elevation' | translate }}
-          <span class="field">
-            <input
-              [value]="l.heights.elevation"
-              [disabled]="!l.lowest"
-              (change)="setElevation($any($event.target))"
-              (keydown.enter)="$any($event.target).blur()"
-            />
-            mm
-          </span>
-          <small>{{
-            (l.lowest ? 'panel.level.elevationLowest' : 'panel.level.elevationDerived') | translate
-          }}</small>
-        </label>
-        <label>
-          {{ 'panel.level.storeyHeight' | translate }}
-          <span class="field">
-            <input
-              [value]="l.level.storeyHeight"
-              (change)="setStoreyHeight($any($event.target))"
-              (keydown.enter)="$any($event.target).blur()"
-            />
-            mm
-          </span>
-          <small>{{ 'panel.level.storeyHint' | translate }}</small>
-        </label>
-        <label>
-          {{ 'panel.level.slabThickness' | translate }}
-          <span class="field">
-            <input
-              [value]="l.heights.slabThickness"
-              [class.preset]="!l.slabOwn"
-              (change)="setSlab($any($event.target))"
-              (keydown.enter)="$any($event.target).blur()"
-            />
-            mm
-            @if (l.slabOwn) {
-              <button type="button" (click)="resetSlab()">
-                {{ 'panel.resetToPreset' | translate }}
-              </button>
-            }
-          </span>
-          <small>{{ (l.slabOwn ? 'panel.custom' : 'panel.preset') | translate }}</small>
-        </label>
-        <dl>
-          <dt>{{ 'panel.level.grossFloorArea' | translate }}</dt>
-          <dd>{{ l.gross }}</dd>
-          <dt>{{ 'panel.level.netFloorArea' | translate }}</dt>
-          <dd>{{ l.net }}</dd>
-        </dl>
-        @if (l.count > 1) {
-          <p class="buttons">
-            <button type="button" (click)="removeLevel()">
-              {{ 'panel.level.delete' | translate }}
-            </button>
-          </p>
-        }
-      }
-      @if (warnings().length) {
-        <h3>{{ 'panel.warnings' | translate }}</h3>
-        <ul class="warnings">
-          @for (w of warnings(); track $index) {
-            <li>{{ w.key | translate: w.params }}</li>
+          <lk-prop
+            [label]="'panel.level.elevation' | translate"
+            [value]="mm(l.heights.elevation)"
+            unit="mm"
+            [editable]="l.lowest"
+            [hint]="
+              (l.lowest ? 'panel.level.elevationLowest' : 'panel.level.elevationDerived')
+                | translate
+            "
+            (commit)="commitMm($event, updateLevel, { level: l.level.id }, 'elevation')"
+          />
+          <lk-prop
+            [label]="'panel.level.storeyHeight' | translate"
+            [value]="mm(l.level.storeyHeight)"
+            unit="mm"
+            [hint]="'panel.level.storeyHint' | translate"
+            (commit)="commitMm($event, updateLevel, { level: l.level.id }, 'storeyHeight')"
+          />
+          <lk-prop
+            [label]="'panel.level.slabThickness' | translate"
+            [value]="mm(l.heights.slabThickness)"
+            unit="mm"
+            [preset]="!l.slabOwn"
+            [resetLabel]="l.slabOwn ? resetText(presets().slabThickness) : null"
+            (commit)="commitMm($event, updateSlab, { level: l.level.id }, 'thickness')"
+            (restore)="run(updateSlab, { level: l.level.id, thickness: null })"
+          />
+          @if (l.count > 1) {
+            <div class="actions">
+              <p-button
+                size="small"
+                severity="danger"
+                [text]="true"
+                [label]="'panel.level.delete' | translate"
+                (onClick)="removeLevel()"
+              />
+            </div>
           }
-        </ul>
+        </section>
       }
-      <lk-presets-panel />
+      <section>
+        <h3>{{ 'presets.title' | translate }}</h3>
+        <p class="note">{{ 'presets.hint' | translate }}</p>
+        @for (f of presetFields; track f) {
+          <lk-prop
+            [label]="'presets.' + f | translate"
+            [value]="mm(presets()[f])"
+            unit="mm"
+            (commit)="commitMm($event, setPresets, {}, f)"
+          />
+        }
+      </section>
+      <section>
+        <h3>{{ 'quantities.rule' | translate }}</h3>
+        <lk-prop
+          [label]="'quantities.rule' | translate"
+          [value]="'quantities.rules.' + measurement.rule() | translate"
+          [choices]="rules()"
+          [choice]="measurement.rule()"
+          (commit)="measurement.rule.set($any($event))"
+        />
+      </section>
     }
   `,
   styles: `
     :host {
       display: block;
-      padding: 12px 14px;
+      padding-bottom: 12px;
       font-size: 13px;
     }
-    h2 {
-      font-size: 14px;
-      margin: 0 0 10px;
-    }
-    h3 {
-      font-size: 12px;
-      margin: 12px 0 6px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .warnings {
-      margin: 0 0 12px;
-      padding-left: 18px;
-      color: var(--warn);
-    }
-    button.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-      padding: 5px 12px;
-      font-size: 13px;
-    }
-    select,
-    button {
-      font-size: 12px;
-      padding: 2px 6px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-    }
-    label {
-      display: grid;
-      gap: 3px;
-      margin-bottom: 10px;
-      color: var(--muted);
-    }
-    label.check {
+    header {
       display: flex;
       align-items: center;
-      gap: 6px;
-      color: var(--ink);
+      gap: 10px;
+      padding: 14px 14px 10px;
     }
-    input:not([type='checkbox']) {
-      padding: 4px 6px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      color: var(--ink);
+    header > div {
+      display: flex;
+      flex-direction: column;
       min-width: 0;
     }
-    input.preset {
-      color: var(--muted);
-    }
-    .field {
+    .badge {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      border-radius: 7px;
       display: flex;
       align-items: center;
-      gap: 6px;
-      color: var(--ink);
+      justify-content: center;
+      background: var(--accent-soft);
+      color: var(--accent);
     }
-    .field input {
-      width: 90px;
-    }
-    small {
-      color: var(--muted);
-      font-size: 11px;
-    }
-    dl {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 4px 10px;
-      margin: 0 0 10px;
-    }
-    dt {
-      color: var(--muted);
-    }
-    dd {
+    h2 {
       margin: 0;
-    }
-    .buttons {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    dd.bad {
-      color: var(--bad, #d64545);
+      font-size: 15px;
       font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    input:disabled {
-      background: #f3f4f6;
+    .kind {
+      font-size: 12px;
       color: var(--muted);
     }
-    .empty {
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      padding: 0 14px 12px;
+    }
+    .tile {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 8px;
+      border-radius: 8px;
+      background: var(--inset);
+    }
+    .tile b {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .tile span {
+      font-size: 11px;
       color: var(--muted);
+    }
+    section {
+      padding: 4px 0 8px;
+      border-top: 1px solid var(--line);
+    }
+    h3 {
+      margin: 8px 14px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .note {
+      margin: 0 14px 6px;
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px 14px;
+    }
+    lk-prop.bad {
+      color: var(--bad);
     }
   `,
 })
 export class PropertiesPanelComponent {
   protected readonly selection = inject(SelectionService);
-  protected readonly format = inject(FormatService);
-  private readonly project = inject(ProjectService);
+  protected readonly project = inject(ProjectService);
+  protected readonly measurement = inject(MeasurementService);
+  protected readonly actions = inject(EditorActionsService);
+  private readonly format = inject(FormatService);
   private readonly messages = inject(MessagesService);
-  private readonly actions = inject(EditorActionsService);
   private readonly translate = inject(TranslateService);
+  private readonly language = inject(LanguageService);
+
+  protected readonly updateRoom = updateRoom;
+  protected readonly updateWall = updateWall;
+  protected readonly updateOpening = updateOpening;
+  protected readonly updateLevel = updateLevel;
+  protected readonly updateSlab = updateSlab;
+  protected readonly setWallThickness = setWallThickness;
+  protected readonly setPresets = setPresets;
   protected readonly wallLength = wallLength;
-  protected readonly editableLength = editableLength;
+  protected readonly presetFields = PRESET_FIELDS;
+
   protected readonly presets = computed(() => this.project.store.model().project.presets);
-  protected readonly roomArea = computed(() => {
-    const room = this.selection.room();
-    const area = room ? this.project.store.values.room(room.id).netFloorArea() : null;
-    return area === null ? '—' : this.format.area(area);
+  protected readonly editingLength = signal(false);
+  protected readonly widthSide = signal<'min' | 'max'>('max');
+  protected readonly depthSide = signal<'min' | 'max'>('max');
+
+  constructor() {
+    // Another selection closes the length editor.
+    effect(() => {
+      this.selection.current();
+      untracked(() => this.editingLength.set(false));
+    });
+  }
+
+  protected readonly levelName = computed(
+    () => this.project.store.model().levels[this.project.level()]?.name ?? '',
+  );
+
+  /** Choices built in code are translated again when a language's texts have loaded. */
+  private readonly t = (key: string, params?: object): string => {
+    this.language.loaded();
+    return this.translate.instant(key, params);
+  };
+  protected readonly yesNo = computed<PropChoice[]>(() => [
+    { value: 'yes', label: this.t('common.yes') },
+    { value: 'no', label: this.t('common.no') },
+  ]);
+  protected readonly rules = computed<PropChoice[]>(() =>
+    (Object.keys(MEASUREMENT_RULES) as MeasurementRule[]).map((r) => ({
+      value: r,
+      label: this.t('quantities.rules.' + r),
+    })),
+  );
+  protected readonly sideChoices = computed<PropChoice[]>(() =>
+    (['maxmax', 'minmax', 'maxmin', 'minmin'] as const).map((v) => ({
+      value: v,
+      label: this.sideLabel(v.slice(0, 3) as 'min' | 'max', v.slice(3) as 'min' | 'max'),
+    })),
+  );
+  protected readonly sidesText = computed(() => this.sideLabel(this.widthSide(), this.depthSide()));
+
+  private sideLabel(width: 'min' | 'max', depth: 'min' | 'max'): string {
+    return `${this.t(width === 'max' ? 'panel.room.right' : 'panel.room.left')} · ${this.t(
+      depth === 'max' ? 'panel.room.bottom' : 'panel.room.top',
+    )}`;
+  }
+
+  /** Up to one decimal, no thousands separator, in the user's language: "2600", "884,6". */
+  private readonly plain = computed(
+    () =>
+      new Intl.NumberFormat(this.language.current() === 'nl' ? 'nl-BE' : 'en-GB', {
+        maximumFractionDigits: 1,
+        useGrouping: false,
+      }),
+  );
+
+  /** mm as the user types it back. */
+  protected mm(value: number): string {
+    return this.plain().format(value);
+  }
+
+  /** m with 2 decimals in the user's language, as typed back ("2,67"). */
+  protected metres(value: number): string {
+    return this.format.decimal(value / 1000);
+  }
+
+  protected resetText(preset: number): string {
+    return this.t('panel.resetTo', { value: `${this.mm(preset)} mm` });
+  }
+
+  protected thickness(wall: Parameters<typeof wallThickness>[0]): number {
+    return wallThickness(wall, this.presets().wallThickness);
+  }
+
+  protected storeyHeight(level: string): number {
+    return this.project.store.model().levels[level]?.storeyHeight ?? 0;
+  }
+
+  protected readonly typeName = computed(() => {
+    const o = this.selection.opening();
+    const type = o && this.project.store.model().openingTypes[o.type];
+    if (!type) return '';
+    // An unnamed type is shown by its sizes in cm, like "93 × 211,5".
+    return (
+      type.name ??
+      `${this.plain().format(type.width / 10)} × ${this.plain().format(type.height / 10)}`
+    );
   });
 
-  protected readonly measurement = inject(MeasurementService);
+  protected readonly roomSummary = computed<Figure[]>(() => {
+    const room = this.selection.room();
+    if (!room) return [];
+    const v = this.project.store.values.room(room.id);
+    const s = v.surfaces();
+    const area = (mm2: number | null) => (mm2 === null ? '—' : this.format.decimal(mm2 / 1e6));
+    const volume = v.volume();
+    return [
+      { value: area(v.netFloorArea()), label: 'panel.summary.floor' },
+      {
+        value: area(s ? netWallArea(s, this.measurement.rule()) : null),
+        label: 'panel.summary.walls',
+      },
+      {
+        value: volume === null ? '—' : this.format.decimal(volume / 1e9),
+        label: 'panel.summary.volume',
+      },
+    ];
+  });
+
+  /** The Room's other figures, under the chosen Measurement rule. */
+  protected readonly roomFigures = computed<Figure[]>(() => {
+    const room = this.selection.room();
+    if (!room) return [];
+    const v = this.project.store.values.room(room.id);
+    const s = v.surfaces();
+    const area = (mm2: number | null) => (mm2 === null ? '—' : this.format.area(mm2));
+    return [
+      { value: area(v.floorFinishArea()), label: 'panel.room.floorFinishArea' },
+      { value: area(v.ceilingArea()), label: 'panel.room.ceilingArea' },
+      { value: area(s ? s.revealArea : null), label: 'panel.room.revealArea' },
+    ];
+  });
+
+  protected readonly roomLevels = computed(() => {
+    const room = this.selection.room();
+    if (!room) return null;
+    const v = this.project.store.values.room(room.id);
+    const gap = v.ceilingVoid();
+    return {
+      floor: this.format.length(v.floorTop()),
+      ceiling: this.format.length(v.ceilingUnderside()),
+      void: gap === null ? null : this.format.millimetres(Math.round(gap)),
+      clash: gap !== null && gap < -0.5,
+    };
+  });
+
+  /** Inside width and depth of a rectangular Room (null for other shapes). */
+  protected readonly roomSize = computed(() => {
+    const room = this.selection.room();
+    const d = room ? this.project.store.values.room(room.id).detection() : undefined;
+    if (!d || d.status !== 'enclosed' || d.area.islands.length) return null;
+    const xs = d.area.outline.map((p) => p.x);
+    const ys = d.area.outline.map((p) => p.y);
+    const [minX, maxX, minY, maxY] = [
+      Math.min(...xs),
+      Math.max(...xs),
+      Math.min(...ys),
+      Math.max(...ys),
+    ];
+    const rectangular = d.area.outline.every(
+      (p) =>
+        (Math.abs(p.x - minX) < 0.5 || Math.abs(p.x - maxX) < 0.5) &&
+        (Math.abs(p.y - minY) < 0.5 || Math.abs(p.y - maxY) < 0.5),
+    );
+    return rectangular ? { width: maxX - minX, depth: maxY - minY } : null;
+  });
+
+  protected readonly wallSummary = computed<Figure[] | null>(() => {
+    const wall = this.selection.wall();
+    const faces = wall ? this.project.store.values.wall(wall.id).faces() : undefined;
+    if (!wall || !faces) return null;
+    return [
+      { value: this.format.decimal(wallLength(wall) / 1000), label: 'panel.summary.length' },
+      { value: this.format.decimal(faces.drawn.net / 1e6), label: 'panel.summary.drawnFace' },
+      { value: this.format.decimal(faces.other.net / 1e6), label: 'panel.summary.otherFace' },
+    ];
+  });
+
+  /** Both faces of the selected Wall: length, gross and net area (Openings subtracted). */
+  protected readonly wallFaces = computed<Figure[] | null>(() => {
+    const wall = this.selection.wall();
+    const faces = wall ? this.project.store.values.wall(wall.id).faces() : undefined;
+    if (!faces) return null;
+    // Length and net area (Openings subtracted); the Quantities show the gross area too.
+    const text = (f: typeof faces.drawn) =>
+      `${this.format.length(f.length)} · ${this.format.area(f.net)}`;
+    return [
+      { value: text(faces.drawn), label: 'panel.wall.drawnFace' },
+      { value: text(faces.other), label: 'panel.wall.otherFace' },
+    ];
+  });
 
   /** The edited Level: its place in the stack, Slab and floor areas. */
   protected readonly level = computed(() => {
@@ -533,55 +711,31 @@ export class PropertiesPanelComponent {
       lowest: levels[0]?.id === id,
       count: levels.length,
       slabOwn: Object.values(model.slabs).some((s) => s.level === id && s.thickness !== undefined),
-      gross: this.format.area(values.grossArea()),
-      net: this.format.area(values.netFloorArea()),
+      gross: this.format.decimal(values.grossArea() / 1e6),
+      net: this.format.decimal(values.netFloorArea() / 1e6),
     };
   });
 
-  /** Floor level, Ceiling level and Ceiling void of the selected Room. */
-  protected readonly roomLevels = computed(() => {
+  protected setSides(value: string): void {
+    this.widthSide.set(value.slice(0, 3) as 'min' | 'max');
+    this.depthSide.set(value.slice(3) as 'min' | 'max');
+  }
+
+  protected resize(axis: 'x' | 'y', text: string): void {
     const room = this.selection.room();
-    if (!room) return null;
-    const v = this.project.store.values.room(room.id);
-    const gap = v.ceilingVoid();
-    return {
-      floor: this.format.length(v.floorTop()),
-      ceiling: this.format.length(v.ceilingUnderside()),
-      void: gap === null ? null : this.format.millimetres(Math.round(gap)),
-      clash: gap !== null && gap < -0.5,
-    };
-  });
-
-  protected renameLevel(input: HTMLInputElement): void {
-    const l = this.level();
-    if (l && input.value.trim() !== l.level.name)
-      this.run(updateLevel, { level: l.level.id, name: input.value }, input, l.level.name);
+    const size = parseLength(text);
+    if (!room || size === null) return;
+    const side = axis === 'x' ? this.widthSide() : this.depthSide();
+    this.run(resizeRoom, { room: room.id, axis, size, side });
   }
 
-  protected setElevation(input: HTMLInputElement): void {
-    const l = this.level();
-    const elevation = parseLength(input.value);
-    if (!l || elevation === null) return;
-    this.run(updateLevel, { level: l.level.id, elevation }, input, String(l.heights.elevation));
-  }
-
-  protected setStoreyHeight(input: HTMLInputElement): void {
-    const l = this.level();
-    const storeyHeight = parseLength(input.value);
-    if (!l || storeyHeight === null) return;
-    this.run(updateLevel, { level: l.level.id, storeyHeight }, input, String(l.level.storeyHeight));
-  }
-
-  protected setSlab(input: HTMLInputElement): void {
-    const l = this.level();
-    const thickness = parseLength(input.value);
-    if (!l || thickness === null) return;
-    this.run(updateSlab, { level: l.level.id, thickness }, input, String(l.heights.slabThickness));
-  }
-
-  protected resetSlab(): void {
-    const l = this.level();
-    if (l) this.run(updateSlab, { level: l.level.id, thickness: null }, null, '');
+  /**
+   * A typed length (mm) as one field of a command's arguments; text that isn't a length is
+   * ignored and the row shows the value again.
+   */
+  protected commitMm<A>(text: string, command: Command<A>, base: object, field: string): void {
+    const value = parseLength(text);
+    if (value !== null) this.run(command, { ...base, [field]: value } as A);
   }
 
   protected removeLevel(): void {
@@ -589,196 +743,11 @@ export class PropertiesPanelComponent {
     if (!l) return;
     const text = this.translate.instant('panel.level.confirmDelete', { name: l.level.name });
     if (!window.confirm(text)) return;
-    this.run(deleteLevel, { level: l.level.id }, null, '');
+    this.run(deleteLevel, { level: l.level.id });
   }
 
-  protected setFloorBuildUp(input: HTMLInputElement): void {
-    const room = this.selection.room();
-    if (!room) return;
-    const floorBuildUp = input.value.trim() === '' ? null : parseLength(input.value);
-    this.run(
-      updateRoom,
-      { room: room.id, floorBuildUp },
-      input,
-      String(room.floorBuildUp ?? this.presets().floorBuildUp),
-    );
-  }
-
-  protected setFloorFinish(input: HTMLInputElement): void {
-    const room = this.selection.room();
-    if (!room) return;
-    const floorFinish = input.value.trim() === '' ? null : input.value;
-    if ((floorFinish ?? undefined) === room.floorFinish) return;
-    this.run(updateRoom, { room: room.id, floorFinish }, input, room.floorFinish ?? '');
-  }
-  /** Volume, finishes and wall surfaces of the selected Room, under the chosen Measurement rule. */
-  protected readonly roomFigures = computed(() => {
-    const room = this.selection.room();
-    if (!room) return null;
-    const v = this.project.store.values.room(room.id);
-    const s = v.surfaces();
-    const volume = v.volume();
-    const floor = v.floorFinishArea();
-    const ceiling = v.ceilingArea();
-    if (!s || volume === null || floor === null || ceiling === null) return null;
-    return {
-      volume: this.format.volume(volume),
-      floorFinish: this.format.area(floor),
-      ceiling: this.format.area(ceiling),
-      netWall: this.format.area(netWallArea(s, this.measurement.rule())),
-      reveals: this.format.area(s.revealArea),
-    };
-  });
-
-  protected readonly warnings = computed(() =>
-    this.project.store.values.level(this.project.level()).warnings(),
-  );
-
-  /** Both faces of the selected Wall: length, gross and net area (Openings subtracted). */
-  protected readonly wallFaces = computed(() => {
-    const wall = this.selection.wall();
-    const faces = wall ? this.project.store.values.wall(wall.id).faces() : undefined;
-    return faces
-      ? [
-          { key: 'panel.wall.drawnFace', face: faces.drawn },
-          { key: 'panel.wall.otherFace', face: faces.other },
-        ]
-      : null;
-  });
-
-  protected round(mm: number): string {
-    return String(Math.round(mm * 10) / 10);
-  }
-
-  protected setOpening(
-    opening: OpeningId,
-    field: 'offset' | 'width' | 'height' | 'sill',
-    input: HTMLInputElement,
-  ): void {
-    const value = parseLength(input.value);
-    const current = this.selection.opening();
-    if (value === null || !current) return;
-    this.run(updateOpening, { opening, [field]: value }, input, this.round(current[field]));
-  }
-
-  protected flip(opening: OpeningId, which: 'flipHinge' | 'flipSwing'): void {
-    this.run(updateOpening, { opening, [which]: true }, null, '');
-  }
-
-  protected merge(): void {
-    this.actions.merge();
-  }
-
-  protected widthSide: 'min' | 'max' = 'max';
-  protected depthSide: 'min' | 'max' = 'max';
-
-  /** Inside width and depth of a rectangular Room (null for other shapes). */
-  protected readonly roomSize = computed(() => {
-    const room = this.selection.room();
-    const d = room ? this.project.store.values.room(room.id).detection() : undefined;
-    if (!d || d.status !== 'enclosed' || d.area.islands.length) return null;
-    const xs = d.area.outline.map((p) => p.x);
-    const ys = d.area.outline.map((p) => p.y);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-    const rectangular = d.area.outline.every(
-      (p) =>
-        (Math.abs(p.x - minX) < 0.5 || Math.abs(p.x - maxX) < 0.5) &&
-        (Math.abs(p.y - minY) < 0.5 || Math.abs(p.y - maxY) < 0.5),
-    );
-    return rectangular ? { width: maxX - minX, depth: maxY - minY } : null;
-  });
-
-  protected resize(axis: 'x' | 'y', input: HTMLInputElement): void {
-    const room = this.selection.room();
-    const size = parseLength(input.value);
-    const current = this.roomSize();
-    if (!room || !current || size === null) return;
-    const side = axis === 'x' ? this.widthSide : this.depthSide;
-    const previous = ((axis === 'x' ? current.width : current.depth) / 1000).toFixed(2);
-    this.run(resizeRoom, { room: room.id, axis, size, side }, input, previous);
-  }
-
-  /** Typing a Wall's length: which way it grows (index into growChoices) and what moves. */
-  protected growIndex = 2;
-  protected lengthMode: SetWallLengthArgs['mode'] = 'room';
-  protected readonly growChoices = computed(() => {
-    const wall = this.selection.wall();
-    return wall ? growOptions(wall) : [];
-  });
-
-  protected setLength(input: HTMLInputElement): void {
-    const wall = this.selection.wall();
-    const length = parseLength(input.value);
-    const choice = this.growChoices()[this.growIndex];
-    if (!wall || length === null || !choice) return;
-    const previous = editableLength(wallLength(wall));
-    this.run(
-      setWallLength,
-      { wall: wall.id, length, end: choice.end, mode: this.lengthMode },
-      input,
-      previous,
-    );
-  }
-
-  protected setThickness(wall: WallId, input: HTMLInputElement): void {
-    const thickness = parseLength(input.value);
-    if (thickness === null) return;
-    this.run(setWallThickness, { wall, thickness }, input, '');
-  }
-
-  protected resetThickness(wall: WallId): void {
-    this.run(setWallThickness, { wall, thickness: null }, null, '');
-  }
-
-  protected thickness(wall: Parameters<typeof wallThickness>[0]): number {
-    return wallThickness(wall, this.presets().wallThickness);
-  }
-
-  protected storeyHeight(level: LevelId): number {
-    return this.project.store.model().levels[level]?.storeyHeight ?? 0;
-  }
-
-  protected rename(input: HTMLInputElement): void {
-    const room = this.selection.room();
-    if (room && input.value.trim() !== room.name)
-      this.run(updateRoom, { room: room.id, name: input.value }, input, room.name);
-  }
-
-  protected setRoomHeight(input: HTMLInputElement): void {
-    const room = this.selection.room();
-    if (!room) return;
-    const height = input.value.trim() === '' ? null : parseLength(input.value);
-    if (height === undefined || (height !== null && height === room.height)) return;
-    this.run(
-      updateRoom,
-      { room: room.id, height },
-      input,
-      String(room.height ?? this.presets().roomHeight),
-    );
-  }
-
-  protected setWallHeight(wall: WallId, input: HTMLInputElement): void {
-    const height = input.value.trim() === '' ? null : parseLength(input.value);
-    this.run(updateWall, { wall, height }, input, '');
-  }
-
-  protected setRoomBounding(wall: WallId, roomBounding: boolean): void {
-    this.run(updateWall, { wall, roomBounding }, null, '');
-  }
-
-  private run<A>(
-    command: Command<A>,
-    args: A,
-    input: HTMLInputElement | null,
-    previous: string,
-  ): void {
+  protected run<A>(command: Command<A>, args: A): void {
     const result = this.project.store.run(command, args);
-    if (!result.ok) {
-      this.messages.refused(result.reason);
-      if (input && previous) input.value = previous;
-    }
+    if (!result.ok) this.messages.refused(result.reason);
   }
 }

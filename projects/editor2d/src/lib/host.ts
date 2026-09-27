@@ -41,6 +41,8 @@ export interface EditorHost {
    * The app shows its context menu there.
    */
   readonly contextMenu?: (at: Vec, target: PlanTarget) => void;
+  /** The plan's zoom changed (screen px per mm), e.g. for a drawing scale in a status bar. */
+  readonly zoomChanged?: (scale: number) => void;
   /** A command was refused: show its reason near the cursor and in the message bar. */
   readonly refused: (reason: Message, at: { x: number; y: number }) => void;
 }

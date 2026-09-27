@@ -10,6 +10,15 @@ class PlanEditorStub {
 }
 
 describe('App shell', () => {
+  // jsdom has no matchMedia (the theme follows the OS).
+  window.matchMedia ??= (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }) as unknown as MediaQueryList;
+
   it('shows the brand, the Room tool and the status bar', async () => {
     await TestBed.configureTestingModule({
       imports: [App],
@@ -24,7 +33,7 @@ describe('App shell', () => {
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.brand')?.textContent).toContain('Lakudemis');
-    expect(el.querySelectorAll('.tools button').length).toBeGreaterThan(0);
+    expect(el.querySelectorAll('lk-plan-toolbar button').length).toBeGreaterThan(0);
     expect(el.querySelector('.status')).not.toBeNull();
   });
 });

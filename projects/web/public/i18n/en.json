@@ -214,7 +214,10 @@
   },
   "common": {
     "cancel": "Cancel",
-    "close": "Close"
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "apply": "Apply"
   },
   "file": {
     "saved": "Saved as {name}.",
@@ -268,7 +271,11 @@
       "floorLevel": "Floor level",
       "ceilingLevel": "Ceiling level",
       "ceilingVoid": "Ceiling void",
-      "voidUnknown": "unknown (no Level above)"
+      "voidUnknown": "unknown (no Level above)",
+      "right": "right side",
+      "left": "left side",
+      "top": "top side",
+      "bottom": "bottom side"
     },
     "wall": {
       "title": "Wall",
@@ -296,7 +303,8 @@
       "modes": {
         "room": "Move Room (the Wall at that end moves along)",
         "wall": "Only this Wall (the connected Wall tilts)"
-      }
+      },
+      "lengthHint": "Click to change the length, which way it grows and what moves"
     },
     "resetToPreset": "Reset to Preset",
     "twoRooms": "Two Rooms selected",
@@ -310,7 +318,9 @@
       "height": "Height",
       "sill": "Sill height",
       "flipHinge": "Hinge side",
-      "flipSwing": "Swing"
+      "flipSwing": "Swing",
+      "type": "Opening type",
+      "sizes": "Sizes (this Opening)"
     },
     "level": {
       "title": "Level",
@@ -324,7 +334,26 @@
       "grossFloorArea": "Gross floor area",
       "netFloorArea": "Net floor area (total)",
       "delete": "Delete Level",
-      "confirmDelete": "Delete {name} and everything on it?"
+      "confirmDelete": "Delete {name} and everything on it?",
+      "grossShort": "m² gross",
+      "netShort": "m² net",
+      "countShort": "Levels"
+    },
+    "editKeys": "Enter saves · Esc cancels",
+    "lengthKeys": "Enter applies · Esc cancels",
+    "heights": "Heights",
+    "surfaces": "Surfaces",
+    "sizes": "Sizes",
+    "placement": "Placement",
+    "resetTo": "Back to the Preset ({value})",
+    "followsStoreyAgain": "Follow the storey height again",
+    "summary": {
+      "floor": "m² floor",
+      "walls": "m² walls",
+      "volume": "m³ volume",
+      "length": "m long",
+      "drawnFace": "m² drawn face",
+      "otherFace": "m² other face"
     }
   },
   "presets": {
@@ -394,5 +423,26 @@
     "flipHinge": "Hinge on the other side",
     "flipSwing": "Open to the other side",
     "delete": "Delete"
+  },
+  "shell": {
+    "panels": "Panels",
+    "building": "Building",
+    "plan": "Plan",
+    "hideBottom": "Hide the bottom panel",
+    "noWarnings": "No warnings on this Level",
+    "units": "m · mm",
+    "scale": "Drawing scale at 96 dpi",
+    "fit": "Show the whole plan",
+    "menu": {
+      "file": "File",
+      "edit": "Edit",
+      "view": "View"
+    },
+    "theme": {
+      "label": "Theme",
+      "system": "As the system",
+      "light": "Light",
+      "dark": "Dark"
+    }
   }
 }

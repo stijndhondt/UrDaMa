@@ -12,8 +12,15 @@ const STORAGE_KEY = 'lakudemis.language';
 export class LanguageService {
   private readonly translate = inject(TranslateService);
   readonly current = signal<Language>(readStored() ?? 'en');
+  /**
+   * The language whose texts are loaded. Labels built in code (menus, options given to UI
+   * components as data) re-read their texts when this changes, not when the choice changes,
+   * which is before the new file has arrived.
+   */
+  readonly loaded = signal<string>('');
 
   constructor() {
+    this.translate.onLangChange.subscribe((e) => this.loaded.set(e.lang));
     effect(() => {
       const lang = this.current();
       this.translate.use(lang);
