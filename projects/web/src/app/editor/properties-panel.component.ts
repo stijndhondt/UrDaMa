@@ -5,6 +5,7 @@ import {
   mergeRooms,
   netWallArea,
   resizeRoom,
+  setWallLength,
   setWallThickness,
   updateLevel,
   updateOpening,
@@ -18,7 +19,7 @@ import {
   type OpeningId,
   type WallId,
 } from '@lakudemis/core';
-import { parseLength } from '@lakudemis/editor2d';
+import { growOptions, parseLength } from '@lakudemis/editor2d';
 import { FormatService } from '../format.service';
 import { MeasurementService } from '../quantities/measurement.service';
 import { MessagesService } from '../messages.service';
@@ -216,10 +217,39 @@ import { SelectionService } from './selection.service';
       }
     } @else if (selection.wall(); as wall) {
       <h2>{{ 'panel.wall.title' | translate }}</h2>
+      <label>
+        {{ 'panel.wall.length' | translate }}
+        <span class="field">
+          <input
+            [value]="(wallLength(wall) / 1000).toFixed(2)"
+            (change)="setLength($any($event.target))"
+            (keydown.enter)="$any($event.target).blur()"
+          />
+          m
+          <select
+            (change)="growIndex = +$any($event.target).value"
+            [attr.aria-label]="'panel.wall.grows' | translate"
+          >
+            @for (o of growChoices(); track $index) {
+              <option [value]="$index" [selected]="growIndex === $index">
+                {{ 'panel.wall.grow.' + o.label | translate }}
+              </option>
+            }
+          </select>
+        </span>
+      </label>
+      <label>
+        {{ 'panel.wall.lengthMode' | translate }}
+        <select (change)="lengthMode = $any($event.target).value">
+          <option value="room" [selected]="lengthMode === 'room'">
+            {{ 'panel.wall.modes.room' | translate }}
+          </option>
+          <option value="wall" [selected]="lengthMode === 'wall'">
+            {{ 'panel.wall.modes.wall' | translate }}
+          </option>
+        </select>
+      </label>
       <dl>
-        <dt>{{ 'panel.wall.length' | translate }}</dt>
-        <dd>{{ format.length(wallLength(wall)) }}</dd>
-
         <dt>{{ 'panel.wall.side' | translate }}</dt>
         <dd>{{ 'editor.wall.side.' + wall.side | translate }}</dd>
       </dl>
@@ -669,6 +699,28 @@ export class PropertiesPanelComponent {
     const side = axis === 'x' ? this.widthSide : this.depthSide;
     const previous = ((axis === 'x' ? current.width : current.depth) / 1000).toFixed(2);
     this.run(resizeRoom, { room: room.id, axis, size, side }, input, previous);
+  }
+
+  /** Typing a Wall's length: which way it grows (index into growChoices) and what moves. */
+  protected growIndex = 2;
+  protected lengthMode: 'room' | 'wall' = 'room';
+  protected readonly growChoices = computed(() => {
+    const wall = this.selection.wall();
+    return wall ? growOptions(wall) : [];
+  });
+
+  protected setLength(input: HTMLInputElement): void {
+    const wall = this.selection.wall();
+    const length = parseLength(input.value);
+    const choice = this.growChoices()[this.growIndex];
+    if (!wall || length === null || !choice) return;
+    const previous = (wallLength(wall) / 1000).toFixed(2);
+    this.run(
+      setWallLength,
+      { wall: wall.id, length, end: choice.end, mode: this.lengthMode },
+      input,
+      previous,
+    );
   }
 
   protected setThickness(wall: WallId, input: HTMLInputElement): void {

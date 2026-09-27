@@ -191,6 +191,12 @@
       "badSlab": "Geweigerd: de vloerplaatdikte moet groter zijn dan 0.",
       "elevationDerived": "Geweigerd: alleen het peil van de laagste bouwlaag kan ingesteld worden; de andere volgen uit de verdiepingshoogtes.",
       "lastLevel": "Geweigerd: een project houdt minstens één bouwlaag."
+    },
+    "wallLength": {
+      "label": "Lengte van een muur wijzigen",
+      "tooShort": "Geweigerd: een muur moet minstens {min} mm lang zijn.",
+      "same": "De muur heeft die lengte al.",
+      "teeEnd": "Geweigerd: dit uiteinde staat tegen een andere muur. Kies 'Ruimte verschuiven' om die muur mee te verplaatsen."
     }
   },
   "invariants": {
@@ -273,7 +279,22 @@
       "drawnFace": "Getekende zijde",
       "otherFace": "Andere zijde",
       "gross": "bruto",
-      "net": "netto"
+      "net": "netto",
+      "grows": "Groeit",
+      "grow": {
+        "left": "naar links",
+        "right": "naar rechts",
+        "up": "naar boven",
+        "down": "naar onder",
+        "start": "aan het begin",
+        "end": "aan het einde",
+        "both": "aan beide kanten"
+      },
+      "lengthMode": "Bij een andere lengte",
+      "modes": {
+        "room": "Ruimte verschuiven (de muur aan dat uiteinde schuift mee)",
+        "wall": "Alleen deze muur (de verbonden muur kantelt)"
+      }
     },
     "resetToPreset": "Terug naar standaard",
     "twoRooms": "Twee ruimtes geselecteerd",

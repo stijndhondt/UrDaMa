@@ -191,6 +191,12 @@
       "badSlab": "Refused: the Slab thickness must be more than 0.",
       "elevationDerived": "Refused: only the lowest Level's elevation can be set; the others follow from the storey heights.",
       "lastLevel": "Refused: a project keeps at least one Level."
+    },
+    "wallLength": {
+      "label": "Change a Wall's length",
+      "tooShort": "Refused: a Wall must be at least {min} mm long.",
+      "same": "The Wall already has that length.",
+      "teeEnd": "Refused: this end sits against another Wall. Use Move Room to move that Wall instead."
     }
   },
   "invariants": {
@@ -273,7 +279,22 @@
       "drawnFace": "Drawn face",
       "otherFace": "Other face",
       "gross": "gross",
-      "net": "net"
+      "net": "net",
+      "grows": "Grows",
+      "grow": {
+        "left": "to the left",
+        "right": "to the right",
+        "up": "upwards",
+        "down": "downwards",
+        "start": "at its start",
+        "end": "at its end",
+        "both": "on both sides"
+      },
+      "lengthMode": "When the length changes",
+      "modes": {
+        "room": "Move Room (the Wall at that end moves along)",
+        "wall": "Only this Wall (the connected Wall tilts)"
+      }
     },
     "resetToPreset": "Reset to Preset",
     "twoRooms": "Two Rooms selected",

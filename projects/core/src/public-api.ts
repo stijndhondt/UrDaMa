@@ -41,3 +41,4 @@ export * from './lib/values/surfaces';
 export * from './lib/report/quantities';
 export * from './lib/commands/levels';
 export * from './lib/geometry/solids';
+export * from './lib/commands/set-wall-length';
