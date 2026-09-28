@@ -502,6 +502,7 @@
     "label": "Indeling",
     "presets": {
       "plan": "Alleen plattegrond",
+      "planElevation": "Plattegrond + gevelaanzicht",
       "plan3d": "Plattegrond + 3D",
       "planElevation3d": "Plattegrond + gevelaanzicht + 3D",
       "grid": "2 × 2: plattegrond, twee gevelaanzichten, 3D"

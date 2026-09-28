@@ -57,7 +57,8 @@ type BottomTab = 'quantities' | 'warnings';
 
 const LAYOUT_ICONS: Record<LayoutId, IconName> = {
   plan: 'square',
-  plan3d: 'columns-2',
+  planElevation: 'columns-2',
+  plan3d: 'box',
   planElevation3d: 'layout-panel-left',
   grid: 'grid-2x2',
 };

@@ -35,7 +35,7 @@ Slice 1 draws a house at its tape sizes, but using it still feels like a prototy
   - **Library choice:** the chosen layout is then built twice against the real app, once with **Taiga UI** and once with **Optimus** (the MIT fork of PrimeNG). The user picks the library.
   - **Target workspace:**
     - **Left:** an icon bar opening a **Building** panel (Levels with show/hide, each with its Rooms, Walls and Openings; it replaces the Level tabs) and a **Library** panel (Opening families and types).
-    - **Centre:** view panels in **preset layouts** (Plan; Plan + Elevation; Plan + Elevation + 3D; 2×2), with draggable dividers.
+    - **Centre:** view panels in **preset layouts** (Plan; Plan + Elevation; Plan + 3D; Plan + Elevation + 3D; 2×2), with draggable dividers.
     - **Plan panel:** a **floating toolbar** at the bottom with grouped tools and shortcuts. The Opening tool has a flyout of Opening types.
     - **Right:** a properties panel in collapsible sections.
     - **Bottom:** a collapsible panel with Quantities and Warnings tabs, and a status bar.
@@ -93,7 +93,7 @@ Slice 1 draws a house at its tape sizes, but using it still feels like a prototy
 24. As a homeowner, I want to click a Room, Wall or Opening in the Building panel to select it, so that I can find small elements that are hard to click on the plan.
 25. As a homeowner, I want the Building panel to replace the Level tabs, so that there is one place to manage Levels (add above/below, rename, delete, choose the Level I draw on).
 26. As a homeowner, I want a Library panel with my Opening families and types, so that I can place my standard doors and windows quickly.
-27. As a homeowner, I want to choose a panel layout (Plan; Plan + Elevation; Plan + Elevation + 3D; 2×2), so that I can see my plan, a side and 3D at once.
+27. As a homeowner, I want to choose a panel layout (Plan; Plan + Elevation; Plan + 3D; Plan + Elevation + 3D; 2×2), so that I can see my plan, a side and 3D at once.
 28. As a homeowner, I want to drag the dividers between panels, so that I can give the view I'm working in more room.
 29. As a homeowner, I want each Elevation panel to have its own front / back / left side / right side picker, so that a 2×2 layout can show two different sides.
 30. As a homeowner, I want the drawing tools in a floating toolbar at the bottom of the Plan panel, grouped with icons and shortcuts, so that the tools sit next to where I draw.

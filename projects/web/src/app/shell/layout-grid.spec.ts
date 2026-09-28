@@ -1,4 +1,4 @@
-import { fittingLayout, layoutFits, layoutGrid } from './layout-grid';
+import { fittingLayout, LAYOUT_IDS, layoutFits, layoutGrid } from './layout-grid';
 
 const split = { col: 60, row: 40 };
 
@@ -8,6 +8,13 @@ describe('the centre layouts (ticket 11)', () => {
     expect(g.panels).toEqual(['plan']);
     expect(g.areas).toBe('"plan"');
     expect(g.dividers).toEqual([]);
+  });
+
+  it('puts an Elevation beside the Plan, split by a draggable column divider', () => {
+    const g = layoutGrid('planElevation', null, split);
+    expect(g.panels).toEqual(['plan', 'elevationA']);
+    expect(g.areas).toBe('"plan dv elevationA"');
+    expect(g.dividers).toEqual([{ area: 'dv', axis: 'col' }]);
   });
 
   it('puts 3D beside the Plan, split by a draggable column divider', () => {
@@ -52,9 +59,7 @@ describe('layouts on a small screen', () => {
   const low = { width: 1400, height: 400 };
 
   it('offers every layout when the centre has room for its panels', () => {
-    expect(
-      ['plan', 'plan3d', 'planElevation3d', 'grid'].every((l) => layoutFits(l as never, large)),
-    ).toBe(true);
+    expect(LAYOUT_IDS.every((l) => layoutFits(l, large))).toBe(true);
   });
 
   it('offers no side-by-side panels in a narrow centre, and no stacked ones in a low centre', () => {

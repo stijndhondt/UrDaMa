@@ -2,8 +2,15 @@
  * The centre's preset layouts (ticket 11, ticket 05's decision): which view panels show and how
  * they sit in a CSS grid, with draggable dividers between them. Plan only is the default.
  */
-export type LayoutId = 'plan' | 'plan3d' | 'planElevation3d' | 'grid';
-export const LAYOUT_IDS: readonly LayoutId[] = ['plan', 'plan3d', 'planElevation3d', 'grid'];
+export type LayoutId = 'plan' | 'planElevation' | 'plan3d' | 'planElevation3d' | 'grid';
+/** Smallest first: a screen too small for a layout falls back to the ones before it. */
+export const LAYOUT_IDS: readonly LayoutId[] = [
+  'plan',
+  'planElevation',
+  'plan3d',
+  'planElevation3d',
+  'grid',
+];
 
 export type ElevationPanelId = 'elevationA' | 'elevationB';
 export type PanelId = 'plan' | ElevationPanelId | 'view3d';
@@ -33,6 +40,7 @@ export interface LayoutGrid {
 
 const PANELS: Record<LayoutId, readonly PanelId[]> = {
   plan: ['plan'],
+  planElevation: ['plan', 'elevationA'],
   plan3d: ['plan', 'view3d'],
   planElevation3d: ['plan', 'elevationA', 'view3d'],
   grid: ['plan', 'elevationA', 'elevationB', 'view3d'],
@@ -91,6 +99,14 @@ export function layoutGrid(
   switch (layout) {
     case 'plan':
       return one('plan');
+    case 'planElevation':
+      return {
+        panels,
+        areas: '"plan dv elevationA"',
+        columns,
+        rows: '1fr',
+        dividers: [{ area: 'dv', axis: 'col' }],
+      };
     case 'plan3d':
       return {
         panels,

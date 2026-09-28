@@ -502,6 +502,7 @@
     "label": "Layout",
     "presets": {
       "plan": "Plan only",
+      "planElevation": "Plan + Elevation",
       "plan3d": "Plan + 3D",
       "planElevation3d": "Plan + Elevation + 3D",
       "grid": "2 × 2: Plan, two Elevations, 3D"
