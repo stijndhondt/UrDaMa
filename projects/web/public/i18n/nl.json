@@ -464,5 +464,27 @@
     "levelActions": "Acties voor de bouwlaag",
     "rename": "Hernoemen…",
     "wallLabel": "Muur {n} · {length}"
+  },
+  "layout": {
+    "label": "Indeling",
+    "presets": {
+      "plan": "Alleen plattegrond",
+      "plan3d": "Plattegrond + 3D",
+      "planElevation3d": "Plattegrond + gevelaanzicht + 3D",
+      "grid": "2 × 2: plattegrond, twee gevelaanzichten, 3D"
+    },
+    "maximize": "Alleen dit paneel tonen",
+    "restore": "Terug naar de indeling",
+    "panels": {
+      "elevation": "Gevelaanzicht"
+    },
+    "side": "Zijde",
+    "sides": {
+      "front": "Voorgevel",
+      "back": "Achtergevel",
+      "left": "Linkerzijgevel",
+      "right": "Rechterzijgevel"
+    },
+    "elevationLater": "{side}: het gevelaanzicht wordt getekend in een volgende versie."
   }
 }

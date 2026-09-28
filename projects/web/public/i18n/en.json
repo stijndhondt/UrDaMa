@@ -464,5 +464,27 @@
     "levelActions": "Level actions",
     "rename": "Rename…",
     "wallLabel": "Wall {n} · {length}"
+  },
+  "layout": {
+    "label": "Layout",
+    "presets": {
+      "plan": "Plan only",
+      "plan3d": "Plan + 3D",
+      "planElevation3d": "Plan + Elevation + 3D",
+      "grid": "2 × 2: Plan, two Elevations, 3D"
+    },
+    "maximize": "Show only this panel",
+    "restore": "Back to the layout",
+    "panels": {
+      "elevation": "Elevation"
+    },
+    "side": "Side",
+    "sides": {
+      "front": "Front",
+      "back": "Back",
+      "left": "Left side",
+      "right": "Right side"
+    },
+    "elevationLater": "{side}: the Elevation is drawn in a coming version."
   }
 }

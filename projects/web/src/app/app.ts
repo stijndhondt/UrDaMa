@@ -8,12 +8,15 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ToolName } from '@lakudemis/editor2d';
 import type { MenuItem } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { Optimus } from '@openng/optimus-ui/config';
 import { MenubarModule } from '@openng/optimus-ui/menubar';
+import { SelectModule } from '@openng/optimus-ui/select';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { TabsModule } from '@openng/optimus-ui/tabs';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { en } from 'primelocale/js/en.js';
@@ -35,11 +38,23 @@ import { FileService, type FileResult } from './project/file.service';
 import { NewProjectDialogComponent } from './project/new-project-dialog.component';
 import { ProjectService } from './project/project.service';
 import { QuantitiesPanelComponent } from './quantities/quantities-panel.component';
+import { ElevationPlaceholderComponent } from './shell/elevation-placeholder.component';
 import { IconComponent } from './shell/icon.component';
+import type { IconName } from './shell/icons.generated';
+import { LAYOUT_IDS, type LayoutId, type PanelId } from './shell/layout-grid';
+import { ELEVATION_SIDES, LayoutService } from './shell/layout.service';
+import { PanelHeaderComponent } from './shell/panel-header.component';
 import { PlanToolbarComponent, TOOLS } from './shell/plan-toolbar.component';
 import { THEME_CHOICES, ThemeService } from './shell/theme.service';
 
 type BottomTab = 'quantities' | 'warnings';
+
+const LAYOUT_ICONS: Record<LayoutId, IconName> = {
+  plan: 'square',
+  plan3d: 'columns-2',
+  planElevation3d: 'layout-panel-left',
+  grid: 'grid-2x2',
+};
 
 /** Screen px per mm at 96 dpi: the drawing scale is 1 : (this / zoom). */
 const PX_PER_MM = 96 / 25.4;
@@ -61,7 +76,12 @@ const PX_PER_MM = 96 / 25.4;
     TooltipModule,
     ChangeSummaryComponent,
     ContextMenuComponent,
+    ElevationPlaceholderComponent,
+    FormsModule,
     IconComponent,
+    PanelHeaderComponent,
+    SelectButtonModule,
+    SelectModule,
     LengthEditorComponent,
     BuildingPanelComponent,
     NewProjectDialogComponent,
@@ -126,6 +146,19 @@ const PX_PER_MM = 96 / 25.4;
                 <span class="unsaved" [pTooltip]="'project.unsaved' | translate">●</span>
               }
             </span>
+            <p-selectbutton
+              size="small"
+              [options]="layoutOptions()"
+              optionValue="value"
+              [allowEmpty]="false"
+              [ngModel]="layout.layout()"
+              (ngModelChange)="layout.choose($event)"
+              [ariaLabel]="'layout.label' | translate"
+            >
+              <ng-template #item let-o>
+                <lk-icon [name]="o.icon" [pTooltip]="o.label" tooltipPosition="bottom" />
+              </ng-template>
+            </p-selectbutton>
             <p-button
               size="small"
               [text]="true"
@@ -157,12 +190,12 @@ const PX_PER_MM = 96 / 25.4;
         <span class="spacer"></span>
         <button
           type="button"
-          [class.on]="show3d()"
-          [attr.aria-pressed]="show3d()"
+          [class.on]="shows('view3d')"
+          [attr.aria-pressed]="shows('view3d')"
           [attr.aria-label]="'view3d.toggle' | translate"
           [pTooltip]="'view3d.toggle' | translate"
           tooltipPosition="right"
-          (click)="show3d.set(!show3d())"
+          (click)="toggle3d()"
         >
           <lk-icon name="box" />
         </button>
@@ -195,10 +228,18 @@ const PX_PER_MM = 96 / 25.4;
         </aside>
       }
 
-      <main class="centre">
-        <!-- The plan stays mounted when 3D opens beside it, so its tool and view are kept. -->
-        <section class="view">
-          <header>{{ 'shell.plan' | translate }} · {{ levelName() }}</header>
+      <main
+        class="centre"
+        [style.grid-template-areas]="layout.grid().areas"
+        [style.grid-template-columns]="layout.grid().columns"
+        [style.grid-template-rows]="layout.grid().rows"
+      >
+        <!-- The plan stays mounted in every layout, so its tool and view are kept. -->
+        <section class="view" style="grid-area: plan" [class.gone]="!shows('plan')">
+          <lk-panel-header
+            panel="plan"
+            [title]="('shell.plan' | translate) + ' · ' + levelName()"
+          />
           <div class="body">
             <div
               class="stage"
@@ -237,16 +278,28 @@ const PX_PER_MM = 96 / 25.4;
             </div>
           </div>
         </section>
-        @if (show3d()) {
-          <div
-            class="divider"
-            role="separator"
-            aria-orientation="vertical"
-            [attr.aria-label]="'shell.divider' | translate"
-            (pointerdown)="startDivider($event)"
-          ></div>
-          <section class="view side3d" [style.flex-basis.%]="view3dShare()">
-            <header>3D</header>
+        @for (e of elevationPanels(); track e) {
+          <section class="view" [style.grid-area]="e">
+            <lk-panel-header [panel]="e" [title]="'layout.panels.elevation' | translate">
+              <p-select
+                size="small"
+                appendTo="body"
+                [options]="sideOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="layout.sides()[e]"
+                (ngModelChange)="layout.setSide(e, $event)"
+                [ariaLabel]="'layout.side' | translate"
+              />
+            </lk-panel-header>
+            <div class="body">
+              <lk-elevation-placeholder [side]="layout.sides()[e]" />
+            </div>
+          </section>
+        }
+        @if (shows('view3d')) {
+          <section class="view" style="grid-area: view3d">
+            <lk-panel-header panel="view3d" title="3D" />
             <div class="body">
               <!-- three.js loads only when the 3D view is first shown. -->
               @defer {
@@ -254,6 +307,17 @@ const PX_PER_MM = 96 / 25.4;
               }
             </div>
           </section>
+        }
+        @for (d of layout.grid().dividers; track d.area) {
+          <div
+            class="divider"
+            [class.row]="d.axis === 'row'"
+            [style.grid-area]="d.area"
+            role="separator"
+            [attr.aria-orientation]="d.axis === 'col' ? 'vertical' : 'horizontal'"
+            [attr.aria-label]="'shell.divider' | translate"
+            (pointerdown)="startDivider($event, d.axis)"
+          ></div>
         }
       </main>
 
@@ -465,21 +529,30 @@ const PX_PER_MM = 96 / 25.4;
     }
     .centre {
       grid-area: centre;
-      display: flex;
+      display: grid;
       padding: 4px;
       min-width: 0;
       min-height: 0;
     }
     .divider {
-      flex: 0 0 6px;
       cursor: col-resize;
       touch-action: none;
+      border-radius: 3px;
+    }
+    .divider.row {
+      cursor: row-resize;
     }
     .divider:hover {
       background: var(--accent-soft);
     }
-    .side3d {
-      flex: 0 0 auto;
+    .view.gone {
+      display: none;
+    }
+    .view p-select {
+      width: 130px;
+      flex-shrink: 1;
+      min-width: 0;
+      font-weight: 400;
     }
     .view {
       flex: 1;
@@ -491,12 +564,6 @@ const PX_PER_MM = 96 / 25.4;
       border-radius: 6px;
       overflow: hidden;
       background: var(--panel);
-    }
-    .view > header {
-      padding: 4px 10px;
-      border-bottom: 1px solid var(--line);
-      font-size: 12px;
-      font-weight: 600;
     }
     .body {
       flex: 1;
@@ -635,9 +702,24 @@ export class App {
   });
 
   protected readonly sideOpen = signal(true);
-  protected readonly show3d = signal(false);
-  /** The 3D view's share of the centre's width (%), set by dragging the divider. */
-  protected readonly view3dShare = signal(45);
+  protected readonly layout = inject(LayoutService);
+  protected readonly elevationPanels = computed(() =>
+    this.layout
+      .grid()
+      .panels.filter(
+        (p): p is 'elevationA' | 'elevationB' => p === 'elevationA' || p === 'elevationB',
+      ),
+  );
+  protected readonly sideOptions = computed(() =>
+    ELEVATION_SIDES.map((value) => ({ value, label: this.t('layout.sides.' + value) })),
+  );
+  protected readonly layoutOptions = computed(() =>
+    LAYOUT_IDS.map((value) => ({
+      value,
+      icon: LAYOUT_ICONS[value],
+      label: this.t('layout.presets.' + value),
+    })),
+  );
   protected readonly bottomOpen = signal(false);
   protected readonly bottomTab = signal<BottomTab>('quantities');
 
@@ -708,9 +790,12 @@ export class App {
       items: [
         { label: this.t('shell.fit'), shortcut: 'F', command: () => this.editor()?.fit() },
         {
-          label: this.t('view3d.toggle'),
-          state: { checked: this.show3d() },
-          command: () => this.show3d.set(!this.show3d()),
+          label: this.t('layout.label'),
+          items: LAYOUT_IDS.map((l) => ({
+            label: this.t('layout.presets.' + l),
+            state: { checked: this.layout.layout() === l },
+            command: () => this.layout.choose(l),
+          })),
         },
         {
           label: this.t('quantities.title'),
@@ -754,14 +839,30 @@ export class App {
     return label ? `${action}: ${this.t(label.key, label.params)} (${shortcut})` : action;
   }
 
-  /** Dragging the divider between the plan and 3D. */
-  protected startDivider(e: PointerEvent): void {
+  protected shows(panel: PanelId): boolean {
+    return this.layout.grid().panels.includes(panel);
+  }
+
+  /** The icon bar's 3D button: Plan + 3D, or back to Plan only. */
+  protected toggle3d(): void {
+    this.layout.choose(this.shows('view3d') ? 'plan' : 'plan3d');
+  }
+
+  /** Dragging a divider: its share of the centre follows the pointer. */
+  protected startDivider(e: PointerEvent, axis: 'col' | 'row'): void {
     const divider = e.target as HTMLElement;
     const centre = divider.parentElement!.getBoundingClientRect();
-    divider.setPointerCapture(e.pointerId);
+    try {
+      divider.setPointerCapture(e.pointerId);
+    } catch {
+      // not a live pointer (synthetic events): dragging still works while over the divider
+    }
     const move = (m: PointerEvent) =>
-      this.view3dShare.set(
-        Math.min(80, Math.max(20, ((centre.right - m.clientX) / centre.width) * 100)),
+      this.layout.setSplit(
+        axis,
+        axis === 'col'
+          ? ((m.clientX - centre.left) / centre.width) * 100
+          : ((m.clientY - centre.top) / centre.height) * 100,
       );
     const up = () => {
       divider.removeEventListener('pointermove', move);
