@@ -20,12 +20,17 @@ export function writeSetting(key: string, value: string): void {
   }
 }
 
+/** A remembered JSON value, or null when there is none or it can't be read. */
+export function readJson(key: string): unknown {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? 'null') as unknown;
+  } catch {
+    return null;
+  }
+}
+
 /** A remembered list of strings (e.g. IDs), empty when there is none. */
 export function readList(key: string): string[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(key) ?? '[]') as unknown;
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
-  } catch {
-    return [];
-  }
+  const v = readJson(key);
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
 }

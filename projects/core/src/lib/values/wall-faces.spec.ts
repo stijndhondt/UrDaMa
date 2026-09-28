@@ -106,4 +106,40 @@ describe("a Room's Wall faces (ticket 12)", () => {
     expect(face.height).toBe(2000);
     expect(face.gross).toBe(face.length * 2000);
   });
+
+  it('counts the reveals of an Opening in a Wall stub once, though both its faces bound the Room', () => {
+    const { store, level, roomName } = setup();
+    store.run(drawRoom, {
+      level,
+      from: { x: 0, y: 0 },
+      to: { x: 6000, y: 4000 },
+      size: 'inside',
+      name: 'Hall',
+    });
+    store.run(drawWall, {
+      level,
+      start: { x: 3000, y: 0 },
+      end: { x: 3000, y: 2500 },
+      side: 'left',
+      roomName,
+    });
+    const stub = Object.values(store.model().walls).find(
+      (w: Wall) => w.start.x === 3000 && w.end.x === 3000,
+    )!;
+    store.run(addOpening, { wall: stub.id, kind: 'wallOpening', offset: 800 });
+    const rooms = Object.values(store.model().rooms);
+    expect(rooms).toHaveLength(1);
+    const s = store.values.room(rooms[0]!.id).surfaces()!;
+    const o = Object.values(store.model().openings)[0]!;
+    const type = store.model().openingTypes[o.type]!;
+    const faces = s.faces.filter((f) => f.wall === stub.id);
+    expect(faces).toHaveLength(2);
+    // Sides and head through the Wall's thickness, once.
+    expect(Math.round(s.revealArea)).toBe(
+      Math.round(
+        (stub.thickness ?? store.model().project.presets.wallThickness) *
+          (2 * type.height + type.width),
+      ),
+    );
+  });
 });

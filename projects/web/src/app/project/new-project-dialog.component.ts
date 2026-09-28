@@ -2,6 +2,7 @@ import { Component, ElementRef, inject, output, signal, viewChild } from '@angul
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DEFAULT_PRESETS } from '@lakudemis/core';
+import { LayoutService } from '../shell/layout.service';
 import { ProjectService } from './project.service';
 
 /**
@@ -125,6 +126,7 @@ import { ProjectService } from './project.service';
 })
 export class NewProjectDialogComponent {
   protected readonly project = inject(ProjectService);
+  private readonly layout = inject(LayoutService);
   protected readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
   readonly closed = output<void>();
 
@@ -148,6 +150,7 @@ export class NewProjectDialogComponent {
       wallThickness: this.wallThickness,
       roomHeight: this.roomHeight,
     });
+    this.layout.reset();
     this.dialog().nativeElement.close();
   }
 }

@@ -20,7 +20,7 @@ import {
   type WallId,
   type WallOutline,
 } from '@lakudemis/core';
-import { distanceToSegment } from '@lakudemis/core';
+import { distanceToSegment, hasSill } from '@lakudemis/core';
 import { increment } from '../snap';
 import { parseLength } from '../units';
 import type { PointerInfo, Tool, ToolContext } from './tool';
@@ -187,9 +187,8 @@ export class OpeningTool implements Tool {
     ctx.restore();
   }
 
-  /** Windows and wall openings can sit above the floor. */
   private get hasSill(): boolean {
-    return this.kind === 'window' || this.kind === 'wallOpening';
+    return hasSill(this.kind);
   }
 
   private size(): { width: number; height: number; sill: number } {

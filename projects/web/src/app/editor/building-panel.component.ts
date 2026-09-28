@@ -17,6 +17,7 @@ import {
   resolveOpening,
   updateLevel,
   wallLength,
+  wallNumbers,
   type LevelId,
 } from '@lakudemis/core';
 import type { Selection } from '@lakudemis/editor2d';
@@ -378,22 +379,23 @@ export class BuildingPanelComponent {
           label: r.name,
           icon: 'square',
         }));
-      const levelWalls = Object.values(model.walls)
-        .filter((w) => w.level === level.id)
-        .sort((a, b) => (a.id < b.id ? -1 : 1));
-      const walls = levelWalls.map((w, i): ElementRow => ({
-        select: { kind: 'wall', id: w.id },
-        label: t('building.wallLabel', { n: i + 1, length: this.format.length(wallLength(w)) }),
+      const numbers = wallNumbers(model, level.id);
+      const walls = [...numbers].map(([id, n]): ElementRow => ({
+        select: { kind: 'wall', id },
+        label: t('building.wallLabel', {
+          n,
+          length: this.format.length(wallLength(model.walls[id]!)),
+        }),
         icon: 'brick-wall',
       }));
-      const onLevel = new Set(levelWalls.map((w) => w.id as string));
+      const onLevel = new Set<string>(numbers.keys());
       const openings = Object.values(model.openings)
         .filter((o) => onLevel.has(o.wall))
         .sort((a, b) => (a.id < b.id ? -1 : 1))
         .flatMap((o): ElementRow[] => {
           const r = resolveOpening(model, o);
           if (!r) return [];
-          const size = `${this.format.decimal(r.width / 1000)} × ${this.format.decimal(r.height / 1000)} m`;
+          const size = this.format.openingSize(r.width, r.height);
           return [
             {
               select: { kind: 'opening', id: o.id },

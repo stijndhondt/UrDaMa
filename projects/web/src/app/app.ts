@@ -41,7 +41,12 @@ import { QuantitiesPanelComponent } from './quantities/quantities-panel.componen
 import { ElevationPlaceholderComponent } from './shell/elevation-placeholder.component';
 import { IconComponent } from './shell/icon.component';
 import type { IconName } from './shell/icons.generated';
-import { LAYOUT_IDS, type LayoutId, type PanelId } from './shell/layout-grid';
+import {
+  LAYOUT_IDS,
+  type ElevationPanelId,
+  type LayoutId,
+  type PanelId,
+} from './shell/layout-grid';
 import { ELEVATION_SIDES, LayoutService } from './shell/layout.service';
 import { PanelHeaderComponent } from './shell/panel-header.component';
 import { PlanToolbarComponent, TOOLS } from './shell/plan-toolbar.component';
@@ -707,9 +712,7 @@ export class App {
   protected readonly elevationPanels = computed(() =>
     this.layout
       .grid()
-      .panels.filter(
-        (p): p is 'elevationA' | 'elevationB' => p === 'elevationA' || p === 'elevationB',
-      ),
+      .panels.filter((p): p is ElevationPanelId => p === 'elevationA' || p === 'elevationB'),
   );
   protected readonly sideOptions = computed(() =>
     ELEVATION_SIDES.map((value) => ({ value, label: this.t('layout.sides.' + value) })),

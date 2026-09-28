@@ -5,7 +5,8 @@
 export type LayoutId = 'plan' | 'plan3d' | 'planElevation3d' | 'grid';
 export const LAYOUT_IDS: readonly LayoutId[] = ['plan', 'plan3d', 'planElevation3d', 'grid'];
 
-export type PanelId = 'plan' | 'elevationA' | 'elevationB' | 'view3d';
+export type ElevationPanelId = 'elevationA' | 'elevationB';
+export type PanelId = 'plan' | ElevationPanelId | 'view3d';
 
 /** Where the dividers are: the first column's and the top row's share of the centre (%). */
 export interface LayoutSplit {

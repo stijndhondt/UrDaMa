@@ -10,6 +10,7 @@ import {
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   deleteLevel,
+  hasSill,
   netWallArea,
   presetSize,
   resizeRoom,
@@ -195,7 +196,7 @@ interface Figure {
           unit="mm"
           (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'offset')"
         />
-        @if (opening.kind === 'window' || opening.kind === 'wallOpening') {
+        @if (hasSill(opening.kind)) {
           <lk-prop
             [label]="'panel.opening.sill' | translate"
             [value]="mm(opening.sill)"
@@ -536,6 +537,7 @@ export class PropertiesPanelComponent {
   private readonly language = inject(LanguageService);
 
   protected readonly updateRoom = updateRoom;
+  protected readonly hasSill = hasSill;
   protected readonly updateWall = updateWall;
   protected readonly updateOpening = updateOpening;
   protected readonly updateLevel = updateLevel;

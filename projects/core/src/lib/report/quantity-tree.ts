@@ -3,15 +3,10 @@
  * of its Wall faces, with the figures a homeowner buys materials with. Values in mm, mm² and mm³;
  * the web app shows m, m² and m³ and writes the same tree to CSV.
  */
-import { levelsInOrder } from '../model/levels';
+import { levelsInOrder, wallNumbers } from '../model/levels';
 import type { LevelId, Model, RoomId, WallId } from '../model/types';
 import type { BuildingValues } from '../values/building-values';
-import {
-  faceNetArea,
-  MEASUREMENT_RULES,
-  netWallArea,
-  type MeasurementRule,
-} from '../values/surfaces';
+import { faceNetArea, netWallArea, openingArea, type MeasurementRule } from '../values/surfaces';
 
 export interface QuantityFace {
   readonly wall: WallId;
@@ -26,7 +21,7 @@ export interface QuantityFace {
   /** mm², the Openings subtracted under the Measurement rule */
   readonly openings: number;
   readonly net: number;
-  readonly reveals: number;
+  readonly revealArea: number;
 }
 
 export interface QuantityRoom {
@@ -37,10 +32,14 @@ export interface QuantityRoom {
   /** mm³ */
   readonly volume: number | null;
   /** mm² */
-  readonly floorArea: number | null;
+  readonly floorFinishArea: number | null;
   readonly ceilingArea: number | null;
+  /** mm, mm²: the totals of its Wall faces */
+  readonly wallLength: number | null;
+  readonly grossWallArea: number | null;
+  readonly openingArea: number | null;
   readonly netWallArea: number | null;
-  readonly reveals: number | null;
+  readonly revealArea: number | null;
   readonly faces: readonly QuantityFace[];
 }
 
@@ -61,14 +60,8 @@ export function quantityTree(
   values: BuildingValues,
   rule: MeasurementRule,
 ): QuantityLevel[] {
-  const min = MEASUREMENT_RULES[rule].minOpeningArea;
   return levelsInOrder(model).map((level) => {
-    const numbers = new Map(
-      Object.values(model.walls)
-        .filter((w) => w.level === level.id)
-        .sort((a, b) => (a.id < b.id ? -1 : 1))
-        .map((w, i) => [w.id as string, i + 1]),
-    );
+    const numbers = wallNumbers(model, level.id);
     const rooms = Object.values(model.rooms)
       .filter((r) => r.level === level.id)
       .sort((a, b) => a.name.localeCompare(b.name) || (a.id < b.id ? -1 : 1))
@@ -80,10 +73,13 @@ export function quantityTree(
           name: r.name,
           netFloorArea: v.netFloorArea(),
           volume: v.volume(),
-          floorArea: v.floorFinishArea(),
+          floorFinishArea: v.floorFinishArea(),
           ceilingArea: v.ceilingArea(),
+          wallLength: s ? s.wallLength : null,
+          grossWallArea: s ? s.grossWallArea : null,
+          openingArea: s ? openingArea(s.openings, rule) : null,
           netWallArea: s ? netWallArea(s, rule) : null,
-          reveals: s ? s.revealArea : null,
+          revealArea: s ? s.revealArea : null,
           faces: (s?.faces ?? []).map((f) => {
             const net = faceNetArea(f, rule);
             return {
@@ -93,9 +89,9 @@ export function quantityTree(
               length: f.length,
               height: f.height,
               gross: f.gross,
-              openings: f.openings.reduce((sum, o) => (o.size < min ? sum : sum + o.cut), 0),
+              openings: openingArea(f.openings, rule),
               net,
-              reveals: f.revealArea,
+              revealArea: f.revealArea,
             };
           }),
         };

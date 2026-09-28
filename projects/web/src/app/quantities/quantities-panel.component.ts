@@ -21,6 +21,7 @@ import { ProjectService } from '../project/project.service';
 import { IconComponent } from '../shell/icon.component';
 import { MeasurementService } from './measurement.service';
 
+type SurfaceKind = 'netFloor' | 'floorFinish' | 'ceiling';
 type Column = 'length' | 'height' | 'gross' | 'openings' | 'net' | 'reveals' | 'volume';
 
 const COLUMNS: readonly { readonly key: Column; readonly unit: 'm' | 'm²' | 'm³' }[] = [
@@ -36,7 +37,7 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm' | 'm²' | 'm�
 /** One row of the tree: its name and its figures (mm, mm², mm³; absent = not applicable). */
 interface Row {
   readonly key: string;
-  readonly kind: 'level' | 'room' | 'floor' | 'ceiling' | 'face';
+  readonly kind: 'level' | 'room' | SurfaceKind | 'face';
   readonly name: string;
   readonly level: string;
   readonly room: string;
@@ -181,7 +182,20 @@ export class QuantitiesPanelComponent {
       rooms: level.rooms.map((room) => ({
         row: this.roomRow(level, room),
         children: [
-          this.surfaceRow(level, room, 'floor', t('quantities.tree.floor'), room.floorArea),
+          this.surfaceRow(
+            level,
+            room,
+            'netFloor',
+            t('quantities.tree.netFloor'),
+            room.netFloorArea,
+          ),
+          this.surfaceRow(
+            level,
+            room,
+            'floorFinish',
+            t('quantities.tree.floorFinish'),
+            room.floorFinishArea,
+          ),
           this.surfaceRow(level, room, 'ceiling', t('quantities.tree.ceiling'), room.ceilingArea),
           ...room.faces.map((f) => this.faceRow(level, room, f, t)),
         ],
@@ -233,14 +247,22 @@ export class QuantitiesPanelComponent {
       room: room.name,
       levelId: level.level,
       select: { kind: 'room', id: room.room },
-      figures: { net: room.netFloorArea, reveals: room.reveals, volume: room.volume },
+      // The Room's totals over its Wall faces; its floor and ceiling are rows below it.
+      figures: {
+        length: room.wallLength,
+        gross: room.grossWallArea,
+        openings: room.openingArea,
+        net: room.netWallArea,
+        reveals: room.revealArea,
+        volume: room.volume,
+      },
     };
   }
 
   private surfaceRow(
     level: QuantityLevel,
     room: QuantityRoom,
-    kind: 'floor' | 'ceiling',
+    kind: SurfaceKind,
     name: string,
     area: number | null,
   ): Row {
@@ -279,7 +301,7 @@ export class QuantitiesPanelComponent {
         gross: f.gross,
         openings: f.openings,
         net: f.net,
-        reveals: f.reveals,
+        reveals: f.revealArea,
       },
     };
   }

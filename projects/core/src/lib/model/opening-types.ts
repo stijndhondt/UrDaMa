@@ -30,6 +30,9 @@ export const OPENING_KINDS: readonly OpeningKind[] = [
   'garageDoor',
 ];
 
+/** Windows and wall openings can sit above the floor; doors and garage doors stand on it. */
+export const hasSill = (kind: OpeningKind): boolean => kind === 'window' || kind === 'wallOpening';
+
 /** mm: the default sizes of the kinds that have no Preset (a passage; a single garage door). */
 const DEFAULT_SIZES = {
   wallOpening: { width: 900, height: 2110, sill: 0 },

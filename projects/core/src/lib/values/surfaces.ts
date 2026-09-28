@@ -48,10 +48,15 @@ export interface RoomWallFace {
   readonly revealArea: number;
 }
 
+/** mm², the part of these Openings subtracted under a Measurement rule. */
+export function openingArea(openings: readonly OpeningCut[], rule: MeasurementRule): number {
+  const min = MEASUREMENT_RULES[rule].minOpeningArea;
+  return openings.reduce((area, o) => (o.size < min ? area : area + o.cut), 0);
+}
+
 /** Net area of a Room's Wall face under a Measurement rule. */
 export function faceNetArea(f: RoomWallFace, rule: MeasurementRule): number {
-  const min = MEASUREMENT_RULES[rule].minOpeningArea;
-  return f.openings.reduce((area, o) => (o.size < min ? area : area - o.cut), f.gross);
+  return f.gross - openingArea(f.openings, rule);
 }
 
 export interface RoomSurfaces {
@@ -68,8 +73,7 @@ export interface RoomSurfaces {
 
 /** Net wall area around a Room under a Measurement rule. */
 export function netWallArea(s: RoomSurfaces, rule: MeasurementRule): number {
-  const min = MEASUREMENT_RULES[rule].minOpeningArea;
-  return s.openings.reduce((area, o) => (o.size < min ? area : area - o.cut), s.grossWallArea);
+  return s.grossWallArea - openingArea(s.openings, rule);
 }
 
 export interface SurfaceInput {
@@ -144,7 +148,9 @@ export function levelRoomSurfaces<K>(
   // Per Room: its wall length and, per Wall face it touches, the length along it and the width
   // of each Opening in it.
   const found = new Map<K, { wallLength: number; faces: Map<string, FaceTally> }>();
-  const roomsPerOpening = new Map<ResolvedOpening, number>();
+  // An Opening's reveals are shared between the Room faces it is in (one per side, or both
+  // faces of a Wall standing inside one Room).
+  const facesPerOpening = new Map<ResolvedOpening, number>();
   for (const [key, room] of rooms) {
     let wallLength = 0;
     const faces = new Map<string, FaceTally>();
@@ -183,8 +189,9 @@ export function levelRoomSurfaces<K>(
         }
       });
     }
-    const inRoom = new Set([...faces.values()].flatMap((t) => [...t.widths.keys()]));
-    for (const o of inRoom) roomsPerOpening.set(o, (roomsPerOpening.get(o) ?? 0) + 1);
+    for (const t of faces.values()) {
+      for (const o of t.widths.keys()) facesPerOpening.set(o, (facesPerOpening.get(o) ?? 0) + 1);
+    }
     found.set(key, { wallLength, faces });
   }
 
@@ -204,7 +211,7 @@ export function levelRoomSurfaces<K>(
         const top = bottom + o.height;
         const below = heightOverlap(bottom, top, floor, ceiling);
         cuts.push({ opening: o.id, size: o.width * o.height, cut: width * below });
-        const depth = Math.abs(f.hi - f.lo) / (roomsPerOpening.get(o) ?? 1);
+        const depth = Math.abs(f.hi - f.lo) / (facesPerOpening.get(o) ?? 1);
         const head = top <= ceiling && top > floor ? o.width : 0;
         // A sill inside the Wall wherever the Opening starts above the floor (windows, a raised
         // wall opening).

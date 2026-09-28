@@ -29,6 +29,9 @@ export class FormatService {
   volume = (mm3: number): string => `${this.twoDecimals().format(mm3 / 1e9)} m³`;
   /** "140 mm" */
   millimetres = (mm: number): string => `${this.whole().format(mm)} mm`;
+  /** An Opening's size, "0.93 × 2.12 m" */
+  openingSize = (width: number, height: number): string =>
+    `${this.decimal(width / 1000)} × ${this.decimal(height / 1000)} m`;
   /** A plain number with 2 decimals in the current language (for CSV). */
   decimal = (value: number): string => this.twoDecimals().format(value);
 }

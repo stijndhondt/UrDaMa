@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import type { OpeningKind, OpeningTypeId } from '@lakudemis/core';
+import { OPENING_KINDS, type OpeningKind, type OpeningTypeId } from '@lakudemis/core';
 import type { ToolName } from '@lakudemis/editor2d';
 import type { MenuItem } from '@openng/optimus-ui/api';
 import { Menu, MenuModule } from '@openng/optimus-ui/menu';
@@ -197,7 +197,6 @@ export class PlanToolbarComponent {
   protected readonly typeItems = computed<MenuItem[]>(() => {
     this.opened();
     const model = this.project.store.model();
-    const order: OpeningKind[] = ['door', 'window', 'wallOpening', 'garageDoor'];
     return Object.values(model.openingTypes)
       .flatMap((t) => {
         const kind = model.openingFamilies[t.family]?.kind;
@@ -205,14 +204,12 @@ export class PlanToolbarComponent {
       })
       .sort(
         (a, b) =>
-          order.indexOf(a.kind) - order.indexOf(b.kind) ||
+          OPENING_KINDS.indexOf(a.kind) - OPENING_KINDS.indexOf(b.kind) ||
           a.t.width - b.t.width ||
           a.t.height - b.t.height,
       )
       .map(({ t, kind }) => {
-        const size =
-          t.name ??
-          `${this.format.decimal(t.width / 1000)} × ${this.format.decimal(t.height / 1000)} m`;
+        const size = t.name ?? this.format.openingSize(t.width, t.height);
         return {
           label: `${this.language.text('panel.opening.' + kind)} ${size}`,
           state: { icon: OPENING_ICONS[kind] },

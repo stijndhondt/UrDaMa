@@ -40,7 +40,7 @@ describe('the Quantities tree (ticket 12)', () => {
     expect(ground!.rooms.map((r) => r.name)).toEqual(['Eetkamer', 'Keuken']);
     const keuken = ground!.rooms[1]!;
     expect(keuken.faces).toHaveLength(4);
-    expect(keuken.floorArea).toBe(store.values.room(keuken.room).floorFinishArea());
+    expect(keuken.floorFinishArea).toBe(store.values.room(keuken.room).floorFinishArea());
     expect(keuken.ceilingArea).toBe(store.values.room(keuken.room).ceilingArea());
     const faceNet = keuken.faces.reduce((sum, f) => sum + f.net, 0);
     expect(Math.round(faceNet)).toBe(
