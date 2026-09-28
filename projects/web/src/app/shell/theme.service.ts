@@ -1,4 +1,5 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
+import { readSetting, writeSetting } from '../browser-setting';
 
 export type ThemeChoice = 'system' | 'light' | 'dark';
 export const THEME_CHOICES: readonly ThemeChoice[] = ['system', 'light', 'dark'];
@@ -12,7 +13,7 @@ const STORAGE_KEY = 'lakudemis.theme';
  */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
-  readonly choice = signal<ThemeChoice>(readStored());
+  readonly choice = signal<ThemeChoice>(readSetting(STORAGE_KEY, THEME_CHOICES) ?? 'system');
   /** The OS's setting; tests (jsdom) have no matchMedia. */
   private readonly media =
     typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
@@ -26,25 +27,12 @@ export class ThemeService {
     effect(() => {
       document.documentElement.classList.toggle('app-dark', this.dark());
       document.documentElement.style.colorScheme = this.dark() ? 'dark' : 'light';
-      try {
-        localStorage.setItem(STORAGE_KEY, this.choice());
-      } catch {
-        // storage unavailable: the choice just isn't remembered
-      }
+      writeSetting(STORAGE_KEY, this.choice());
     });
   }
 
   /** The theme button: system → light → dark → system. */
   next(): void {
     this.choice.set(THEME_CHOICES[(THEME_CHOICES.indexOf(this.choice()) + 1) % 3]!);
-  }
-}
-
-function readStored(): ThemeChoice {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY);
-    return (THEME_CHOICES as readonly string[]).includes(v ?? '') ? (v as ThemeChoice) : 'system';
-  } catch {
-    return 'system';
   }
 }

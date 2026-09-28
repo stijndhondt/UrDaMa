@@ -8,14 +8,12 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ToolName } from '@lakudemis/editor2d';
 import type { MenuItem } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { Optimus } from '@openng/optimus-ui/config';
 import { MenubarModule } from '@openng/optimus-ui/menubar';
-import { SplitterModule } from '@openng/optimus-ui/splitter';
 import { TabsModule } from '@openng/optimus-ui/tabs';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { en } from 'primelocale/js/en.js';
@@ -54,11 +52,9 @@ const PX_PER_MM = 96 / 25.4;
   selector: 'lk-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    NgTemplateOutlet,
     TranslatePipe,
     ButtonModule,
     MenubarModule,
-    SplitterModule,
     TabsModule,
     TooltipModule,
     ChangeSummaryComponent,
@@ -197,29 +193,7 @@ const PX_PER_MM = 96 / 25.4;
       }
 
       <main class="centre">
-        @if (show3d()) {
-          <p-splitter styleClass="fill" [panelSizes]="[55, 45]" [minSizes]="[20, 20]">
-            <ng-template #panel>
-              <ng-container [ngTemplateOutlet]="plan" />
-            </ng-template>
-            <ng-template #panel>
-              <section class="view">
-                <header>3D</header>
-                <div class="body">
-                  <!-- three.js loads only when the 3D view is first shown. -->
-                  @defer {
-                    <lk-view3d />
-                  }
-                </div>
-              </section>
-            </ng-template>
-          </p-splitter>
-        } @else {
-          <ng-container [ngTemplateOutlet]="plan" />
-        }
-      </main>
-
-      <ng-template #plan>
+        <!-- The plan stays mounted when 3D opens beside it, so its tool and view are kept. -->
         <section class="view">
           <header>{{ 'shell.plan' | translate }} · {{ levelName() }}</header>
           <div class="body">
@@ -248,7 +222,25 @@ const PX_PER_MM = 96 / 25.4;
             </div>
           </div>
         </section>
-      </ng-template>
+        @if (show3d()) {
+          <div
+            class="divider"
+            role="separator"
+            aria-orientation="vertical"
+            [attr.aria-label]="'shell.divider' | translate"
+            (pointerdown)="startDivider($event)"
+          ></div>
+          <section class="view side3d" [style.flex-basis.%]="view3dShare()">
+            <header>3D</header>
+            <div class="body">
+              <!-- three.js loads only when the 3D view is first shown. -->
+              @defer {
+                <lk-view3d />
+              }
+            </div>
+          </section>
+        }
+      </main>
 
       <aside class="props" [attr.aria-label]="'panel.label' | translate">
         <lk-properties-panel />
@@ -467,20 +459,16 @@ const PX_PER_MM = 96 / 25.4;
       min-width: 0;
       min-height: 0;
     }
-    .centre > *,
-    :host ::ng-deep .fill {
-      flex: 1;
-      min-width: 0;
-      height: 100%;
+    .divider {
+      flex: 0 0 6px;
+      cursor: col-resize;
+      touch-action: none;
     }
-    :host ::ng-deep .p-splitter {
-      border: 0;
-      background: transparent;
+    .divider:hover {
+      background: var(--accent-soft);
     }
-    :host ::ng-deep .p-splitterpanel {
-      display: flex;
-      min-width: 0;
-      min-height: 0;
+    .side3d {
+      flex: 0 0 auto;
     }
     .view {
       flex: 1;
@@ -620,6 +608,8 @@ export class App {
 
   protected readonly sideOpen = signal(true);
   protected readonly show3d = signal(false);
+  /** The 3D view's share of the centre's width (%), set by dragging the divider. */
+  protected readonly view3dShare = signal(45);
   protected readonly bottomOpen = signal(false);
   protected readonly bottomTab = signal<BottomTab>('quantities');
 
@@ -627,19 +617,14 @@ export class App {
   protected readonly warnings = computed(() =>
     this.store.values.level(this.project.level()).warnings(),
   );
-  protected readonly levelName = computed(
-    () => this.store.model().levels[this.project.level()]?.name ?? '',
-  );
+  protected readonly levelName = this.project.levelName;
   protected readonly drawingScale = computed(() => {
     const scale = this.editor()?.scale() ?? 0;
     return scale > 0 ? Math.round(PX_PER_MM / scale) : null;
   });
 
-  /** Texts built in code (menus, tooltips) re-read when a language's texts have loaded. */
-  private readonly t = (key: string, params?: object): string => {
-    this.language.loaded();
-    return this.translate.instant(key, params);
-  };
+  /** Texts built in code (menus, tooltips), read again when a language's texts have loaded. */
+  private readonly t = (key: string, params?: object): string => this.language.text(key, params);
   protected readonly undoHint = computed(() => this.historyHint('undo'));
   protected readonly redoHint = computed(() => this.historyHint('redo'));
   protected readonly themeHint = computed(
@@ -739,6 +724,23 @@ export class App {
     const shortcut = which === 'undo' ? 'Ctrl+Z' : 'Ctrl+Y';
     const action = this.t('history.' + which);
     return label ? `${action}: ${this.t(label.key, label.params)} (${shortcut})` : action;
+  }
+
+  /** Dragging the divider between the plan and 3D. */
+  protected startDivider(e: PointerEvent): void {
+    const divider = e.target as HTMLElement;
+    const centre = divider.parentElement!.getBoundingClientRect();
+    divider.setPointerCapture(e.pointerId);
+    const move = (m: PointerEvent) =>
+      this.view3dShare.set(
+        Math.min(80, Math.max(20, ((centre.right - m.clientX) / centre.width) * 100)),
+      );
+    const up = () => {
+      divider.removeEventListener('pointermove', move);
+      divider.removeEventListener('pointerup', up);
+    };
+    divider.addEventListener('pointermove', move);
+    divider.addEventListener('pointerup', up);
   }
 
   protected showBottom(tab: BottomTab): void {

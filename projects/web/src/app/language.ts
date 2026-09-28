@@ -1,6 +1,7 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { firstValueFrom } from 'rxjs';
+import { readSetting, writeSetting } from './browser-setting';
 
 export const LANGUAGES = ['en', 'nl'] as const;
 export type Language = (typeof LANGUAGES)[number];
@@ -11,7 +12,7 @@ const STORAGE_KEY = 'lakudemis.language';
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
   private readonly translate = inject(TranslateService);
-  readonly current = signal<Language>(readStored() ?? 'en');
+  readonly current = signal<Language>(readSetting(STORAGE_KEY, LANGUAGES) ?? 'en');
   /**
    * The language whose texts are loaded. Labels built in code (menus, options given to UI
    * components as data) re-read their texts when this changes, not when the choice changes,
@@ -25,25 +26,21 @@ export class LanguageService {
       const lang = this.current();
       this.translate.use(lang);
       document.documentElement.lang = lang;
-      try {
-        localStorage.setItem(STORAGE_KEY, lang);
-      } catch {
-        // storage unavailable: the choice just isn't remembered
-      }
+      writeSetting(STORAGE_KEY, lang);
     });
+  }
+
+  /**
+   * A text built in code (menus, options given to UI components as data): read in a computed,
+   * it is read again when a language's texts have loaded.
+   */
+  text(key: string, params?: object): string {
+    this.loaded();
+    return this.translate.instant(key, params);
   }
 
   /** Loads the chosen language's texts before the app starts (so defaults are translated). */
   load(): Promise<unknown> {
     return firstValueFrom(this.translate.use(this.current()));
-  }
-}
-
-function readStored(): Language | null {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY);
-    return (LANGUAGES as readonly string[]).includes(v ?? '') ? (v as Language) : null;
-  } catch {
-    return null;
   }
 }

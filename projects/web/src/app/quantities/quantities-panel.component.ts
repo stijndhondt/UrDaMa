@@ -4,13 +4,7 @@ import { ButtonModule } from '@openng/optimus-ui/button';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { IconComponent } from '../shell/icon.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import {
-  MEASUREMENT_RULES,
-  quantityRows,
-  toCsv,
-  type MeasurementRule,
-  type QuantityRow,
-} from '@lakudemis/core';
+import { quantityRows, toCsv, type QuantityRow } from '@lakudemis/core';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { ProjectService } from '../project/project.service';
@@ -53,7 +47,7 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm²' | 'm³' }[]
           inputId="quantities-rule"
           size="small"
           appendTo="body"
-          [options]="ruleOptions()"
+          [options]="measurement.options()"
           optionLabel="label"
           optionValue="value"
           [ngModel]="measurement.rule()"
@@ -162,13 +156,6 @@ export class QuantitiesPanelComponent {
   private readonly language = inject(LanguageService);
   private readonly translate = inject(TranslateService);
 
-  protected readonly ruleOptions = computed(() => {
-    this.language.loaded();
-    return (Object.keys(MEASUREMENT_RULES) as MeasurementRule[]).map((value) => ({
-      value,
-      label: this.translate.instant('quantities.rules.' + value),
-    }));
-  });
   protected readonly columns = COLUMNS;
   protected readonly rows = computed(() =>
     quantityRows(this.project.store.model(), this.project.store.values, this.measurement.rule()),

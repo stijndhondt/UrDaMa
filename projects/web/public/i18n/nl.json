@@ -304,7 +304,8 @@
         "room": "Ruimte verschuiven (de muur aan dat uiteinde schuift mee)",
         "wall": "Alleen deze muur (de verbonden muur kantelt)"
       },
-      "lengthHint": "Klik om de lengte te wijzigen, de richting en wat er beweegt"
+      "lengthHint": "Klik om de lengte te wijzigen, de richting en wat er beweegt",
+      "faceHint": "Bruto {gross}, netto {net} (openingen afgetrokken)"
     },
     "resetToPreset": "Terug naar standaard",
     "twoRooms": "Twee ruimtes geselecteerd",
@@ -353,7 +354,10 @@
       "volume": "m³ volume",
       "length": "m lang",
       "drawnFace": "m² getekende zijde",
-      "otherFace": "m² andere zijde"
+      "otherFace": "m² andere zijde",
+      "width": "m breed",
+      "height": "m hoog",
+      "openingArea": "m² opening"
     }
   },
   "presets": {
@@ -443,6 +447,7 @@
       "system": "Zoals het systeem",
       "light": "Licht",
       "dark": "Donker"
-    }
+    },
+    "divider": "Sleep om plattegrond en 3D te verdelen"
   }
 }

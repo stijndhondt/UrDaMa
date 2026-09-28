@@ -6,9 +6,8 @@
  */
 import { checkInvariants } from '../model/invariants';
 import { message, type Message } from '../model/message';
-import { BUILT_IN_FAMILIES } from '../model/opening-types';
 import { COLLECTIONS } from '../model/patch';
-import type { CollectionName, Model, OpeningKind } from '../model/types';
+import type { CollectionName, Model } from '../model/types';
 
 export const FILE_FORMAT = 'lakudemis';
 export const CURRENT_SCHEMA_VERSION = 2;
@@ -28,9 +27,11 @@ export const MIGRATIONS: Readonly<Record<number, (doc: Doc) => Doc>> = {
  * Version 1 → 2 (ticket 16, ADR 0007): doors and windows become Openings of the built-in door and
  * window families. Every size in use, and each family's Preset size, becomes an Opening type; an
  * Opening keeps its Wall, position, sill, hinge and swing and refers to the type of its size.
- * Types made here get IDs from their kind and size (a migration has no ID generator).
+ * Types made here get IDs from their kind and size (a migration has no ID generator). The values
+ * are written out here, not taken from the live code, so this step keeps giving the same result.
  */
 function openingTypesFromSizes(doc: Doc): Doc {
+  const families = { door: 'ofm_door', window: 'ofm_window' } as const;
   const presets = ((doc['project'] as Doc | undefined)?.['presets'] ?? {}) as Record<
     string,
     number
@@ -39,7 +40,7 @@ function openingTypesFromSizes(doc: Doc): Doc {
   const typeFor = (kind: string, width: number, height: number): string => {
     const id = `oty_${kind}_${width}x${height}`.replace(/\./g, '-');
     if (!types.has(id))
-      types.set(id, { id, family: BUILT_IN_FAMILIES[kind as OpeningKind], width, height });
+      types.set(id, { id, family: families[kind as keyof typeof families], width, height });
     return id;
   };
   typeFor('door', presets['doorWidth'] ?? 930, presets['doorHeight'] ?? 2115);
@@ -55,10 +56,7 @@ function openingTypesFromSizes(doc: Doc): Doc {
   return {
     ...doc,
     schemaVersion: 2,
-    openingFamilies: (['door', 'window'] as const).map((kind) => ({
-      id: BUILT_IN_FAMILIES[kind],
-      kind,
-    })),
+    openingFamilies: (['door', 'window'] as const).map((kind) => ({ id: families[kind], kind })),
     openingTypes: [...types.values()],
     openings,
   };

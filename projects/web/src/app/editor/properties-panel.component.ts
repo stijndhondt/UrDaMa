@@ -9,9 +9,9 @@ import {
 } from '@angular/core';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
-  MEASUREMENT_RULES,
   deleteLevel,
   netWallArea,
+  presetSize,
   resizeRoom,
   setPresets,
   setWallThickness,
@@ -23,7 +23,6 @@ import {
   wallLength,
   wallThickness,
   type Command,
-  type MeasurementRule,
   type Presets,
 } from '@lakudemis/core';
 import { parseLength } from '@lakudemis/editor2d';
@@ -55,6 +54,8 @@ const PRESET_FIELDS: readonly (keyof Presets)[] = [
 interface Figure {
   readonly value: string;
   readonly label: string;
+  /** More detail, shown as a tooltip */
+  readonly hint?: string;
 }
 
 /**
@@ -177,6 +178,14 @@ interface Figure {
           <span class="kind">{{ 'panel.opening.type' | translate }} · {{ levelName() }}</span>
         </div>
       </header>
+      <div class="summary">
+        @for (f of openingSummary(); track f.label) {
+          <div class="tile">
+            <b>{{ f.value }}</b
+            ><span>{{ f.label | translate }}</span>
+          </div>
+        }
+      </div>
       <section>
         <h3>{{ 'panel.placement' | translate }}</h3>
         <lk-prop
@@ -190,6 +199,11 @@ interface Figure {
             [label]="'panel.opening.sill' | translate"
             [value]="mm(opening.sill)"
             unit="mm"
+            [preset]="opening.sill === openingPreset().sill"
+            [resetLabel]="
+              opening.sill === openingPreset().sill ? null : resetText(openingPreset().sill)
+            "
+            (restore)="run(updateOpening, { opening: opening.id, sill: openingPreset().sill })"
             (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'sill')"
           />
         } @else {
@@ -215,12 +229,22 @@ interface Figure {
           [label]="'panel.opening.width' | translate"
           [value]="mm(opening.width)"
           unit="mm"
+          [preset]="opening.width === openingPreset().width"
+          [resetLabel]="
+            opening.width === openingPreset().width ? null : resetText(openingPreset().width)
+          "
+          (restore)="run(updateOpening, { opening: opening.id, width: openingPreset().width })"
           (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'width')"
         />
         <lk-prop
           [label]="'panel.opening.height' | translate"
           [value]="mm(opening.height)"
           unit="mm"
+          [preset]="opening.height === openingPreset().height"
+          [resetLabel]="
+            opening.height === openingPreset().height ? null : resetText(openingPreset().height)
+          "
+          (restore)="run(updateOpening, { opening: opening.id, height: openingPreset().height })"
           (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'height')"
         />
       </section>
@@ -288,7 +312,12 @@ interface Figure {
         <section>
           <h3>{{ 'panel.wall.faces' | translate }}</h3>
           @for (f of faces; track f.label) {
-            <lk-prop [label]="f.label | translate" [value]="f.value" [editable]="false" />
+            <lk-prop
+              [label]="f.label | translate"
+              [value]="f.value"
+              [hint]="f.hint ?? ''"
+              [editable]="false"
+            />
           }
         </section>
       }
@@ -396,7 +425,7 @@ interface Figure {
         <lk-prop
           [label]="'quantities.rule' | translate"
           [value]="'quantities.rules.' + measurement.rule() | translate"
-          [choices]="rules()"
+          [choices]="measurement.options()"
           [choice]="measurement.rule()"
           (commit)="measurement.rule.set($any($event))"
         />
@@ -528,25 +557,14 @@ export class PropertiesPanelComponent {
     });
   }
 
-  protected readonly levelName = computed(
-    () => this.project.store.model().levels[this.project.level()]?.name ?? '',
-  );
+  protected readonly levelName = this.project.levelName;
 
-  /** Choices built in code are translated again when a language's texts have loaded. */
-  private readonly t = (key: string, params?: object): string => {
-    this.language.loaded();
-    return this.translate.instant(key, params);
-  };
+  /** Choices built in code, read again when a language's texts have loaded. */
+  private readonly t = (key: string, params?: object): string => this.language.text(key, params);
   protected readonly yesNo = computed<PropChoice[]>(() => [
     { value: 'yes', label: this.t('common.yes') },
     { value: 'no', label: this.t('common.no') },
   ]);
-  protected readonly rules = computed<PropChoice[]>(() =>
-    (Object.keys(MEASUREMENT_RULES) as MeasurementRule[]).map((r) => ({
-      value: r,
-      label: this.t('quantities.rules.' + r),
-    })),
-  );
   protected readonly sideChoices = computed<PropChoice[]>(() =>
     (['maxmax', 'minmax', 'maxmin', 'minmin'] as const).map((v) => ({
       value: v,
@@ -601,6 +619,24 @@ export class PropertiesPanelComponent {
       type.name ??
       `${this.plain().format(type.width / 10)} × ${this.plain().format(type.height / 10)}`
     );
+  });
+
+  /** The Presets for the selected Opening's kind: its sizes when it has its own. */
+  protected readonly openingPreset = computed(() =>
+    presetSize(this.presets(), this.selection.opening()?.kind ?? 'door'),
+  );
+
+  protected readonly openingSummary = computed<Figure[]>(() => {
+    const o = this.selection.opening();
+    if (!o) return [];
+    return [
+      { value: this.format.decimal(o.width / 1000), label: 'panel.summary.width' },
+      { value: this.format.decimal(o.height / 1000), label: 'panel.summary.height' },
+      {
+        value: this.format.decimal((o.width * o.height) / 1e6),
+        label: 'panel.summary.openingArea',
+      },
+    ];
   });
 
   protected readonly roomSummary = computed<Figure[]>(() => {

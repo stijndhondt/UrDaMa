@@ -91,9 +91,9 @@ export const resolveOpenings = (model: Model, openings: readonly Opening[]): Res
   openings.flatMap((o) => resolveOpening(model, o) ?? []);
 
 /**
- * The type of a family with exactly these sizes: an existing one (the oldest, so a family's
- * default type wins), or a new unnamed one. Used where an Opening gets its own size, which until
- * ticket 18 always means "only this one".
+ * The type of a family with exactly these sizes: the existing one (placing and migrating never
+ * make two types of one size in a family), or a new unnamed one. Used where an Opening gets its
+ * own size, which until ticket 18 always means "only this one".
  */
 export function typeWithSize(
   model: Model,
@@ -102,9 +102,9 @@ export function typeWithSize(
   height: number,
   ids: IdGenerator,
 ): { readonly model: Model; readonly type: OpeningTypeId } {
-  const same = Object.values(model.openingTypes)
-    .filter((t) => t.family === family && t.width === width && t.height === height)
-    .sort((a, b) => (a.id < b.id ? -1 : 1))[0];
+  const same = Object.values(model.openingTypes).find(
+    (t) => t.family === family && t.width === width && t.height === height,
+  );
   if (same) return { model, type: same.id };
   const type: OpeningType = { id: ids('openingTypes') as OpeningTypeId, family, width, height };
   return { model: put(model, 'openingTypes', type), type: type.id };

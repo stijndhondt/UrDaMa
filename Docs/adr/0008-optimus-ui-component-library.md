@@ -15,4 +15,4 @@ Icons come from **Iconify**: one main set, with icons from other sets only where
 - The fork is young (2.0.2, August 2026) with a small team. If it stalls, the escape route is its PrimeNG v21 API: code written against it stays close to PrimeNG and other forks.
 - Labels given to Optimus as data (menus, options, tree nodes) are translated in code and rebuilt when a language's texts have loaded; Optimus's own texts come from the `primelocale` package through `Optimus.setTranslation`.
 - Optimus's default density is roomy; the properties panel gets its own design (ticket 24) rather than stacked default fields.
-- The initial bundle budget goes up (the production build grew from 530 kB to about 1.5 MB raw, 140 to 316 kB transferred).
+- The initial bundle budget goes up to 1.3 MB (warning) and 1.6 MB (error): the workspace (ticket 09) takes the production build from 530 kB to 1.20 MB raw, 140 to 264 kB transferred.

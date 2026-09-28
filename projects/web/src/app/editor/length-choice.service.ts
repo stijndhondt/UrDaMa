@@ -1,7 +1,9 @@
 import { Injectable, effect, signal } from '@angular/core';
 import type { SetWallLengthArgs } from '@lakudemis/core';
+import { readSetting, writeSetting } from '../browser-setting';
 
 const STORAGE_KEY = 'lakudemis.lengthMode';
+const MODES: readonly SetWallLengthArgs['mode'][] = ['room', 'wall'];
 
 /**
  * What moves when a Wall's length is typed (tickets 01, 23): Move Room the first time, then the
@@ -9,23 +11,11 @@ const STORAGE_KEY = 'lakudemis.lengthMode';
  */
 @Injectable({ providedIn: 'root' })
 export class LengthChoiceService {
-  readonly mode = signal<SetWallLengthArgs['mode']>(readStored());
+  readonly mode = signal<SetWallLengthArgs['mode']>(readSetting(STORAGE_KEY, MODES) ?? 'room');
 
   constructor() {
     effect(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, this.mode());
-      } catch {
-        // storage unavailable: the choice lasts for this session only
-      }
+      writeSetting(STORAGE_KEY, this.mode());
     });
-  }
-}
-
-function readStored(): SetWallLengthArgs['mode'] {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === 'wall' ? 'wall' : 'room';
-  } catch {
-    return 'room';
   }
 }

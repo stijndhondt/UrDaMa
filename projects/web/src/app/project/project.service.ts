@@ -57,6 +57,8 @@ export class ProjectService {
     const chosen = this.selectedLevel();
     return chosen && levels.some((l) => l.id === chosen) ? chosen : levels[0]!.id;
   });
+  /** The edited Level's name. */
+  readonly levelName = computed(() => this.store.model().levels[this.level()]?.name ?? '');
 
   private autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 

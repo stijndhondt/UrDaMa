@@ -304,7 +304,8 @@
         "room": "Move Room (the Wall at that end moves along)",
         "wall": "Only this Wall (the connected Wall tilts)"
       },
-      "lengthHint": "Click to change the length, which way it grows and what moves"
+      "lengthHint": "Click to change the length, which way it grows and what moves",
+      "faceHint": "Gross {gross}, net {net} (Openings subtracted)"
     },
     "resetToPreset": "Reset to Preset",
     "twoRooms": "Two Rooms selected",
@@ -353,7 +354,10 @@
       "volume": "m³ volume",
       "length": "m long",
       "drawnFace": "m² drawn face",
-      "otherFace": "m² other face"
+      "otherFace": "m² other face",
+      "width": "m wide",
+      "height": "m high",
+      "openingArea": "m² opening"
     }
   },
   "presets": {
@@ -443,6 +447,7 @@
       "system": "As the system",
       "light": "Light",
       "dark": "Dark"
-    }
+    },
+    "divider": "Drag to resize the plan and 3D"
   }
 }

@@ -20,3 +20,5 @@
 Checked in the browser (Dutch, light and dark): a Wall's length 3,00 → 3,30 m through the panel (Room 1 8,15 → 8,94 m²), a Room height reset to its Preset, the right-click menu, 3D beside the plan, the Quantities panel, a door placed and its width changed to 830 (only that door, now type "83 × 211,5"), the Level dialog in dark. A Slice 1 working copy opened through the ticket 16 migration.
 
 Not in this ticket: the plan canvas keeps its light paper colours in dark mode; the side panel is not yet resizable.
+
+**2026-09-28, after review:** Openings in the panel now have summary tiles, grey Preset sizes and reset buttons naming the Preset; Wall faces show the gross area in a tooltip; the plan stays mounted when 3D opens (it was rebuilt, losing the tool and view), with its own draggable divider instead of the Optimus splitter; shared helpers for per-browser settings, texts built in code (`LanguageService.text`) and the Measurement rule choices. Known differences, kept on purpose: the status bar shows the drawing scale (1:67) rather than a zoom percentage, and the change summary takes the status bar's place while there is no message.
