@@ -506,6 +506,7 @@
       "planElevation3d": "Plan + Elevation + 3D",
       "grid": "2 × 2: Plan, two Elevations, 3D"
     },
+    "tooSmall": "needs a larger window",
     "maximize": "Show only this panel",
     "restore": "Back to the layout",
     "panels": {

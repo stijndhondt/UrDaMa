@@ -1,4 +1,4 @@
-import { layoutGrid } from './layout-grid';
+import { fittingLayout, layoutFits, layoutGrid } from './layout-grid';
 
 const split = { col: 60, row: 40 };
 
@@ -43,5 +43,38 @@ describe('the centre layouts (ticket 11)', () => {
     expect(g.areas).toBe('"elevationB"');
     expect(g.dividers).toEqual([]);
     expect(layoutGrid('plan3d', 'elevationB', split).panels).toEqual(['plan', 'view3d']);
+  });
+});
+
+describe('layouts on a small screen', () => {
+  const large = { width: 1400, height: 800 };
+  const narrow = { width: 600, height: 800 };
+  const low = { width: 1400, height: 400 };
+
+  it('offers every layout when the centre has room for its panels', () => {
+    expect(
+      ['plan', 'plan3d', 'planElevation3d', 'grid'].every((l) => layoutFits(l as never, large)),
+    ).toBe(true);
+  });
+
+  it('offers no side-by-side panels in a narrow centre, and no stacked ones in a low centre', () => {
+    expect(layoutFits('plan', narrow)).toBe(true);
+    expect(layoutFits('plan', { width: 200, height: 150 })).toBe(true);
+    expect(layoutFits('plan3d', narrow)).toBe(false);
+    expect(layoutFits('grid', narrow)).toBe(false);
+    expect(layoutFits('plan3d', low)).toBe(true);
+    expect(layoutFits('planElevation3d', low)).toBe(false);
+    expect(layoutFits('grid', low)).toBe(false);
+  });
+
+  it('shows the largest layout that fits, keeping the chosen one for when the window grows', () => {
+    expect(fittingLayout('grid', large)).toBe('grid');
+    expect(fittingLayout('grid', low)).toBe('plan3d');
+    expect(fittingLayout('grid', narrow)).toBe('plan');
+    expect(fittingLayout('plan', narrow)).toBe('plan');
+  });
+
+  it('keeps the chosen layout while the centre has not been measured yet', () => {
+    expect(fittingLayout('grid', null)).toBe('grid');
   });
 });

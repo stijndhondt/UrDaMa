@@ -38,6 +38,39 @@ const PANELS: Record<LayoutId, readonly PanelId[]> = {
   grid: ['plan', 'elevationA', 'elevationB', 'view3d'],
 };
 
+/** The centre's size in CSS px */
+export interface CentreSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+/** px: below this a view panel is too small to work in. */
+export const MIN_PANEL = { width: 360, height: 240 } as const;
+const DIVIDER = 6;
+
+/**
+ * Whether a layout's panels each get at least MIN_PANEL in a centre of this size. Plan only
+ * always fits: it is what a small screen falls back to.
+ */
+export function layoutFits(layout: LayoutId, size: CentreSize): boolean {
+  if (layout === 'plan') return true;
+  const rows = layout === 'planElevation3d' || layout === 'grid' ? 2 : 1;
+  return (
+    size.width >= 2 * MIN_PANEL.width + DIVIDER &&
+    size.height >= rows * MIN_PANEL.height + (rows - 1) * DIVIDER
+  );
+}
+
+/**
+ * The layout to show: the chosen one, or on a screen too small for it the largest one that fits.
+ * The choice itself is kept, so it comes back when the window grows. Unmeasured: the choice.
+ */
+export function fittingLayout(chosen: LayoutId, size: CentreSize | null): LayoutId {
+  if (!size) return chosen;
+  const smaller = LAYOUT_IDS.slice(0, LAYOUT_IDS.indexOf(chosen) + 1).reverse();
+  return smaller.find((l) => layoutFits(l, size)) ?? 'plan';
+}
+
 /** The grid for a layout; a maximised panel of the layout fills the centre on its own. */
 export function layoutGrid(
   layout: LayoutId,

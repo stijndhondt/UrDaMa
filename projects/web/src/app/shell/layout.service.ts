@@ -1,8 +1,11 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import { readJson, readSetting, writeSetting } from '../browser-setting';
 import {
+  fittingLayout,
   LAYOUT_IDS,
+  layoutFits,
   layoutGrid,
+  type CentreSize,
   type ElevationPanelId,
   type LayoutId,
   type LayoutSplit,
@@ -34,7 +37,23 @@ export class LayoutService {
   readonly split = signal<LayoutSplit>(readSplit());
   readonly sides = signal<Readonly<Record<ElevationPanelId, ElevationSide>>>(readSides());
 
-  readonly grid = computed(() => layoutGrid(this.layout(), this.maximized(), this.split()));
+  /** The centre's size, measured by the shell; null until then */
+  readonly centre = signal<CentreSize | null>(null);
+  /** The layout shown: the chosen one, or a smaller one while the screen is too small for it */
+  readonly shown = computed(() => fittingLayout(this.layout(), this.centre()));
+
+  readonly grid = computed(() => {
+    const maximized = this.maximized();
+    // A maximised panel fills the centre on its own, so it shows even on a small screen.
+    const layout = maximized ? this.layout() : this.shown();
+    return layoutGrid(layout, maximized, this.split());
+  });
+
+  /** Whether a layout's panels fit in the centre now (unmeasured: yes). */
+  fits(layout: LayoutId): boolean {
+    const centre = this.centre();
+    return !centre || layoutFits(layout, centre);
+  }
 
   constructor() {
     effect(() => writeSetting(LAYOUT_KEY, this.layout()));
@@ -55,6 +74,12 @@ export class LayoutService {
   /** A panel's Maximise button: that panel alone; again (Restore) brings back the preset. */
   toggleMaximized(panel: PanelId): void {
     this.maximized.set(this.maximized() === panel ? null : panel);
+  }
+
+  /** 3D beside the Plan; on a screen too narrow for that, 3D alone until toggled off. */
+  show3d(): void {
+    this.choose('plan3d');
+    if (!this.fits('plan3d')) this.maximized.set('view3d');
   }
 
   /** Dragging a divider: its share of the centre, kept between 15 and 85 %. */

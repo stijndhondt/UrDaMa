@@ -506,6 +506,7 @@
       "planElevation3d": "Plattegrond + gevelaanzicht + 3D",
       "grid": "2 × 2: plattegrond, twee gevelaanzichten, 3D"
     },
+    "tooSmall": "vraagt een groter venster",
     "maximize": "Alleen dit paneel tonen",
     "restore": "Terug naar de indeling",
     "panels": {

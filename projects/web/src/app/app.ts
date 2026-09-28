@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   HostListener,
   computed,
   effect,
@@ -156,12 +157,13 @@ const PX_PER_MM = 96 / 25.4;
               [options]="layoutOptions()"
               optionValue="value"
               [allowEmpty]="false"
-              [ngModel]="layout.layout()"
+              optionDisabled="disabled"
+              [ngModel]="layout.shown()"
               (ngModelChange)="layout.choose($event)"
               [ariaLabel]="'layout.label' | translate"
             >
               <ng-template #item let-o>
-                <lk-icon [name]="o.icon" [pTooltip]="o.label" tooltipPosition="bottom" />
+                <lk-icon [name]="o.icon" [pTooltip]="o.hint" tooltipPosition="bottom" />
               </ng-template>
             </p-selectbutton>
             <p-button
@@ -234,6 +236,7 @@ const PX_PER_MM = 96 / 25.4;
       }
 
       <main
+        #centre
         class="centre"
         [style.grid-template-areas]="layout.grid().areas"
         [style.grid-template-columns]="layout.grid().columns"
@@ -698,6 +701,7 @@ export class App {
   protected readonly editor = viewChild(PlanEditorComponent);
   protected readonly contextMenu = viewChild.required(ContextMenuComponent);
   private readonly newDialog = viewChild.required(NewProjectDialogComponent);
+  private readonly centre = viewChild<ElementRef<HTMLElement>>('centre');
   protected readonly store = this.project.store;
   protected readonly lengthEdits = inject(LengthEditService);
   /** The length editor on the plan, with its Wall (closed when the Wall is gone). */
@@ -718,11 +722,17 @@ export class App {
     ELEVATION_SIDES.map((value) => ({ value, label: this.t('layout.sides.' + value) })),
   );
   protected readonly layoutOptions = computed(() =>
-    LAYOUT_IDS.map((value) => ({
-      value,
-      icon: LAYOUT_ICONS[value],
-      label: this.t('layout.presets.' + value),
-    })),
+    LAYOUT_IDS.map((value) => {
+      const label = this.t('layout.presets.' + value);
+      const disabled = !this.layout.fits(value);
+      return {
+        value,
+        icon: LAYOUT_ICONS[value],
+        label,
+        disabled,
+        hint: disabled ? `${label}: ${this.t('layout.tooSmall')}` : label,
+      };
+    }),
   );
   protected readonly bottomOpen = signal(false);
   protected readonly bottomTab = signal<BottomTab>('quantities');
@@ -797,7 +807,8 @@ export class App {
           label: this.t('layout.label'),
           items: LAYOUT_IDS.map((l) => ({
             label: this.t('layout.presets.' + l),
-            state: { checked: this.layout.layout() === l },
+            state: { checked: this.layout.shown() === l },
+            disabled: !this.layout.fits(l),
             command: () => this.layout.choose(l),
           })),
         },
@@ -834,6 +845,18 @@ export class App {
     });
     // Optimus's own texts (aria labels, empty messages, …) follow the app's language.
     effect(() => this.optimus.setTranslation(this.language.current() === 'nl' ? nl : en));
+    // The centre's size decides which layouts fit (a small screen gets no 2 × 2 of tiny panels).
+    effect((onCleanup) => {
+      const centre = this.centre()?.nativeElement;
+      // Unmeasured (no ResizeObserver, as in unit tests): the chosen layout shows.
+      if (!centre || typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(([entry]) => {
+        const { width, height } = entry!.contentRect;
+        this.layout.centre.set({ width, height });
+      });
+      observer.observe(centre);
+      onCleanup(() => observer.disconnect());
+    });
   }
 
   private historyHint(which: 'undo' | 'redo'): string {
@@ -849,7 +872,8 @@ export class App {
 
   /** The icon bar's 3D button: Plan + 3D, or back to Plan only. */
   protected toggle3d(): void {
-    this.layout.choose(this.shows('view3d') ? 'plan' : 'plan3d');
+    if (this.shows('view3d')) this.layout.choose('plan');
+    else this.layout.show3d();
   }
 
   /** Dragging a divider: its share of the centre follows the pointer. */
