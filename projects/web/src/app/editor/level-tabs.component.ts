@@ -90,10 +90,12 @@ import { SelectionService } from './selection.service';
       background: var(--panel);
       color: var(--ink);
     }
+    /* The Level being edited: the same blue "selected" look as the icon bar, light and dark. */
     button.on {
-      background: var(--ink);
-      border-color: var(--ink);
-      color: #fff;
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
     }
     button.add {
       color: var(--muted);

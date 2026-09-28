@@ -85,11 +85,13 @@ import { SelectionService } from './selection.service';
       border: 1px solid var(--line);
       border-radius: 5px;
       background: var(--panel);
+      color: var(--ink);
     }
     button.on {
-      background: var(--ink);
-      border-color: var(--ink);
-      color: #fff;
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
     }
     label {
       display: flex;
