@@ -8,6 +8,7 @@ import type {
   Vec,
   WallId,
 } from '@lakudemis/core';
+import type { PlanColors } from './draw-plan';
 import type { PlanTarget } from './hit-test';
 
 /** A selected element (Slice 1 spec, "Select / move / delete"): its kind, with the matching ID type. */
@@ -41,6 +42,13 @@ export interface EditorHost {
    * The app shows its context menu there.
    */
   readonly contextMenu?: (at: Vec, target: PlanTarget) => void;
+  /**
+   * A double click on a Wall's length label (ticket 23): the app opens its length editor at that
+   * point (canvas px). `faceLength` is the length the label shows (mm).
+   */
+  readonly editLength?: (wall: WallId, at: Vec, faceLength: number) => void;
+  /** The colours to draw with (the app's theme); the light defaults when absent. */
+  readonly colors?: () => PlanColors;
   /** The plan's zoom changed (screen px per mm), e.g. for a drawing scale in a status bar. */
   readonly zoomChanged?: (scale: number) => void;
   /** A command was refused: show its reason near the cursor and in the message bar. */

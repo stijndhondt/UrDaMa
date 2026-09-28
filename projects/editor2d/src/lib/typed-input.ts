@@ -29,8 +29,10 @@ export class TypedInput {
       gap: '8px',
       alignItems: 'flex-end',
       padding: '8px',
-      background: '#fff',
-      border: '1px solid #2f6fde',
+      // The app's colour variables when it has them (light and dark), else these.
+      background: 'var(--panel, #fff)',
+      color: 'var(--ink, #1d232b)',
+      border: '1px solid var(--accent, #2f6fde)',
       borderRadius: '8px',
       boxShadow: '0 4px 16px rgba(0,0,0,.12)',
       zIndex: '5',
@@ -59,7 +61,11 @@ export class TypedInput {
     this.root.replaceChildren();
     this.inputs = fields.map((field, i) => {
       const label = document.createElement('label');
-      Object.assign(label.style, { display: 'flex', flexDirection: 'column', color: '#6b7280' });
+      Object.assign(label.style, {
+        display: 'flex',
+        flexDirection: 'column',
+        color: 'var(--muted, #6b7280)',
+      });
       label.textContent = field.label;
       const input = field.options ? this.choice(field) : this.text(field, i === 0 ? first : '');
       const element: HTMLElement = input;
@@ -91,6 +97,10 @@ export class TypedInput {
       width: '84px',
       font: '600 14px system-ui, sans-serif',
       padding: '3px 5px',
+      background: 'var(--inset, #fff)',
+      color: 'var(--ink, #1d232b)',
+      border: '1px solid var(--line, #c9ccd2)',
+      borderRadius: '4px',
     });
     input.value = first + (field.value ?? '');
     input.autocomplete = 'off';
@@ -99,7 +109,14 @@ export class TypedInput {
 
   private choice(field: TypedField): HTMLSelectElement {
     const select = document.createElement('select');
-    Object.assign(select.style, { font: '13px system-ui, sans-serif', padding: '3px 4px' });
+    Object.assign(select.style, {
+      font: '13px system-ui, sans-serif',
+      padding: '3px 4px',
+      background: 'var(--inset, #fff)',
+      color: 'var(--ink, #1d232b)',
+      border: '1px solid var(--line, #c9ccd2)',
+      borderRadius: '4px',
+    });
     for (const o of field.options ?? []) {
       const option = document.createElement('option');
       option.value = o.value;

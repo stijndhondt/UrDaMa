@@ -1,6 +1,6 @@
 /**
- * What is under a point on the plan: the element the Select tool picks, and what the right-click
- * menu acts on (slice 2, ticket 04).
+ * What is under a point on the plan: the element the Select tool picks, what the right-click menu
+ * acts on (slice 2, ticket 04) and the length label a double click edits (ticket 23).
  */
 import {
   distanceToSegment,
@@ -9,7 +9,7 @@ import {
   levelWallOutlines,
   type Vec,
 } from '@lakudemis/core';
-import { openingOutline } from './draw-plan';
+import { faceLabelAt, faceLabels, openingOutline, type FaceLabel } from './draw-plan';
 import type { EditorHost, Selection } from './host';
 import type { View } from './view';
 
@@ -47,4 +47,16 @@ export function targetAt(host: EditorHost, view: View, p: Vec): PlanTarget | nul
     .footprint()
     .areas.find((a) => !a.rooms.length && insideArea(p, a.outline, a.islands));
   return empty ? { kind: 'empty', seed: p } : null;
+}
+
+/** Labels are only drawn where they are visible; a point can only be on one of those. */
+const EVERYWHERE = { min: { x: -Infinity, y: -Infinity }, max: { x: Infinity, y: Infinity } };
+
+/**
+ * The length label of a Wall face at a screen point (ticket 23): a single click on it selects the
+ * Wall, a double click opens the length editor there.
+ */
+export function lengthLabelAt(host: EditorHost, view: View, screen: Vec): FaceLabel | null {
+  const values = host.store.values.level(host.level());
+  return faceLabelAt(faceLabels(values.slice().walls, values.outlines(), view, EVERYWHERE), screen);
 }

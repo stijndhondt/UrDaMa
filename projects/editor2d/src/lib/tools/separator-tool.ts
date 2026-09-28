@@ -12,6 +12,7 @@ import {
   type WallSnap,
 } from '../snap';
 import { wallEnds, type PointerInfo, type Tool, type ToolContext } from './tool';
+import { planColors } from '../draw-plan';
 
 const CLICK_PX = 4;
 
@@ -77,7 +78,7 @@ export class SeparatorTool implements Tool {
     const b = this.ctx.view.toScreen(this.end);
     ctx.save();
     ctx.setLineDash([8, 5]);
-    ctx.strokeStyle = '#2f6fde';
+    ctx.strokeStyle = planColors().accent;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);

@@ -15,6 +15,7 @@ import {
 import { drawSnap, increment, snapToWalls, SNAP_RADIUS_PX, type WallSnap } from '../snap';
 import { parseAngle, parseLength } from '../units';
 import type { PointerInfo, Tool, ToolContext } from './tool';
+import { planColors } from '../draw-plan';
 
 type State =
   | { readonly kind: 'idle' }
@@ -134,14 +135,14 @@ export class WallTool implements Tool {
     const b = this.ctx.view.toScreen(this.state.end);
     ctx.save();
     ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = '#1d232b';
+    ctx.strokeStyle = planColors().label;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = '#2f6fde';
+    ctx.fillStyle = planColors().accent;
     ctx.beginPath();
     ctx.arc(a.x, a.y, 4, 0, Math.PI * 2);
     ctx.fill();
@@ -154,7 +155,7 @@ export class WallTool implements Tool {
       this.typed.length !== null ? ` (${this.ctx.host.text('editor.wall.locked')})` : '';
     const label = `${lengthText}${locked} · ${Math.round(angleOf(v))}° · ${this.ctx.host.text('editor.wall.side.' + this.side)}`;
     ctx.font = '600 12px system-ui, sans-serif';
-    ctx.fillStyle = '#2f6fde';
+    ctx.fillStyle = planColors().accent;
     ctx.textAlign = 'left';
     ctx.fillText(label, b.x + 12, b.y - 12);
     ctx.restore();

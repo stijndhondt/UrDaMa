@@ -181,6 +181,11 @@ export class LengthEditorComponent {
   readonly wall = input.required<Wall>();
   /** Where a refusal is shown (canvas px), when the editor sits on the plan. */
   readonly at = input<{ x: number; y: number } | null>(null);
+  /**
+   * On the plan: the length (mm) of the face whose label was double-clicked. The editor shows and
+   * takes that length; the Baseline changes by the same amount. Without it, the Baseline length.
+   */
+  readonly faceLength = input<number | null>(null);
   readonly closed = output<void>();
 
   private readonly project = inject(ProjectService);
@@ -193,7 +198,8 @@ export class LengthEditorComponent {
   /** Grows towards the end of the plan's axis (right / down) unless chosen otherwise. */
   protected readonly growIndex = signal(2);
   /** The length as the user types it back: m with 2 decimals in their language ("3,30"). */
-  protected readonly shown = computed(() => this.format.decimal(wallLength(this.wall()) / 1000));
+  private readonly shownMm = computed(() => this.faceLength() ?? wallLength(this.wall()));
+  protected readonly shown = computed(() => this.format.decimal(this.shownMm() / 1000));
   protected readonly modes: readonly { value: SetWallLengthArgs['mode']; icon: IconName }[] = [
     { value: 'room', icon: 'panel-right' },
     { value: 'wall', icon: 'slash' },
@@ -201,7 +207,8 @@ export class LengthEditorComponent {
 
   constructor() {
     afterNextRender(() => {
-      this.field().nativeElement.focus();
+      // Without scrolling: on the plan, a scroll would shift the whole drawing.
+      this.field().nativeElement.focus({ preventScroll: true });
       this.field().nativeElement.select();
     });
   }
@@ -221,11 +228,11 @@ export class LengthEditorComponent {
       this.closed.emit();
       return;
     }
-    const length = parseLength(text);
-    if (length === null) return;
+    const typed = parseLength(text);
+    if (typed === null) return;
     const result = this.project.store.run(setWallLength, {
       wall: this.wall().id,
-      length,
+      length: wallLength(this.wall()) + (typed - this.shownMm()),
       end: choice.end,
       mode: this.choice.mode(),
     });

@@ -21,22 +21,61 @@ import {
 import type { EditorHost, Selection } from './host';
 import type { View } from './view';
 
-export const PLAN_COLORS = {
+/** The colours the plan is drawn with. The app gives its theme's (EditorHost.colors). */
+export interface PlanColors {
+  readonly paper: string;
+  readonly gridMinor: string;
+  readonly gridMajor: string;
+  /** A Room's area, and one the last edit changed */
+  readonly area: string;
+  readonly areaChanged: string;
+  /** The hatch of an area without a Room */
+  readonly hatch: string;
+  readonly wallFill: string;
+  readonly wallStroke: string;
+  readonly separator: string;
+  readonly levelBelow: string;
+  readonly levelBelowStroke: string;
+  readonly label: string;
+  readonly muted: string;
+  readonly ok: string;
+  readonly warn: string;
+  readonly bad: string;
+  readonly accent: string;
+  /** Text on the accent colour */
+  readonly onAccent: string;
+}
+
+/** The light plan, used when the app gives no colours. */
+export const DEFAULT_PLAN_COLORS: PlanColors = {
   paper: '#fbfaf7',
   gridMinor: '#efede8',
   gridMajor: '#dedbd4',
   area: '#ffffff',
   areaChanged: '#e3ecfc',
+  hatch: '#d6d2c9',
   wallFill: '#cfd3da',
   wallStroke: '#2b313b',
+  separator: '#8a93a3',
   levelBelow: 'rgba(120, 130, 150, 0.18)',
   levelBelowStroke: 'rgba(120, 130, 150, 0.45)',
   label: '#1d232b',
   muted: '#6b7280',
+  ok: '#1f9d55',
   warn: '#c2410c',
   bad: '#d64545',
   accent: '#2f6fde',
-} as const;
+  onAccent: '#ffffff',
+};
+
+let active: PlanColors = DEFAULT_PLAN_COLORS;
+
+/** The colours of the frame being drawn: PlanEditor sets them from its host before each frame. */
+export const planColors = (): PlanColors => active;
+
+export function usePlanColors(colors: PlanColors): void {
+  active = colors;
+}
 
 /** Whether a ring may be visible in a box (its bounding box overlaps it). */
 export const overlaps = (ring: readonly Vec[], box: Box): boolean =>
@@ -70,7 +109,7 @@ export function drawPlan(
   height: number,
   options: DrawOptions = {},
 ): void {
-  ctx.fillStyle = PLAN_COLORS.paper;
+  ctx.fillStyle = planColors().paper;
   ctx.fillRect(0, 0, width, height);
   drawGrid(ctx, view, width, height);
 
@@ -88,7 +127,7 @@ export function drawPlan(
     ctx.beginPath();
     tracePolygon(ctx, view, area.outline);
     for (const island of area.islands) tracePolygon(ctx, view, island);
-    ctx.fillStyle = changed ? PLAN_COLORS.areaChanged : PLAN_COLORS.area;
+    ctx.fillStyle = changed ? planColors().areaChanged : planColors().area;
     ctx.fill('evenodd');
     if (!area.rooms.length && hatch) {
       ctx.fillStyle = hatch;
@@ -105,10 +144,10 @@ export function drawPlan(
     if (outline && overlaps(outline, box)) tracePolygon(ctx, view, outline);
   }
   ctx.lineJoin = 'miter';
-  ctx.strokeStyle = PLAN_COLORS.wallStroke;
+  ctx.strokeStyle = planColors().wallStroke;
   ctx.lineWidth = 3;
   ctx.stroke();
-  ctx.fillStyle = PLAN_COLORS.wallFill;
+  ctx.fillStyle = planColors().wallFill;
   ctx.fill('nonzero');
 
   drawOpenings(ctx, view, slice, outlines);
@@ -116,7 +155,7 @@ export function drawPlan(
   // Room separators: dashed lines with no physical form.
   ctx.save();
   ctx.setLineDash([8, 5]);
-  ctx.strokeStyle = '#8a93a3';
+  ctx.strokeStyle = planColors().separator;
   ctx.lineWidth = 1.5;
   for (const s of slice.separators) {
     const a = view.toScreen(s.start);
@@ -139,23 +178,23 @@ export function drawPlan(
     if (s.x < -200 || s.y < -50 || s.x > width + 200 || s.y > height + 50) continue;
     const detection = host.store.values.room(room.id).detection();
     ctx.font = '600 13px system-ui, sans-serif';
-    ctx.fillStyle = PLAN_COLORS.label;
+    ctx.fillStyle = planColors().label;
     ctx.fillText(room.name, s.x, s.y - 9);
     ctx.font = '12px system-ui, sans-serif';
     if (!detection || detection.status === 'notEnclosed') {
-      ctx.fillStyle = PLAN_COLORS.bad;
+      ctx.fillStyle = planColors().bad;
       ctx.fillText(host.text('warnings.short.notEnclosed'), s.x, s.y + 9);
     } else if (detection.status === 'sharingArea') {
-      ctx.fillStyle = PLAN_COLORS.warn;
+      ctx.fillStyle = planColors().warn;
       ctx.fillText(host.text('warnings.short.sharingArea'), s.x, s.y + 9);
     } else {
-      ctx.fillStyle = options.highlight?.has(room.id) ? PLAN_COLORS.accent : PLAN_COLORS.muted;
+      ctx.fillStyle = options.highlight?.has(room.id) ? planColors().accent : planColors().muted;
       ctx.fillText(host.format.area(detection.area.area), s.x, s.y + 9);
     }
   }
 
   // The selection, whichever tool is active (it may have been made in the 3D view).
-  for (const item of host.selection()) drawSelected(ctx, view, host, item, PLAN_COLORS.accent, 3);
+  for (const item of host.selection()) drawSelected(ctx, view, host, item, planColors().accent, 3);
 }
 
 /** "no Room · 9.96 m²" in the middle of each enclosed area without a Room (click it to make a Room). */
@@ -172,17 +211,19 @@ export function drawEmptyAreaLabels(
     ctx.font = '12px system-ui, sans-serif';
     const text = `${host.text('areas.noRoom')} · ${host.format.area(b.area)}`;
     const w = ctx.measureText(text).width + 8;
-    ctx.fillStyle = 'rgba(251,250,247,.9)';
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = planColors().paper;
     ctx.fillRect(b.label.x - w / 2, b.label.y - 9, w, 18);
-    ctx.fillStyle = PLAN_COLORS.muted;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = planColors().muted;
     ctx.fillText(text, b.label.x, b.label.y);
     // The "+ Room" button: one click makes this area a Room, whatever tool is active.
-    ctx.fillStyle = PLAN_COLORS.accent;
+    ctx.fillStyle = planColors().accent;
     ctx.beginPath();
     ctx.roundRect(b.button.x, b.button.y, b.button.w, b.button.h, b.button.h / 2);
     ctx.fill();
     ctx.font = '600 12px system-ui, sans-serif';
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = planColors().onAccent;
     ctx.fillText(
       `+ ${host.text('areas.addRoom')}`,
       b.button.x + b.button.w / 2,
@@ -269,9 +310,11 @@ export function drawWallDetails(
     ctx.rotate(label.angle);
     const text = host.format.length(label.length);
     const w = ctx.measureText(text).width + 6;
-    ctx.fillStyle = 'rgba(251,250,247,.85)';
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = planColors().paper;
     ctx.fillRect(-w / 2, -7, w, 14);
-    ctx.fillStyle = PLAN_COLORS.label;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = planColors().label;
     ctx.fillText(text, 0, 0);
     ctx.restore();
   }
@@ -282,11 +325,11 @@ export function drawWallDetails(
       const s = view.toScreen(wall[end]);
       const kind = ends.get(`${wall.id}:${end}`);
       if (!kind) {
-        ctx.strokeStyle = PLAN_COLORS.bad;
+        ctx.strokeStyle = planColors().bad;
         ctx.lineWidth = 1.5;
         ctx.strokeRect(s.x - 4, s.y - 4, 8, 8);
       } else {
-        ctx.fillStyle = kind === 'corner' ? '#1f9d55' : PLAN_COLORS.accent;
+        ctx.fillStyle = kind === 'corner' ? planColors().ok : planColors().accent;
         ctx.beginPath();
         ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
         ctx.fill();
@@ -405,9 +448,9 @@ function drawLevelBelow(
   ctx.beginPath();
   for (const outline of outlines.values())
     if (overlaps(outline, box)) tracePolygon(ctx, view, outline);
-  ctx.fillStyle = PLAN_COLORS.levelBelow;
+  ctx.fillStyle = planColors().levelBelow;
   ctx.fill('nonzero');
-  ctx.strokeStyle = PLAN_COLORS.levelBelowStroke;
+  ctx.strokeStyle = planColors().levelBelowStroke;
   ctx.lineWidth = 1;
   ctx.stroke();
   ctx.restore();
@@ -450,9 +493,9 @@ export function drawOpenings(
     ctx.beginPath();
     corners.forEach((c, i) => (i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y)));
     ctx.closePath();
-    ctx.fillStyle = PLAN_COLORS.area;
+    ctx.fillStyle = planColors().area;
     ctx.fill();
-    ctx.strokeStyle = PLAN_COLORS.wallStroke;
+    ctx.strokeStyle = planColors().wallStroke;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(corners[0]!.x, corners[0]!.y);
@@ -503,28 +546,33 @@ export function drawOpenings(
   ctx.restore();
 }
 
-let cachedHatch: { ctx: CanvasRenderingContext2D; pattern: CanvasPattern | null } | null = null;
+let cachedHatch: {
+  ctx: CanvasRenderingContext2D;
+  color: string;
+  pattern: CanvasPattern | null;
+} | null = null;
 function hatchPattern(ctx: CanvasRenderingContext2D): CanvasPattern | null {
-  if (cachedHatch?.ctx === ctx) return cachedHatch.pattern;
+  const color = planColors().hatch;
+  if (cachedHatch?.ctx === ctx && cachedHatch.color === color) return cachedHatch.pattern;
   const tile = document.createElement('canvas');
   tile.width = tile.height = 10;
   const t = tile.getContext('2d');
   if (t) {
-    t.strokeStyle = '#d6d2c9';
+    t.strokeStyle = color;
     t.lineWidth = 1;
     t.beginPath();
     t.moveTo(0, 10);
     t.lineTo(10, 0);
     t.stroke();
   }
-  cachedHatch = { ctx, pattern: ctx.createPattern(tile, 'repeat') };
+  cachedHatch = { ctx, color, pattern: ctx.createPattern(tile, 'repeat') };
   return cachedHatch.pattern;
 }
 
 function drawGrid(ctx: CanvasRenderingContext2D, view: View, width: number, height: number): void {
   for (const [step, color] of [
-    [100, PLAN_COLORS.gridMinor],
-    [1000, PLAN_COLORS.gridMajor],
+    [100, planColors().gridMinor],
+    [1000, planColors().gridMajor],
   ] as const) {
     const px = step * view.scale;
     if (px < 8) continue;

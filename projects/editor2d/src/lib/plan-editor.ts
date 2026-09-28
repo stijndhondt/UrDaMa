@@ -3,9 +3,15 @@
  * The app around it supplies an EditorHost and calls `invalidate()` when the model changes.
  */
 import { addRoom, type RoomId, type Vec } from '@lakudemis/core';
-import { drawPlan, emptyAreaButtonAt, emptyAreaButtons } from './draw-plan';
+import {
+  DEFAULT_PLAN_COLORS,
+  drawPlan,
+  emptyAreaButtonAt,
+  emptyAreaButtons,
+  usePlanColors,
+} from './draw-plan';
 import type { EditorHost } from './host';
-import { targetAt } from './hit-test';
+import { lengthLabelAt, targetAt } from './hit-test';
 import { RoomTool } from './tools/room-tool';
 import { WallTool } from './tools/wall-tool';
 import { SelectTool } from './tools/select-tool';
@@ -61,6 +67,7 @@ export class PlanEditor {
     this.listen(canvas, 'pointermove', (e) => this.onPointerMove(e as PointerEvent));
     this.listen(canvas, 'pointerup', (e) => this.onPointerUp(e as PointerEvent));
     this.listen(canvas, 'wheel', (e) => this.onWheel(e as WheelEvent), { passive: false });
+    this.listen(canvas, 'dblclick', (e) => this.onDoubleClick(e as MouseEvent));
     this.listen(canvas, 'contextmenu', (e) => e.preventDefault());
     this.resize = new ResizeObserver(() => this.measure());
     this.resize.observe(canvas);
@@ -147,6 +154,7 @@ export class PlanEditor {
   private reportedScale = 0;
 
   private draw(): void {
+    usePlanColors(this.host.colors?.() ?? DEFAULT_PLAN_COLORS);
     const dpr = window.devicePixelRatio || 1;
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawPlan(this.ctx, this.view, this.host, this.width, this.height, {
@@ -169,7 +177,7 @@ export class PlanEditor {
     this.invalidate();
   }
 
-  private info(e: PointerEvent | WheelEvent): PointerInfo {
+  private info(e: MouseEvent): PointerInfo {
     const r = this.canvas.getBoundingClientRect();
     const screen = { x: e.clientX - r.left, y: e.clientY - r.top };
     return {
@@ -197,6 +205,20 @@ export class PlanEditor {
     this.last = this.info(e);
     if (this.addRoomAt(this.last.screen)) return;
     this.tool?.pointerDown(this.last);
+  }
+
+  /**
+   * A double click on a Wall's length label, with any tool (ticket 23): whatever the tool began
+   * is cancelled, the Wall selected and the app asked to open its length editor there.
+   */
+  private onDoubleClick(e: MouseEvent): void {
+    const p = this.info(e);
+    const label = lengthLabelAt(this.host, this.view, p.screen);
+    if (!label || !this.host.editLength) return;
+    this.tool?.cancel();
+    this.host.select([{ kind: 'wall', id: label.wall }]);
+    this.invalidate();
+    this.host.editLength(label.wall, p.screen, label.length);
   }
 
   /** Right-click: select what is under the pointer (unless it is already selected) and ask for the menu. */

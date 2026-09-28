@@ -1,4 +1,5 @@
 import type { Vec, WallOutline } from '@lakudemis/core';
+import { planColors } from './draw-plan';
 
 /** Drag increments (Slice 1 spec): 10 mm; Shift = coarse (100 mm); Ctrl = fine (1 mm). */
 export function increment(mods: { shift: boolean; ctrl: boolean }): number {
@@ -84,7 +85,7 @@ function clampRound(v: number, a: number, b: number, step: number): number {
 /** Draws the snap marker: a square for corners, a circle for faces. */
 export function drawSnap(ctx: CanvasRenderingContext2D, screen: Vec, kind: WallSnap['kind']): void {
   ctx.save();
-  ctx.strokeStyle = kind === 'corner' ? '#1f9d55' : '#2f6fde';
+  ctx.strokeStyle = kind === 'corner' ? planColors().ok : planColors().accent;
   ctx.lineWidth = 2;
   if (kind === 'corner') ctx.strokeRect(screen.x - 6, screen.y - 6, 12, 12);
   else {

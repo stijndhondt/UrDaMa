@@ -21,6 +21,7 @@ import { distanceToSegment } from '@lakudemis/core';
 import { increment } from '../snap';
 import { parseLength } from '../units';
 import type { PointerInfo, Tool, ToolContext } from './tool';
+import { planColors } from '../draw-plan';
 
 interface Hover {
   readonly wall: WallId;
@@ -158,7 +159,7 @@ export class OpeningTool implements Tool {
       if (to - from < 1) continue;
       const a = at(from, pad);
       const b = at(to, pad);
-      ctx.strokeStyle = '#2f6fde';
+      ctx.strokeStyle = planColors().accent;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
@@ -167,9 +168,9 @@ export class OpeningTool implements Tool {
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
       const text = this.ctx.host.format.length(to - from);
       const w = ctx.measureText(text).width + 8;
-      ctx.fillStyle = 'rgba(255,255,255,.92)';
+      ctx.fillStyle = planColors().paper;
       ctx.fillRect(mid.x - w / 2, mid.y - 9, w, 18);
-      ctx.fillStyle = '#2f6fde';
+      ctx.fillStyle = planColors().accent;
       ctx.fillText(text, mid.x, mid.y);
     }
     ctx.restore();

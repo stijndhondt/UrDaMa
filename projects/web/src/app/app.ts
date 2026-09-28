@@ -22,6 +22,8 @@ import { ChangeSummaryComponent } from './editor/change-summary.component';
 import { ContextMenuComponent } from './editor/context-menu.component';
 import { ContextMenuService } from './editor/context-menu.service';
 import { EditorActionsService } from './editor/editor-actions.service';
+import { LengthEditService } from './editor/length-edit.service';
+import { LengthEditorComponent } from './editor/length-editor.component';
 import { LevelTabsComponent } from './editor/level-tabs.component';
 import { PlanEditorComponent } from './editor/plan-editor.component';
 import { PropertiesPanelComponent } from './editor/properties-panel.component';
@@ -60,6 +62,7 @@ const PX_PER_MM = 96 / 25.4;
     ChangeSummaryComponent,
     ContextMenuComponent,
     IconComponent,
+    LengthEditorComponent,
     LevelTabsComponent,
     NewProjectDialogComponent,
     PlanEditorComponent,
@@ -199,7 +202,7 @@ const PX_PER_MM = 96 / 25.4;
           <div class="body">
             <div
               class="stage"
-              (pointerdown)="messages.clear()"
+              (pointerdown)="messages.clear(); lengthEdits.open.set(null)"
               (contextmenu)="contextMenu().openAt($event)"
             >
               <lk-plan-editor [label]="'app.planLabel' | translate" />
@@ -208,6 +211,18 @@ const PX_PER_MM = 96 / 25.4;
                 [tool]="editor()?.tool() ?? null"
                 (choose)="selectTool($event)"
               />
+              @if (planLengthEdit(); as edit) {
+                <lk-length-editor
+                  class="plan-length"
+                  [style.left]="'min(' + (edit.edit.at.x + 12) + 'px, calc(100% - 288px))'"
+                  [style.top]="'min(' + (edit.edit.at.y + 12) + 'px, calc(100% - 150px))'"
+                  [wall]="edit.wall"
+                  [faceLength]="edit.edit.faceLength"
+                  [at]="edit.edit.at"
+                  (pointerdown)="$event.stopPropagation()"
+                  (closed)="closeLengthEdit()"
+                />
+              }
               @if (messages.current(); as shown) {
                 @if (shown.at) {
                   <div
@@ -506,6 +521,16 @@ const PX_PER_MM = 96 / 25.4;
       bottom: 14px;
       transform: translateX(-50%);
     }
+    .plan-length {
+      position: absolute;
+      z-index: 6;
+      width: 280px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
     .note {
       position: absolute;
       max-width: 320px;
@@ -605,6 +630,13 @@ export class App {
   protected readonly contextMenu = viewChild.required(ContextMenuComponent);
   private readonly newDialog = viewChild.required(NewProjectDialogComponent);
   protected readonly store = this.project.store;
+  protected readonly lengthEdits = inject(LengthEditService);
+  /** The length editor on the plan, with its Wall (closed when the Wall is gone). */
+  protected readonly planLengthEdit = computed(() => {
+    const edit = this.lengthEdits.open();
+    const wall = edit && this.store.model().walls[edit.wall];
+    return edit && wall ? { edit, wall } : null;
+  });
 
   protected readonly sideOpen = signal(true);
   protected readonly show3d = signal(false);
@@ -741,6 +773,14 @@ export class App {
     };
     divider.addEventListener('pointermove', move);
     divider.addEventListener('pointerup', up);
+  }
+
+  /** The plan's length editor closes; the keyboard goes back to the plan. */
+  protected closeLengthEdit(): void {
+    this.lengthEdits.open.set(null);
+    document
+      .querySelector<HTMLCanvasElement>('lk-plan-editor canvas')
+      ?.focus({ preventScroll: true });
   }
 
   protected showBottom(tab: BottomTab): void {

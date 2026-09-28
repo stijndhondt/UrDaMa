@@ -23,6 +23,7 @@ import {
 } from '../snap';
 import { parseLength } from '../units';
 import { wallEnds, type PointerInfo, type Tool, type ToolContext } from './tool';
+import { planColors } from '../draw-plan';
 
 type State =
   | { readonly kind: 'idle' }
@@ -128,7 +129,7 @@ export class RoomTool implements Tool {
     const b = this.ctx.view.toScreen(to);
     ctx.save();
     ctx.setLineDash([5, 4]);
-    ctx.strokeStyle = '#2f6fde';
+    ctx.strokeStyle = planColors().accent;
     ctx.lineWidth = 1.5;
     ctx.strokeRect(
       Math.min(a.x, b.x),
@@ -138,7 +139,7 @@ export class RoomTool implements Tool {
     );
     ctx.setLineDash([]);
     const s = this.ctx.view.toScreen(this.state.start);
-    ctx.fillStyle = '#2f6fde';
+    ctx.fillStyle = planColors().accent;
     ctx.beginPath();
     ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
     ctx.fill();
@@ -148,7 +149,7 @@ export class RoomTool implements Tool {
       this.size === 'inside' ? 'editor.room.insideSize' : 'editor.room.outsideSize',
     )}`;
     ctx.font = '600 12px system-ui, sans-serif';
-    ctx.fillStyle = '#2f6fde';
+    ctx.fillStyle = planColors().accent;
     ctx.textAlign = 'left';
     ctx.fillText(label, Math.max(a.x, b.x) + 10, Math.max(a.y, b.y) + 16);
     ctx.restore();

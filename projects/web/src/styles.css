@@ -23,6 +23,14 @@
   --note-ink: var(--p-orange-800);
   --paper: var(--p-surface-50);
   --bg: var(--p-surface-100);
+  /* The plan drawing (read by the plan editor when the theme changes) */
+  --plan-grid-minor: var(--p-surface-100);
+  --plan-grid-major: var(--p-surface-200);
+  --plan-area: var(--p-surface-0);
+  --plan-hatch: var(--p-surface-300);
+  --plan-wall-fill: var(--p-surface-300);
+  --plan-wall-stroke: var(--p-surface-800);
+  --plan-separator: var(--p-surface-400);
   --sans: system-ui, 'Segoe UI', sans-serif;
   --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
 }
@@ -34,8 +42,15 @@
   --note-bg: var(--p-orange-950);
   --note-line: var(--p-orange-700);
   --note-ink: var(--p-orange-200);
-  --paper: var(--p-surface-800);
+  --paper: var(--p-surface-950);
   --bg: var(--p-surface-950);
+  --plan-grid-minor: var(--p-surface-900);
+  --plan-grid-major: var(--p-surface-800);
+  --plan-area: var(--p-surface-800);
+  --plan-hatch: var(--p-surface-700);
+  --plan-wall-fill: var(--p-surface-500);
+  --plan-wall-stroke: var(--p-surface-200);
+  --plan-separator: var(--p-surface-400);
 }
 * {
   box-sizing: border-box;
