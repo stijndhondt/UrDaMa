@@ -1,36 +1,41 @@
 :root {
-  --ink: #1d232b;
-  --muted: #5b6473;
-  --accent: #2563eb;
-  --accent-ink: #ffffff;
-  --accent-soft: #eaf0fc;
-  --ok: #1f9d55;
-  --warn: #c2410c;
-  --bad: #d64545;
-  --line: #e3e1dc;
-  --panel: #ffffff;
-  --inset: #f4f5f7;
-  --hover: #f1f3f6;
-  --paper: #fbfaf7;
-  --bg: #f1f0ec;
+  /*
+   * The app's colours come from Optimus UI's theme (ADR 0008): Aura with the app's blue as its
+   * primary colour, set in app.config.ts. Our own components use these names; Optimus switches
+   * its tokens for dark mode (the app-dark class), so they follow without values of their own.
+   */
+  --ink: var(--p-text-color);
+  --muted: var(--p-text-muted-color);
+  --accent: var(--p-primary-color);
+  --accent-ink: var(--p-primary-contrast-color);
+  --accent-soft: var(--p-highlight-background);
+  --line: var(--p-content-border-color);
+  --panel: var(--p-content-background);
+  --hover: var(--p-content-hover-background);
+  --inset: var(--p-form-field-filled-background);
+  --ok: var(--p-green-600);
+  --warn: var(--p-orange-600);
+  --bad: var(--p-red-600);
+  /* The plan's paper and the workspace behind the panels: steps of the theme's surface scale. */
+  /* A refused command's note next to the cursor */
+  --note-bg: var(--p-orange-50);
+  --note-line: var(--p-orange-300);
+  --note-ink: var(--p-orange-800);
+  --paper: var(--p-surface-50);
+  --bg: var(--p-surface-100);
   --sans: system-ui, 'Segoe UI', sans-serif;
   --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
 }
-/* Dark (ticket 09): ThemeService sets .app-dark from the user's choice or the OS. */
+/* Dark mode: the surface scale is a different palette there, so pick other steps of it. */
 :root.app-dark {
-  --ink: #e7e9ee;
-  --muted: #a0a8b6;
-  --accent: #3b82f6;
-  --accent-ink: #ffffff;
-  --accent-soft: #1f2a40;
-  --warn: #fb923c;
-  --bad: #f87171;
-  --line: #2f343d;
-  --panel: #1b1e24;
-  --inset: #23272e;
-  --hover: #262a31;
-  --paper: #25282d;
-  --bg: #15171b;
+  --ok: var(--p-green-400);
+  --warn: var(--p-orange-400);
+  --bad: var(--p-red-400);
+  --note-bg: var(--p-orange-950);
+  --note-line: var(--p-orange-700);
+  --note-ink: var(--p-orange-200);
+  --paper: var(--p-surface-800);
+  --bg: var(--p-surface-950);
 }
 * {
   box-sizing: border-box;
@@ -55,6 +60,9 @@ button {
 dialog {
   background: var(--panel);
   color: var(--ink);
+}
+dialog::backdrop {
+  background: var(--p-mask-background);
 }
 dialog input {
   background: var(--inset);

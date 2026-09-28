@@ -511,9 +511,9 @@ const PX_PER_MM = 96 / 25.4;
       max-width: 320px;
       padding: 6px 10px;
       border-radius: 6px;
-      background: #fff7ed;
-      border: 1px solid #fdba74;
-      color: #9a3412;
+      background: var(--note-bg);
+      border: 1px solid var(--note-line);
+      color: var(--note-ink);
       font-size: 13px;
       pointer-events: none;
     }

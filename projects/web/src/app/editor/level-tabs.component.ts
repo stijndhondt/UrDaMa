@@ -112,9 +112,6 @@ import { SelectionService } from './selection.service';
       padding: 18px 20px;
       min-width: 320px;
     }
-    dialog::backdrop {
-      background: rgba(0, 0, 0, 0.25);
-    }
     h2 {
       font-size: 17px;
       margin: 0 0 12px;
@@ -158,7 +155,7 @@ import { SelectionService } from './selection.service';
     button.primary {
       background: var(--accent);
       border-color: var(--accent);
-      color: #fff;
+      color: var(--accent-ink);
     }
   `,
 })
