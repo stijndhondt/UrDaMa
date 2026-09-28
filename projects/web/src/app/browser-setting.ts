@@ -19,3 +19,13 @@ export function writeSetting(key: string, value: string): void {
     // storage unavailable: the setting isn't remembered
   }
 }
+
+/** A remembered list of strings (e.g. IDs), empty when there is none. */
+export function readList(key: string): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(key) ?? '[]') as unknown;
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}

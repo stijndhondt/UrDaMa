@@ -449,5 +449,20 @@
       "dark": "Donker"
     },
     "divider": "Sleep om plattegrond en 3D te verdelen"
+  },
+  "building": {
+    "rooms": "Ruimtes",
+    "walls": "Muren",
+    "openings": "Openingen",
+    "empty": "Nog geen",
+    "expand": "Openklappen",
+    "collapse": "Dichtklappen",
+    "drawOn": "Op deze bouwlaag tekenen",
+    "show": "Deze bouwlaag tonen in plattegrond en 3D",
+    "hide": "Deze bouwlaag verbergen in plattegrond en 3D",
+    "currentShown": "De bouwlaag waarop je tekent is altijd zichtbaar",
+    "levelActions": "Acties voor de bouwlaag",
+    "rename": "Hernoemen…",
+    "wallLabel": "Muur {n} · {length}"
   }
 }

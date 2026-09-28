@@ -8,36 +8,14 @@ import { ProjectService } from '../project/project.service';
 import { SelectionService } from './selection.service';
 
 /**
- * Level tabs (Slice 1 spec, "Levels"): one tab per Level, lowest first, keys 1–9; "Add Level"
- * above or below the current one. Levels are stacked, so a new Level's elevation follows.
+ * Adding a Level above or below the current one (Slice 1 spec, "Levels"; opened from the Building
+ * panel, ticket 10). Levels are stacked, so the new Level's elevation follows; it becomes the
+ * Level being drawn on.
  */
 @Component({
-  selector: 'lk-level-tabs',
+  selector: 'lk-add-level-dialog',
   imports: [FormsModule, TranslatePipe],
   template: `
-    <nav class="tabs" [attr.aria-label]="'levels.tabs' | translate">
-      @for (l of project.levels(); track l.id; let i = $index) {
-        <button
-          type="button"
-          role="tab"
-          [class.on]="l.id === project.level()"
-          [attr.aria-selected]="l.id === project.level()"
-          [title]="i < 9 ? l.name + ' (' + (i + 1) + ')' : l.name"
-          (click)="choose(l.id)"
-        >
-          {{ l.name }}
-          @if (i < 9) {
-            <kbd>{{ i + 1 }}</kbd>
-          }
-        </button>
-      }
-      <button type="button" class="add" (click)="openAdd('above')">
-        + {{ 'levels.addAbove' | translate }}
-      </button>
-      <button type="button" class="add" (click)="openAdd('below')">
-        + {{ 'levels.addBelow' | translate }}
-      </button>
-    </nav>
     <dialog #dialog>
       <form method="dialog" (submit)="add($event)">
         <h2>
@@ -76,36 +54,6 @@ import { SelectionService } from './selection.service';
     </dialog>
   `,
   styles: `
-    .tabs {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    button {
-      font-size: 12px;
-      padding: 3px 9px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-      color: var(--ink);
-    }
-    /* The Level being edited: the same blue "selected" look as the icon bar, light and dark. */
-    button.on {
-      background: var(--accent-soft);
-      border-color: var(--accent);
-      color: var(--accent);
-      font-weight: 600;
-    }
-    button.add {
-      color: var(--muted);
-      border-style: dashed;
-    }
-    kbd {
-      font-size: 10px;
-      opacity: 0.6;
-      margin-left: 3px;
-    }
     dialog {
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -149,6 +97,10 @@ import { SelectionService } from './selection.service';
       gap: 8px;
     }
     .buttons button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      color: var(--ink);
       font-size: 13px;
       padding: 5px 12px;
     }
@@ -159,7 +111,7 @@ import { SelectionService } from './selection.service';
     }
   `,
 })
-export class LevelTabsComponent {
+export class AddLevelDialogComponent {
   protected readonly project = inject(ProjectService);
   private readonly selection = inject(SelectionService);
   private readonly messages = inject(MessagesService);
@@ -186,21 +138,13 @@ export class LevelTabsComponent {
     return this.format.length(mm);
   });
 
-  /** Keys 1–9 switch Level. */
-  chooseByNumber(n: number): boolean {
-    const level = this.project.levels()[n - 1];
-    if (!level) return false;
-    this.choose(level.id);
-    return true;
-  }
-
   protected choose(id: LevelId): void {
     if (id === this.project.level()) return;
     this.selection.clear();
     this.project.selectLevel(id);
   }
 
-  protected openAdd(position: 'above' | 'below'): void {
+  open(position: 'above' | 'below'): void {
     this.position.set(position);
     this.name = this.translate.instant('levels.defaultName', {
       n: this.project.levels().length + 1,

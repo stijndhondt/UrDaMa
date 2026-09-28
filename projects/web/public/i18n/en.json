@@ -449,5 +449,20 @@
       "dark": "Dark"
     },
     "divider": "Drag to resize the plan and 3D"
+  },
+  "building": {
+    "rooms": "Rooms",
+    "walls": "Walls",
+    "openings": "Openings",
+    "empty": "None yet",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "drawOn": "Draw on this Level",
+    "show": "Show this Level in the plan and 3D",
+    "hide": "Hide this Level in the plan and 3D",
+    "currentShown": "The Level you draw on is always shown",
+    "levelActions": "Level actions",
+    "rename": "Rename…",
+    "wallLabel": "Wall {n} · {length}"
   }
 }

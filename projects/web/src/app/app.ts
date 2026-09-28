@@ -24,7 +24,7 @@ import { ContextMenuService } from './editor/context-menu.service';
 import { EditorActionsService } from './editor/editor-actions.service';
 import { LengthEditService } from './editor/length-edit.service';
 import { LengthEditorComponent } from './editor/length-editor.component';
-import { LevelTabsComponent } from './editor/level-tabs.component';
+import { BuildingPanelComponent } from './editor/building-panel.component';
 import { PlanEditorComponent } from './editor/plan-editor.component';
 import { PropertiesPanelComponent } from './editor/properties-panel.component';
 import { SelectionService } from './editor/selection.service';
@@ -63,7 +63,7 @@ const PX_PER_MM = 96 / 25.4;
     ContextMenuComponent,
     IconComponent,
     LengthEditorComponent,
-    LevelTabsComponent,
+    BuildingPanelComponent,
     NewProjectDialogComponent,
     PlanEditorComponent,
     PlanToolbarComponent,
@@ -191,7 +191,7 @@ const PX_PER_MM = 96 / 25.4;
       @if (sideOpen()) {
         <aside class="side" [attr.aria-label]="'shell.building' | translate">
           <h2>{{ 'shell.building' | translate }}</h2>
-          <lk-level-tabs class="levels" />
+          <lk-building-panel />
         </aside>
       }
 
@@ -450,7 +450,7 @@ const PX_PER_MM = 96 / 25.4;
     .side {
       grid-area: side;
       grid-row: 2 / 4;
-      width: 230px;
+      width: 250px;
       overflow: auto;
       border-right: 1px solid var(--line);
       background: var(--panel);
@@ -462,10 +462,6 @@ const PX_PER_MM = 96 / 25.4;
       letter-spacing: 0.05em;
       text-transform: uppercase;
       color: var(--muted);
-    }
-    .levels {
-      display: block;
-      padding: 0 8px 8px;
     }
     .centre {
       grid-area: centre;

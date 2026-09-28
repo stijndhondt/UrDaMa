@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { buildingSolids, type LevelId, type SolidRef } from '@lakudemis/core';
+import { buildingSolids, type SolidRef } from '@lakudemis/core';
 import {
   CAMERA_PRESETS,
   ManifoldKernel,
@@ -19,6 +19,7 @@ import {
 } from '@lakudemis/render3d';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
+import { LevelVisibilityService } from './level-visibility.service';
 import { SelectionService } from './selection.service';
 
 /**
@@ -35,18 +36,6 @@ import { SelectionService } from './selection.service';
           <button type="button" [class.on]="preset() === p" (click)="setPreset(p)">
             {{ 'view3d.presets.' + p | translate }}
           </button>
-        }
-      </span>
-      <span class="group" role="group" [attr.aria-label]="'view3d.levels' | translate">
-        @for (l of project.levels(); track l.id) {
-          <label>
-            <input
-              type="checkbox"
-              [checked]="!hidden().has(l.id)"
-              (change)="toggleLevel(l.id, $any($event.target).checked)"
-            />
-            {{ l.name }}
-          </label>
         }
       </span>
       @if (building()) {
@@ -118,7 +107,8 @@ export class View3dComponent {
 
   protected readonly presets = CAMERA_PRESETS;
   protected readonly preset = signal<CameraPreset>('orbit');
-  protected readonly hidden = signal<ReadonlySet<LevelId>>(new Set());
+  /** Hidden Levels come from the Building panel (ticket 10). */
+  private readonly visibility = inject(LevelVisibilityService);
   protected readonly building = signal(false);
 
   private view: View3D | null = null;
@@ -133,6 +123,7 @@ export class View3dComponent {
       );
       this.schedule();
       this.view.setSelection(this.selectedIds());
+      this.view.setHiddenLevels(this.visibility.hidden());
     });
     // Rebuild after committed edits (not on every preview frame of a drag).
     effect(() => {
@@ -145,7 +136,7 @@ export class View3dComponent {
       this.view?.setSelection(ids);
     });
     effect(() => {
-      const hidden = this.hidden();
+      const hidden = this.visibility.hidden();
       this.view?.setHiddenLevels(hidden);
     });
     inject(DestroyRef).onDestroy(() => {
@@ -158,13 +149,6 @@ export class View3dComponent {
   protected setPreset(preset: CameraPreset): void {
     this.preset.set(preset);
     this.view?.setPreset(preset);
-  }
-
-  protected toggleLevel(level: LevelId, visible: boolean): void {
-    const next = new Set(this.hidden());
-    if (visible) next.delete(level);
-    else next.add(level);
-    this.hidden.set(next);
   }
 
   /** The selected Walls, and the selected Rooms (shown by their Floor build-up). */

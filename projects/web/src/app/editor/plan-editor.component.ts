@@ -27,6 +27,7 @@ import { SelectionService } from './selection.service';
 import { ThemeService } from '../shell/theme.service';
 import { ContextMenuService } from './context-menu.service';
 import { LengthEditService } from './length-edit.service';
+import { LevelVisibilityService } from './level-visibility.service';
 
 /** Hosts the Canvas2D plan editor for the current Level. */
 @Component({
@@ -61,6 +62,7 @@ export class PlanEditorComponent {
   private readonly selection = inject(SelectionService);
   private readonly contextMenus = inject(ContextMenuService);
   private readonly lengthEdits = inject(LengthEditService);
+  private readonly visibility = inject(LevelVisibilityService);
   private readonly theme = inject(ThemeService);
   /** The plan's colours, read from the theme's CSS variables once per theme. */
   private colorCache: { dark: boolean; colors: PlanColors } | null = null;
@@ -71,7 +73,11 @@ export class PlanEditorComponent {
       const host: EditorHost = {
         store: this.project.store,
         level: () => this.project.level(),
-        levelBelow: () => this.project.levelBelow(),
+        // The faded Level below is left out when it is hidden (ticket 10).
+        levelBelow: () => {
+          const below = this.project.levelBelow();
+          return below && !this.visibility.isHidden(below) ? below : null;
+        },
         text: (key, params) => this.translate.instant(key, params),
         format: { length: this.format.length, area: this.format.area },
         nextRoomName: (offset) => this.project.nextRoomName(offset),
@@ -113,6 +119,7 @@ export class PlanEditorComponent {
       this.selection.current();
       this.project.store.model();
       this.project.level();
+      this.visibility.hidden();
       this.language.current();
       this.editor?.invalidate();
     });
