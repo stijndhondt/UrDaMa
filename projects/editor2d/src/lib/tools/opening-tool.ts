@@ -1,5 +1,6 @@
 /**
- * The Door (D) and Window (N) tools (Slice 1 spec). Hover a Wall: the Opening slides along it,
+ * The Opening tools (Slice 1 spec; ticket 17): door (D), window (N), wall opening and garage
+ * door, each placing its kind's default size or an Opening type chosen in the tool bar's flyout. Hover a Wall: the Opening slides along it,
  * showing its distance to both inside corners, as measured with a tape. Click places it; or type
  * the distance (from the first corner), width and height (and sill), Tab between fields, Enter.
  * F / Shift+F flip a door's hinge side / swing direction.
@@ -10,8 +11,10 @@ import {
   levelWallOutlines,
   fullThicknessSpan,
   wallFrame,
+  presetSize,
   type AddOpeningArgs,
   type OpeningKind,
+  type OpeningTypeId,
   type Vec,
   type Wall,
   type WallId,
@@ -34,8 +37,10 @@ interface Hover {
 }
 
 export class OpeningTool implements Tool {
-  readonly name: 'door' | 'window';
+  readonly name: OpeningKind;
   private hover: Hover | null = null;
+  /** The Opening type chosen in the flyout; null places the kind's default size */
+  private type: OpeningTypeId | null = null;
   private hinge: 'start' | 'end' = 'start';
   private swing: 'left' | 'right' = 'right';
   private typed: {
@@ -55,6 +60,12 @@ export class OpeningTool implements Tool {
     private readonly kind: OpeningKind,
   ) {
     this.name = kind;
+  }
+
+  /** Place this Opening type (from the flyout), or the kind's default size (null). */
+  setType(type: OpeningTypeId | null): void {
+    this.type = type;
+    this.preview();
   }
 
   pointerDown(p: PointerInfo): void {
@@ -88,7 +99,7 @@ export class OpeningTool implements Tool {
         { label: t('editor.opening.distance') },
         { label: t('editor.opening.width'), value: String(this.size().width) },
         { label: t('editor.opening.height'), value: String(this.size().height) },
-        ...(this.kind === 'window'
+        ...(this.hasSill
           ? [{ label: t('editor.opening.sill'), value: String(this.size().sill) }]
           : []),
       ];
@@ -97,7 +108,7 @@ export class OpeningTool implements Tool {
           distance: parseLength(values[0] ?? ''),
           width: parseLength(values[1] ?? ''),
           height: parseLength(values[2] ?? ''),
-          sill: this.kind === 'window' ? parseLength(values[3] ?? '') : 0,
+          sill: this.hasSill ? parseLength(values[3] ?? '') : 0,
         };
       };
       this.ctx.typed.open(
@@ -176,13 +187,19 @@ export class OpeningTool implements Tool {
     ctx.restore();
   }
 
+  /** Windows and wall openings can sit above the floor. */
+  private get hasSill(): boolean {
+    return this.kind === 'window' || this.kind === 'wallOpening';
+  }
+
   private size(): { width: number; height: number; sill: number } {
-    const p = this.ctx.host.store.committedModel().project.presets;
-    const door = this.kind === 'door';
+    const model = this.ctx.host.store.committedModel();
+    const preset = presetSize(model.project.presets, this.kind);
+    const type = this.type ? model.openingTypes[this.type] : undefined;
     return {
-      width: this.typed.width ?? (door ? p.doorWidth : p.windowWidth),
-      height: this.typed.height ?? (door ? p.doorHeight : p.windowHeight),
-      sill: this.typed.sill ?? (door ? 0 : p.windowSill),
+      width: this.typed.width ?? type?.width ?? preset.width,
+      height: this.typed.height ?? type?.height ?? preset.height,
+      sill: this.typed.sill ?? preset.sill,
     };
   }
 
@@ -282,6 +299,7 @@ export class OpeningTool implements Tool {
     return {
       wall: this.hover.wall,
       kind: this.kind,
+      ...(this.type ? { type: this.type } : {}),
       offset,
       width: size.width,
       height: size.height,

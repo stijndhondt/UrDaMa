@@ -14,7 +14,9 @@
       "wall": "Drag a Wall, or click and type a length (then rotate with the mouse), Tab: angle, Enter. S: side of the thickness. Shift: 45°, Ctrl: 1°.",
       "separator": "Drag a Room separator from one Wall face to another (or click both ends). It splits the area; the other part becomes a new Room.",
       "door": "Move along a Wall to place a door: it shows the distance to both inside corners. Click to place, or type the distance, Tab, width, Tab, height, Enter. F: hinge side, Shift+F: swing.",
-      "window": "Move along a Wall to place a window: it shows the distance to both inside corners. Click to place, or type the distance, Tab, width, Tab, height, Tab, sill, Enter."
+      "window": "Move along a Wall to place a window: it shows the distance to both inside corners. Click to place, or type the distance, Tab, width, Tab, height, Tab, sill, Enter.",
+      "wallOpening": "Hover a Wall: the wall opening slides along it with its distances to both corners. Click places it; or type the distance, width, height and sill, Enter.",
+      "garageDoor": "Hover a Wall: the garage door slides along it with its distances to both corners. Click places it; or type the distance, width and height, Enter."
     }
   },
   "tools": {
@@ -41,6 +43,14 @@
     "window": {
       "name": "Window",
       "hint": "Place a window in a Wall"
+    },
+    "wallOpening": {
+      "name": "Wall opening",
+      "hint": "A plain opening without a door, such as a passage between two Rooms."
+    },
+    "garageDoor": {
+      "name": "Garage door",
+      "hint": "An overhead garage door."
     }
   },
   "editor": {
@@ -179,7 +189,9 @@
       "addDoor": "Add door",
       "addWindow": "Add window",
       "update": "Change door or window",
-      "badSize": "Refused: width and height must be more than 0 and the sill can't be negative."
+      "badSize": "Refused: width and height must be more than 0 and the sill can't be negative.",
+      "addWallOpening": "Place a wall opening",
+      "addGarageDoor": "Place a garage door"
     },
     "level": {
       "add": "Add Level {name}",
@@ -321,7 +333,9 @@
       "flipHinge": "Hinge side",
       "flipSwing": "Swing",
       "type": "Opening type",
-      "sizes": "Sizes (this Opening)"
+      "sizes": "Sizes (this Opening)",
+      "wallOpening": "Wall opening",
+      "garageDoor": "Garage door"
     },
     "level": {
       "title": "Level",
@@ -465,7 +479,8 @@
       "light": "Light",
       "dark": "Dark"
     },
-    "divider": "Drag to resize the plan and 3D"
+    "divider": "Drag to resize the plan and 3D",
+    "openingTypes": "Opening types"
   },
   "building": {
     "rooms": "Rooms",

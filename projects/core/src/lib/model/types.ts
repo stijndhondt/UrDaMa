@@ -132,7 +132,8 @@ export interface Room {
   readonly floorFinish?: string;
 }
 
-export type OpeningKind = 'door' | 'window';
+/** A door, a window, a plain wall opening (no frame, no leaf) or a garage door (ticket 17). */
+export type OpeningKind = 'door' | 'window' | 'wallOpening' | 'garageDoor';
 
 /**
  * A design of an Opening (ADR 0007), such as "interior door, single leaf". Its parts come with

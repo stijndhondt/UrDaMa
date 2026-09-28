@@ -14,7 +14,9 @@
       "wall": "Sleep een muur, of klik en typ een lengte (en draai met de muis), Tab: hoek, Enter. S: kant van de dikte. Shift: 45°, Ctrl: 1°.",
       "separator": "Sleep een ruimtescheiding van het ene muurvlak naar het andere (of klik beide uiteinden). Ze deelt de ruimte; het andere deel wordt een nieuwe ruimte.",
       "door": "Beweeg langs een muur om een deur te plaatsen: je ziet de afstand tot beide binnenhoeken. Klik om te plaatsen, of typ de afstand, Tab, breedte, Tab, hoogte, Enter. F: scharnierkant, Shift+F: draairichting.",
-      "window": "Beweeg langs een muur om een raam te plaatsen: je ziet de afstand tot beide binnenhoeken. Klik om te plaatsen, of typ de afstand, Tab, breedte, Tab, hoogte, Tab, borstwering, Enter."
+      "window": "Beweeg langs een muur om een raam te plaatsen: je ziet de afstand tot beide binnenhoeken. Klik om te plaatsen, of typ de afstand, Tab, breedte, Tab, hoogte, Tab, borstwering, Enter.",
+      "wallOpening": "Beweeg over een muur: de muuropening schuift mee met de afstanden tot beide hoeken. Klik om te plaatsen; of typ afstand, breedte, hoogte en borstwering, Enter.",
+      "garageDoor": "Beweeg over een muur: de garagepoort schuift mee met de afstanden tot beide hoeken. Klik om te plaatsen; of typ afstand, breedte en hoogte, Enter."
     }
   },
   "tools": {
@@ -41,6 +43,14 @@
     "window": {
       "name": "Raam",
       "hint": "Plaats een raam in een muur"
+    },
+    "wallOpening": {
+      "name": "Muuropening",
+      "hint": "Een opening zonder deur, zoals een doorgang tussen twee ruimtes."
+    },
+    "garageDoor": {
+      "name": "Garagepoort",
+      "hint": "Een kantelende of sectionale garagepoort."
     }
   },
   "editor": {
@@ -179,7 +189,9 @@
       "addDoor": "Deur toevoegen",
       "addWindow": "Raam toevoegen",
       "update": "Deur of raam wijzigen",
-      "badSize": "Geweigerd: breedte en hoogte moeten groter zijn dan 0 en de borstwering kan niet negatief zijn."
+      "badSize": "Geweigerd: breedte en hoogte moeten groter zijn dan 0 en de borstwering kan niet negatief zijn.",
+      "addWallOpening": "Muuropening plaatsen",
+      "addGarageDoor": "Garagepoort plaatsen"
     },
     "level": {
       "add": "Bouwlaag {name} toevoegen",
@@ -321,7 +333,9 @@
       "flipHinge": "Scharnierkant",
       "flipSwing": "Draairichting",
       "type": "Openingtype",
-      "sizes": "Maten (deze opening)"
+      "sizes": "Maten (deze opening)",
+      "wallOpening": "Muuropening",
+      "garageDoor": "Garagepoort"
     },
     "level": {
       "title": "Bouwlaag",
@@ -465,7 +479,8 @@
       "light": "Licht",
       "dark": "Donker"
     },
-    "divider": "Sleep om plattegrond en 3D te verdelen"
+    "divider": "Sleep om plattegrond en 3D te verdelen",
+    "openingTypes": "Openingtypes"
   },
   "building": {
     "rooms": "Ruimtes",

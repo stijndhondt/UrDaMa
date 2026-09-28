@@ -251,6 +251,7 @@ const PX_PER_MM = 96 / 25.4;
                 class="toolbar"
                 [tool]="editor()?.tool() ?? null"
                 (choose)="selectTool($event)"
+                (placeType)="editor()?.placeOpeningType($event.kind, $event.type)"
               />
               @if (planLengthEdit(); as edit) {
                 <lk-length-editor

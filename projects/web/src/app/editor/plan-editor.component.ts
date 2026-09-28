@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
+import type { OpeningKind, OpeningTypeId } from '@lakudemis/core';
 import {
   DEFAULT_PLAN_COLORS,
   PlanEditor,
@@ -161,8 +162,15 @@ export class PlanEditorComponent {
     return colors;
   }
 
+  /** A tool chosen by its button or key (an Opening tool places its kind's default size). */
   setTool(name: ToolName): void {
-    this.editor?.setTool(name);
+    this.editor?.chooseTool(name);
+    this.tool.set(this.editor?.toolName ?? null);
+  }
+
+  /** The Opening type flyout: place this type with its kind's tool. */
+  placeOpeningType(kind: OpeningKind, type: OpeningTypeId): void {
+    this.editor?.placeOpeningType(kind, type);
     this.tool.set(this.editor?.toolName ?? null);
   }
 

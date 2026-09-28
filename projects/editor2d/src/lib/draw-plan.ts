@@ -503,7 +503,47 @@ export function drawOpenings(
     ctx.moveTo(corners[1]!.x, corners[1]!.y);
     ctx.lineTo(corners[2]!.x, corners[2]!.y);
     ctx.stroke();
-    if (o.kind === 'window') {
+    if (o.kind === 'wallOpening' || o.kind === 'garageDoor') {
+      // A wall opening: the head above, dashed along both faces. A garage door: its door in the
+      // middle of the Wall, and its overhead track dashed into the Room.
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      if (o.kind === 'wallOpening') {
+        for (const s of [lo, hi]) {
+          const a = point(t0, s);
+          const b = point(t1, s);
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+        }
+      } else {
+        const inward = o.swing === 'right' ? 1 : -1;
+        const face = inward > 0 ? Math.max(lo, hi) : Math.min(lo, hi);
+        const depth = Math.min(o.height, 2500);
+        for (const t of [t0, t1]) {
+          const a = point(t, face);
+          const b = point(t, face + inward * depth);
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+        }
+        const a = point(t0, face + inward * depth);
+        const b = point(t1, face + inward * depth);
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (o.kind === 'garageDoor') {
+        const mid = (lo + hi) / 2;
+        const a = point(t0, mid);
+        const b = point(t1, mid);
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    } else if (o.kind === 'window') {
       const mid = (lo + hi) / 2;
       const gap = Math.max(1, Math.abs(hi - lo) * 0.12);
       ctx.lineWidth = 1;

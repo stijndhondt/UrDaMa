@@ -28,6 +28,7 @@ import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { IconComponent } from '../shell/icon.component';
+import { OPENING_ICONS } from '../shell/opening-icons';
 import type { IconName } from '../shell/icons.generated';
 import { AddLevelDialogComponent } from './add-level-dialog.component';
 import { LevelVisibilityService } from './level-visibility.service';
@@ -397,7 +398,7 @@ export class BuildingPanelComponent {
             {
               select: { kind: 'opening', id: o.id },
               label: `${t('panel.opening.' + r.kind)} ${size}`,
-              icon: r.kind === 'door' ? 'door-open' : 'app-window',
+              icon: OPENING_ICONS[r.kind],
             },
           ];
         });

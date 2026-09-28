@@ -1,0 +1,190 @@
+{
+  "format": "lakudemis",
+  "schemaVersion": 2,
+  "units": {
+    "length": "mm"
+  },
+  "project": {
+    "id": "prj_0004",
+    "name": "Thuis",
+    "presets": {
+      "wallThickness": 140,
+      "slabThickness": 200,
+      "floorBuildUp": 120,
+      "roomHeight": 2600,
+      "ceilingThickness": 15,
+      "doorWidth": 930,
+      "doorHeight": 2115,
+      "windowWidth": 1200,
+      "windowHeight": 1200,
+      "windowSill": 900
+    }
+  },
+  "buildings": [
+    {
+      "id": "bld_0001",
+      "name": "Thuis",
+      "baseElevation": 0
+    }
+  ],
+  "levels": [
+    {
+      "id": "lvl_0002",
+      "building": "bld_0001",
+      "name": "Gelijkvloers",
+      "order": 0,
+      "storeyHeight": 2935
+    }
+  ],
+  "walls": [
+    {
+      "id": "wal_0007",
+      "level": "lvl_0002",
+      "start": {
+        "x": 0,
+        "y": 0
+      },
+      "end": {
+        "x": 2670,
+        "y": 0
+      },
+      "side": "left",
+      "roomBounding": true
+    },
+    {
+      "id": "wal_0008",
+      "level": "lvl_0002",
+      "start": {
+        "x": 2670,
+        "y": 0
+      },
+      "end": {
+        "x": 2670,
+        "y": 3730
+      },
+      "side": "left",
+      "roomBounding": true
+    },
+    {
+      "id": "wal_0009",
+      "level": "lvl_0002",
+      "start": {
+        "x": 2670,
+        "y": 3730
+      },
+      "end": {
+        "x": 0,
+        "y": 3730
+      },
+      "side": "left",
+      "roomBounding": true
+    },
+    {
+      "id": "wal_0010",
+      "level": "lvl_0002",
+      "start": {
+        "x": 0,
+        "y": 3730
+      },
+      "end": {
+        "x": 0,
+        "y": 0
+      },
+      "side": "left",
+      "roomBounding": true
+    }
+  ],
+  "wallConnections": [
+    {
+      "id": "wcn_0011",
+      "wall": "wal_0007",
+      "end": "end",
+      "kind": "corner",
+      "to": "wal_0008",
+      "toEnd": "start"
+    },
+    {
+      "id": "wcn_0012",
+      "wall": "wal_0008",
+      "end": "end",
+      "kind": "corner",
+      "to": "wal_0009",
+      "toEnd": "start"
+    },
+    {
+      "id": "wcn_0013",
+      "wall": "wal_0009",
+      "end": "end",
+      "kind": "corner",
+      "to": "wal_0010",
+      "toEnd": "start"
+    },
+    {
+      "id": "wcn_0014",
+      "wall": "wal_0010",
+      "end": "end",
+      "kind": "corner",
+      "to": "wal_0007",
+      "toEnd": "start"
+    }
+  ],
+  "openingFamilies": [
+    {
+      "id": "ofm_door",
+      "kind": "door"
+    },
+    {
+      "id": "ofm_window",
+      "kind": "window"
+    }
+  ],
+  "openingTypes": [
+    {
+      "id": "oty_0005",
+      "family": "ofm_door",
+      "width": 930,
+      "height": 2115
+    },
+    {
+      "id": "oty_0006",
+      "family": "ofm_window",
+      "width": 1200,
+      "height": 1200
+    }
+  ],
+  "openings": [
+    {
+      "id": "opn_0017",
+      "wall": "wal_0009",
+      "type": "oty_0005",
+      "offset": 580,
+      "sill": 0,
+      "hinge": "start",
+      "swing": "right"
+    }
+  ],
+  "rooms": [
+    {
+      "id": "rom_0015",
+      "level": "lvl_0002",
+      "name": "Keuken",
+      "seed": {
+        "x": 1335,
+        "y": 1865
+      }
+    }
+  ],
+  "roomSeparators": [],
+  "slabs": [
+    {
+      "id": "slb_0003",
+      "level": "lvl_0002"
+    }
+  ],
+  "ceilings": [
+    {
+      "id": "cei_0016",
+      "room": "rom_0015"
+    }
+  ]
+}

@@ -33,6 +33,7 @@ import { MeasurementService } from '../quantities/measurement.service';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { IconComponent } from '../shell/icon.component';
+import { OPENING_ICONS } from '../shell/opening-icons';
 import { EditorActionsService } from './editor-actions.service';
 import { LengthEditorComponent } from './length-editor.component';
 import { PropRowComponent, type PropChoice } from './prop-row.component';
@@ -171,7 +172,7 @@ interface Figure {
     } @else if (selection.opening(); as opening) {
       <header>
         <span class="badge">
-          <lk-icon [name]="opening.kind === 'door' ? 'door-open' : 'app-window'" />
+          <lk-icon [name]="openingIcons[opening.kind]" />
         </span>
         <div>
           <h2>{{ 'panel.opening.' + opening.kind | translate }} {{ typeName() }}</h2>
@@ -194,7 +195,7 @@ interface Figure {
           unit="mm"
           (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'offset')"
         />
-        @if (opening.kind === 'window') {
+        @if (opening.kind === 'window' || opening.kind === 'wallOpening') {
           <lk-prop
             [label]="'panel.opening.sill' | translate"
             [value]="mm(opening.sill)"
@@ -206,7 +207,7 @@ interface Figure {
             (restore)="run(updateOpening, { opening: opening.id, sill: openingPreset().sill })"
             (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'sill')"
           />
-        } @else {
+        } @else if (opening.kind === 'door') {
           <div class="actions">
             <p-button
               size="small"
@@ -543,6 +544,7 @@ export class PropertiesPanelComponent {
   protected readonly setPresets = setPresets;
   protected readonly wallLength = wallLength;
   protected readonly presetFields = PRESET_FIELDS;
+  protected readonly openingIcons = OPENING_ICONS;
 
   protected readonly presets = computed(() => this.project.store.model().project.presets);
   protected readonly editingLength = signal(false);

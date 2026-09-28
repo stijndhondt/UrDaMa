@@ -44,6 +44,7 @@ const ICONS = [
   'panel-right',
   'pencil',
   'plus',
+  'rectangle-vertical',
   'redo-2',
   'rotate-ccw',
   'ruler',
@@ -59,6 +60,7 @@ const ICONS = [
   'trash-2',
   'triangle-alert',
   'undo-2',
+  'warehouse',
   'x',
 ];
 

@@ -29,12 +29,12 @@ describe('Opening families and types (ticket 16, ADR 0007)', () => {
   it('gives every new project a door and a window family, each with a default type from the Presets', () => {
     const model = createProject({ name: 'T', levelName: 'Ground floor' }, counterIds());
     const families = Object.values(model.openingFamilies);
-    expect(families.map((f) => [f.id, f.kind])).toEqual([
+    expect(families.map((f) => [f.id, f.kind]).slice(0, 2)).toEqual([
       [BUILT_IN_FAMILIES.door, 'door'],
       [BUILT_IN_FAMILIES.window, 'window'],
     ]);
     const types = Object.values(model.openingTypes);
-    expect(types.map((t) => [t.family, t.width, t.height])).toEqual([
+    expect(types.map((t) => [t.family, t.width, t.height]).slice(0, 2)).toEqual([
       [BUILT_IN_FAMILIES.door, 930, 2115],
       [BUILT_IN_FAMILIES.window, 1200, 1200],
     ]);
@@ -47,7 +47,8 @@ describe('Opening families and types (ticket 16, ADR 0007)', () => {
     const type = store.model().openingTypes[door!.type]!;
     expect(type.family).toBe(BUILT_IN_FAMILIES.door);
     expect(door).toMatchObject({ kind: 'door', width: 930, height: 2115, sill: 0, offset: 580 });
-    expect(Object.keys(store.model().openingTypes)).toHaveLength(2);
+    // The four built-in default types (ticket 17 added two families); no new one.
+    expect(Object.keys(store.model().openingTypes)).toHaveLength(4);
   });
 
   it('shares one type between Openings of the same size, and makes a new one for another size', () => {
@@ -57,7 +58,7 @@ describe('Opening families and types (ticket 16, ADR 0007)', () => {
     const [a, b] = openings();
     expect(a!.type).toBe(b!.type);
     expect(a!.width).toBe(800);
-    expect(Object.keys(store.model().openingTypes)).toHaveLength(3);
+    expect(Object.keys(store.model().openingTypes)).toHaveLength(5);
   });
 
   it('changes only this Opening when its width is edited, as before', () => {

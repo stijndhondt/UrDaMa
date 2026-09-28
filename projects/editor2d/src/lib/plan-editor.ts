@@ -2,7 +2,13 @@
  * The plan editor (ADR 0005): a framework-free Canvas2D editor for one Level.
  * The app around it supplies an EditorHost and calls `invalidate()` when the model changes.
  */
-import { addRoom, type RoomId, type Vec } from '@lakudemis/core';
+import {
+  addRoom,
+  type OpeningKind,
+  type OpeningTypeId,
+  type RoomId,
+  type Vec,
+} from '@lakudemis/core';
 import {
   DEFAULT_PLAN_COLORS,
   drawPlan,
@@ -60,6 +66,8 @@ export class PlanEditor {
       separator: new SeparatorTool(toolContext),
       door: new OpeningTool(toolContext, 'door'),
       window: new OpeningTool(toolContext, 'window'),
+      wallOpening: new OpeningTool(toolContext, 'wallOpening'),
+      garageDoor: new OpeningTool(toolContext, 'garageDoor'),
     };
     this.setTool('room');
 
@@ -78,12 +86,29 @@ export class PlanEditor {
     return this.tool?.name ?? null;
   }
 
+  /**
+   * The tool bar's Opening type flyout (ticket 17): the tool of the type's kind, placing that
+   * type. Choosing a tool by its button or key places the kind's default size again.
+   */
+  placeOpeningType(kind: OpeningKind, type: OpeningTypeId): void {
+    this.setTool(kind);
+    const tool = this.tools[kind];
+    if (tool instanceof OpeningTool) tool.setType(type);
+  }
+
   setTool(name: ToolName): void {
     const next = this.tools[name];
     if (!next || next === this.tool) return;
     this.tool?.cancel();
     this.tool = next;
     this.invalidate();
+  }
+
+  /** A tool chosen by its button or key: an Opening tool places its kind's default size again. */
+  chooseTool(name: ToolName): void {
+    this.setTool(name);
+    const tool = this.tools[name];
+    if (tool instanceof OpeningTool) tool.setType(null);
   }
 
   /** Changed Rooms to highlight (old → new feedback). */

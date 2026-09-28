@@ -6,7 +6,7 @@
 import { put } from '../model/edit';
 import { message, type Message } from '../model/message';
 import { BUILT_IN_FAMILIES, presetSize, typeWithSize } from '../model/opening-types';
-import type { Opening, OpeningId, OpeningKind, WallId } from '../model/types';
+import type { Opening, OpeningId, OpeningKind, OpeningTypeId, WallId } from '../model/types';
 import { refuse, type Command } from './command';
 
 export interface AddOpeningArgs {
@@ -14,6 +14,8 @@ export interface AddOpeningArgs {
   readonly kind: OpeningKind;
   /** mm along the Wall's Baseline from its start to the Opening's near edge */
   readonly offset: number;
+  /** An Opening type to place (the Opening type flyout); its family decides the kind */
+  readonly type?: OpeningTypeId;
   readonly width?: number;
   readonly height?: number;
   readonly sill?: number;
@@ -33,16 +35,29 @@ export function openingSizeProblem(o: {
 export const addOpening: Command<AddOpeningArgs> = (model, args, { ids }) => {
   if (!model.walls[args.wall])
     return refuse(message('invariants.missingReference', { what: 'wall', id: args.wall }));
-  const preset = presetSize(model.project.presets, args.kind);
+  const chosen = args.type ? model.openingTypes[args.type] : undefined;
+  if (args.type && !chosen)
+    return refuse(message('invariants.missingReference', { what: 'openingType', id: args.type }));
+  const kind = chosen ? (model.openingFamilies[chosen.family]?.kind ?? args.kind) : args.kind;
+  const preset = presetSize(model.project.presets, kind);
   const size = {
-    width: args.width ?? preset.width,
-    height: args.height ?? preset.height,
+    width: args.width ?? chosen?.width ?? preset.width,
+    height: args.height ?? chosen?.height ?? preset.height,
     sill: args.sill ?? preset.sill,
   };
   const problem = openingSizeProblem(size);
   if (problem) return refuse(problem);
   // The Opening is an instance of its family's type with this size (a new type if none has it).
-  const typed = typeWithSize(model, BUILT_IN_FAMILIES[args.kind], size.width, size.height, ids);
+  const typed =
+    chosen && size.width === chosen.width && size.height === chosen.height
+      ? { model, type: chosen.id }
+      : typeWithSize(
+          model,
+          chosen?.family ?? BUILT_IN_FAMILIES[kind],
+          size.width,
+          size.height,
+          ids,
+        );
   const opening: Opening = {
     id: ids('openings') as OpeningId,
     wall: args.wall,
@@ -52,10 +67,15 @@ export const addOpening: Command<AddOpeningArgs> = (model, args, { ids }) => {
     hinge: args.hinge ?? 'start',
     swing: args.swing ?? 'right',
   };
-  const door = args.kind === 'door';
+  const label = {
+    door: 'commands.opening.addDoor',
+    window: 'commands.opening.addWindow',
+    wallOpening: 'commands.opening.addWallOpening',
+    garageDoor: 'commands.opening.addGarageDoor',
+  }[kind];
   return {
     ok: true,
     model: put(typed.model, 'openings', opening),
-    label: message(door ? 'commands.opening.addDoor' : 'commands.opening.addWindow'),
+    label: message(label),
   };
 };

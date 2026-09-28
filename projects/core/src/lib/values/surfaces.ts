@@ -206,7 +206,9 @@ export function levelRoomSurfaces<K>(
         cuts.push({ opening: o.id, size: o.width * o.height, cut: width * below });
         const depth = Math.abs(f.hi - f.lo) / (roomsPerOpening.get(o) ?? 1);
         const head = top <= ceiling && top > floor ? o.width : 0;
-        const sill = o.kind === 'window' && bottom > floor && bottom < ceiling ? o.width : 0;
+        // A sill inside the Wall wherever the Opening starts above the floor (windows, a raised
+        // wall opening).
+        const sill = bottom > floor && bottom < ceiling ? o.width : 0;
         revealArea += depth * (2 * below + head + sill);
       }
       roomFaces.push({

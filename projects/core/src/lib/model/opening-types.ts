@@ -19,13 +19,33 @@ import type {
 export const BUILT_IN_FAMILIES = {
   door: 'ofm_door' as OpeningFamilyId,
   window: 'ofm_window' as OpeningFamilyId,
+  wallOpening: 'ofm_wall_opening' as OpeningFamilyId,
+  garageDoor: 'ofm_garage_door' as OpeningFamilyId,
 } as const satisfies Record<OpeningKind, OpeningFamilyId>;
+
+export const OPENING_KINDS: readonly OpeningKind[] = [
+  'door',
+  'window',
+  'wallOpening',
+  'garageDoor',
+];
+
+/** mm: the default sizes of the kinds that have no Preset (a passage; a single garage door). */
+const DEFAULT_SIZES = {
+  wallOpening: { width: 900, height: 2110, sill: 0 },
+  garageDoor: { width: 2400, height: 2125, sill: 0 },
+} as const;
 
 /** The sizes a new Opening of a kind takes when none are given: the Presets. */
 export function presetSize(p: Presets, kind: OpeningKind) {
-  return kind === 'door'
-    ? { width: p.doorWidth, height: p.doorHeight, sill: 0 }
-    : { width: p.windowWidth, height: p.windowHeight, sill: p.windowSill };
+  switch (kind) {
+    case 'door':
+      return { width: p.doorWidth, height: p.doorHeight, sill: 0 };
+    case 'window':
+      return { width: p.windowWidth, height: p.windowHeight, sill: p.windowSill };
+    default:
+      return DEFAULT_SIZES[kind];
+  }
 }
 
 /** The built-in families and their default types (sized from the Presets) for a new project. */
@@ -33,7 +53,7 @@ export function builtInOpenings(
   presets: Presets,
   ids: IdGenerator,
 ): Pick<Model, 'openingFamilies' | 'openingTypes'> {
-  const families: OpeningFamily[] = (['door', 'window'] as const).map((kind) => ({
+  const families: OpeningFamily[] = OPENING_KINDS.map((kind) => ({
     id: BUILT_IN_FAMILIES[kind],
     kind,
   }));

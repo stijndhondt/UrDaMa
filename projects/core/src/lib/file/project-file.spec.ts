@@ -141,7 +141,12 @@ describe('project file (ADR 0004)', () => {
       if (!opened.ok) return;
       const model = opened.model;
       expect(Object.keys(model.openingFamilies).sort()).toEqual(
-        [BUILT_IN_FAMILIES.door, BUILT_IN_FAMILIES.window].sort(),
+        [
+          BUILT_IN_FAMILIES.door,
+          BUILT_IN_FAMILIES.window,
+          BUILT_IN_FAMILIES.wallOpening,
+          BUILT_IN_FAMILIES.garageDoor,
+        ].sort(),
       );
       for (const old of before) {
         const o = resolveOpening(model, model.openings[old.id]!)!;
@@ -158,7 +163,8 @@ describe('project file (ADR 0004)', () => {
         expect(model.openingFamilies[model.openingTypes[o.type]!.family]!.kind).toBe(old.kind);
       }
       // The Preset-sized door and window share their family's default type; the small window has its own.
-      expect(Object.keys(model.openingTypes)).toHaveLength(3);
+      // Plus the wall opening and garage door defaults from the step to version 3 (ticket 17).
+      expect(Object.keys(model.openingTypes)).toHaveLength(5);
     });
 
     it('saves a migrated file as the current version, byte-identically on the next save', () => {
@@ -174,7 +180,12 @@ describe('project file (ADR 0004)', () => {
       const doc = JSON.parse(serializeProject(drawnHouse()));
       const ids = (list: { id: string }[]) => list.map((x) => x.id);
       expect(ids(doc.openingTypes)).toEqual([...ids(doc.openingTypes)].sort());
-      expect(doc.openingFamilies.map((f: { kind: string }) => f.kind)).toEqual(['door', 'window']);
+      expect(doc.openingFamilies.map((f: { kind: string }) => f.kind)).toEqual([
+        'door',
+        'garageDoor',
+        'wallOpening',
+        'window',
+      ]);
       expect(doc.openings.every((o: object) => !('width' in o) && !('kind' in o))).toBe(true);
     });
   });

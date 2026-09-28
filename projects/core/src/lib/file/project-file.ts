@@ -10,7 +10,7 @@ import { COLLECTIONS } from '../model/patch';
 import type { CollectionName, Model } from '../model/types';
 
 export const FILE_FORMAT = 'lakudemis';
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 export const FILE_EXTENSION = '.lakudemis.json';
 
 type Doc = Record<string, unknown>;
@@ -21,7 +21,36 @@ type Doc = Record<string, unknown>;
  */
 export const MIGRATIONS: Readonly<Record<number, (doc: Doc) => Doc>> = {
   1: openingTypesFromSizes,
+  2: wallOpeningAndGarageDoorFamilies,
 };
+
+/**
+ * Version 2 → 3 (ticket 17): the built-in wall opening and garage door families, each with its
+ * default type, as every new project has them. Values written out, as in step 1.
+ */
+function wallOpeningAndGarageDoorFamilies(doc: Doc): Doc {
+  const added = [
+    { family: 'ofm_wall_opening', kind: 'wallOpening', width: 900, height: 2110 },
+    { family: 'ofm_garage_door', kind: 'garageDoor', width: 2400, height: 2125 },
+  ];
+  return {
+    ...doc,
+    schemaVersion: 3,
+    openingFamilies: [
+      ...((doc['openingFamilies'] ?? []) as Doc[]),
+      ...added.map((a) => ({ id: a.family, kind: a.kind })),
+    ],
+    openingTypes: [
+      ...((doc['openingTypes'] ?? []) as Doc[]),
+      ...added.map((a) => ({
+        id: `oty_${a.kind}_${a.width}x${a.height}`,
+        family: a.family,
+        width: a.width,
+        height: a.height,
+      })),
+    ],
+  };
+}
 
 /**
  * Version 1 → 2 (ticket 16, ADR 0007): doors and windows become Openings of the built-in door and

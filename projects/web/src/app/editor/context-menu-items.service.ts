@@ -95,8 +95,9 @@ export class ContextMenuItemsService {
       }
       case 'opening': {
         const opening = model.openings[target.id];
-        const door = !!opening && resolveOpening(model, opening)?.kind === 'door';
-        headingKey = door ? 'contextMenu.door' : 'contextMenu.window';
+        const kind = opening ? resolveOpening(model, opening)?.kind : undefined;
+        const door = kind === 'door';
+        headingKey = 'panel.opening.' + (kind ?? 'door');
         items = [
           {
             labelKey: 'contextMenu.flipHinge',
