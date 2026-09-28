@@ -1,44 +1,60 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslatePipe } from '@ngx-translate/core';
+import {
+  quantityTree,
+  toCsv,
+  type LevelId,
+  type QuantityFace,
+  type QuantityLevel,
+  type QuantityRoom,
+} from '@lakudemis/core';
+import type { Selection } from '@lakudemis/editor2d';
+import type { TreeNode } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { SelectModule } from '@openng/optimus-ui/select';
-import { IconComponent } from '../shell/icon.component';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { quantityRows, toCsv, type QuantityRow } from '@lakudemis/core';
+import { TreeTableModule } from '@openng/optimus-ui/treetable';
+import { SelectionService } from '../editor/selection.service';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { ProjectService } from '../project/project.service';
+import { IconComponent } from '../shell/icon.component';
 import { MeasurementService } from './measurement.service';
 
-type Column = keyof Pick<
-  QuantityRow,
-  | 'grossFloorArea'
-  | 'netFloorArea'
-  | 'volume'
-  | 'floorFinishArea'
-  | 'ceilingArea'
-  | 'netWallArea'
-  | 'revealArea'
->;
+type Column = 'length' | 'height' | 'gross' | 'openings' | 'net' | 'reveals' | 'volume';
 
-const COLUMNS: readonly { readonly key: Column; readonly unit: 'm²' | 'm³' }[] = [
-  { key: 'grossFloorArea', unit: 'm²' },
-  { key: 'netFloorArea', unit: 'm²' },
+const COLUMNS: readonly { readonly key: Column; readonly unit: 'm' | 'm²' | 'm³' }[] = [
+  { key: 'length', unit: 'm' },
+  { key: 'height', unit: 'm' },
+  { key: 'gross', unit: 'm²' },
+  { key: 'openings', unit: 'm²' },
+  { key: 'net', unit: 'm²' },
+  { key: 'reveals', unit: 'm²' },
   { key: 'volume', unit: 'm³' },
-  { key: 'floorFinishArea', unit: 'm²' },
-  { key: 'ceilingArea', unit: 'm²' },
-  { key: 'netWallArea', unit: 'm²' },
-  { key: 'revealArea', unit: 'm²' },
 ];
 
+/** One row of the tree: its name and its figures (mm, mm², mm³; absent = not applicable). */
+interface Row {
+  readonly key: string;
+  readonly kind: 'level' | 'room' | 'floor' | 'ceiling' | 'face';
+  readonly name: string;
+  readonly level: string;
+  readonly room: string;
+  readonly figures: Partial<Record<Column, number | null>>;
+  /** What a click selects */
+  readonly select?: Selection;
+  readonly levelId: LevelId;
+}
+
 /**
- * The Quantities table (Slice 1 spec) in the bottom panel (ticket 09): every Room and Level under
- * the chosen Measurement rule, with CSV export in the UI language. Ticket 12 makes it a tree.
+ * The Quantities (ticket 12) in the bottom panel: a tree of Level → Room (its totals) → its floor,
+ * its ceiling and each of its Wall faces, under the chosen Measurement rule. A click selects the
+ * surface's Room or Wall everywhere; the CSV export writes the same tree in the UI language.
  */
 @Component({
   selector: 'lk-quantities-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TranslatePipe, ButtonModule, SelectModule, IconComponent],
+  imports: [FormsModule, TranslatePipe, ButtonModule, SelectModule, TreeTableModule, IconComponent],
   template: `
     <div class="head">
       <div class="rule">
@@ -59,34 +75,36 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm²' | 'm³' }[]
         <lk-icon name="file-down" /> {{ 'quantities.export' | translate }}
       </p-button>
     </div>
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>{{ 'quantities.name' | translate }}</th>
-            @for (c of columns; track c.key) {
-              <th class="num">{{ 'quantities.columns.' + c.key | translate }} ({{ c.unit }})</th>
-            }
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of rows(); track row.room ?? row.level) {
-            <tr [class.level]="row.kind === 'level'">
-              <td>
-                {{
-                  row.kind === 'level'
-                    ? ('quantities.levelTotal' | translate: { level: row.name })
-                    : row.name
-                }}
-              </td>
-              @for (c of columns; track c.key) {
-                <td class="num">{{ cell(row, c.key) }}</td>
-              }
-            </tr>
+    <p-treetable
+      [value]="nodes()"
+      size="small"
+      [scrollable]="true"
+      scrollHeight="flex"
+      selectionMode="single"
+      (onNodeSelect)="choose($event.node)"
+      (onNodeExpand)="setOpen($event.node, true)"
+      (onNodeCollapse)="setOpen($event.node, false)"
+    >
+      <ng-template #header>
+        <tr>
+          <th>{{ 'quantities.name' | translate }}</th>
+          @for (c of columns; track c.key) {
+            <th class="num">{{ 'quantities.tree.' + c.key | translate }} ({{ c.unit }})</th>
           }
-        </tbody>
-      </table>
-    </div>
+        </tr>
+      </ng-template>
+      <ng-template #body let-rowNode let-row="rowData">
+        <tr [ttRow]="rowNode" [ttSelectableRow]="rowNode" [class]="'kind-' + row.kind">
+          <td class="name">
+            <p-treetable-toggler [rowNode]="rowNode" />
+            {{ row.name }}
+          </td>
+          @for (c of columns; track c.key) {
+            <td class="num">{{ cell(row, c.key) }}</td>
+          }
+        </tr>
+      </ng-template>
+    </p-treetable>
   `,
   styles: `
     :host {
@@ -115,72 +133,206 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm²' | 'm³' }[]
       width: 260px;
       max-width: 40vw;
     }
-    .scroll {
+    p-treetable {
       flex: 1;
       min-height: 0;
-      overflow: auto;
-      padding: 0 12px 8px;
-    }
-    table {
-      border-collapse: collapse;
-    }
-    th,
-    td {
-      padding: 4px 10px;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      white-space: nowrap;
     }
     th {
-      position: sticky;
-      top: 0;
-      background: var(--panel);
-      font-weight: 600;
-      color: var(--muted);
       font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
     }
     .num {
       text-align: right;
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
-    tr.level td {
+    .name {
+      white-space: nowrap;
+    }
+    .kind-level td {
       font-weight: 600;
-      background: var(--inset);
+    }
+    .kind-room td.name {
+      font-weight: 600;
     }
   `,
 })
 export class QuantitiesPanelComponent {
   protected readonly measurement = inject(MeasurementService);
   private readonly project = inject(ProjectService);
+  private readonly selection = inject(SelectionService);
   private readonly format = inject(FormatService);
   private readonly language = inject(LanguageService);
-  private readonly translate = inject(TranslateService);
 
   protected readonly columns = COLUMNS;
-  protected readonly rows = computed(() =>
-    quantityRows(this.project.store.model(), this.project.store.values, this.measurement.rule()),
+  /** Rows the user opened or closed; Levels start open. */
+  private readonly open = signal<ReadonlyMap<string, boolean>>(new Map());
+
+  private readonly tree = computed(() =>
+    quantityTree(this.project.store.model(), this.project.store.values, this.measurement.rule()),
   );
 
-  protected cell(row: QuantityRow, key: Column): string {
-    const value = row[key];
-    return value === null ? '—' : this.format.decimal(value / (key === 'volume' ? 1e9 : 1e6));
+  /** The tree as rows, with its names in the user's language. */
+  private readonly rows = computed(() => {
+    const t = (key: string, params?: object) => this.language.text(key, params);
+    return this.tree().map((level) => ({
+      row: this.levelRow(level),
+      rooms: level.rooms.map((room) => ({
+        row: this.roomRow(level, room),
+        children: [
+          this.surfaceRow(level, room, 'floor', t('quantities.tree.floor'), room.floorArea),
+          this.surfaceRow(level, room, 'ceiling', t('quantities.tree.ceiling'), room.ceilingArea),
+          ...room.faces.map((f) => this.faceRow(level, room, f, t)),
+        ],
+      })),
+    }));
+  });
+
+  protected readonly nodes = computed<TreeNode[]>(() => {
+    const open = this.open();
+    const node = (row: Row, children?: TreeNode[], byDefault = false): TreeNode => ({
+      key: row.key,
+      data: row,
+      expanded: open.get(row.key) ?? byDefault,
+      children,
+      leaf: !children?.length,
+    });
+    return this.rows().map((level) =>
+      node(
+        level.row,
+        level.rooms.map((room) =>
+          node(
+            room.row,
+            room.children.map((c) => node(c)),
+          ),
+        ),
+        true,
+      ),
+    );
+  });
+
+  private levelRow(level: QuantityLevel): Row {
+    return {
+      key: level.level,
+      kind: 'level',
+      name: level.name,
+      level: level.name,
+      room: '',
+      levelId: level.level,
+      figures: { gross: level.grossFloorArea, net: level.netFloorArea, volume: level.volume },
+    };
   }
 
-  protected exportCsv(): void {
-    const t = (key: string, params?: Record<string, string>) => this.translate.instant(key, params);
-    const header = [
-      t('quantities.name'),
-      ...COLUMNS.map((c) => `${t('quantities.columns.' + c.key)} (${c.unit})`),
-    ];
-    const rows = this.rows().map((row) => [
-      row.kind === 'level' ? t('quantities.levelTotal', { level: row.name }) : row.name,
-      ...COLUMNS.map((c) => {
-        const value = row[c.key];
-        return value === null ? null : value / (c.key === 'volume' ? 1e9 : 1e6);
+  private roomRow(level: QuantityLevel, room: QuantityRoom): Row {
+    return {
+      key: room.room,
+      kind: 'room',
+      name: room.name,
+      level: level.name,
+      room: room.name,
+      levelId: level.level,
+      select: { kind: 'room', id: room.room },
+      figures: { net: room.netFloorArea, reveals: room.reveals, volume: room.volume },
+    };
+  }
+
+  private surfaceRow(
+    level: QuantityLevel,
+    room: QuantityRoom,
+    kind: 'floor' | 'ceiling',
+    name: string,
+    area: number | null,
+  ): Row {
+    return {
+      key: `${room.room}/${kind}`,
+      kind,
+      name,
+      level: level.name,
+      room: room.name,
+      levelId: level.level,
+      select: { kind: 'room', id: room.room },
+      figures: { net: area },
+    };
+  }
+
+  private faceRow(
+    level: QuantityLevel,
+    room: QuantityRoom,
+    f: QuantityFace,
+    t: (key: string, params?: object) => string,
+  ): Row {
+    return {
+      key: `${room.room}/${f.wall}/${f.face}`,
+      kind: 'face',
+      name: t('quantities.tree.face', {
+        n: f.wallNumber,
+        face: t(f.face === 'drawn' ? 'quantities.tree.drawn' : 'quantities.tree.other'),
       }),
+      level: level.name,
+      room: room.name,
+      levelId: level.level,
+      select: { kind: 'wall', id: f.wall },
+      figures: {
+        length: f.length,
+        height: f.height,
+        gross: f.gross,
+        openings: f.openings,
+        net: f.net,
+        reveals: f.reveals,
+      },
+    };
+  }
+
+  /** A figure in m, m² or m³, null where the row has none. */
+  private value(row: Row, key: Column): number | null {
+    const v = row.figures[key];
+    if (v === undefined || v === null) return null;
+    return key === 'length' || key === 'height' ? v / 1000 : key === 'volume' ? v / 1e9 : v / 1e6;
+  }
+
+  protected cell(row: Row, key: Column): string {
+    const v = this.value(row, key);
+    return v === null ? '' : this.format.decimal(v);
+  }
+
+  protected setOpen(node: TreeNode | undefined, open: boolean): void {
+    const key = node?.key;
+    if (!key) return;
+    this.open.set(new Map(this.open()).set(key, open));
+  }
+
+  protected choose(node: TreeNode | undefined): void {
+    const row = node?.data as Row | undefined;
+    if (!row?.select) return;
+    if (row.levelId !== this.project.level()) this.project.selectLevel(row.levelId);
+    this.selection.current.set([row.select]);
+  }
+
+  /** The CSV: the same tree, one line per row, with its Level, Room and surface named. */
+  protected exportCsv(): void {
+    const t = (key: string) => this.language.text(key);
+    const header = [
+      t('quantities.tree.level'),
+      t('quantities.tree.room'),
+      t('quantities.tree.surface'),
+      ...COLUMNS.map((c) => `${t('quantities.tree.' + c.key)} (${c.unit})`),
+    ];
+    const line = (row: Row, surface: string) => [
+      row.level,
+      row.room,
+      surface,
+      ...COLUMNS.map((c) => this.value(row, c.key)),
+    ];
+    const lines = this.rows().flatMap((level) => [
+      line(level.row, ''),
+      ...level.rooms.flatMap((room) => [
+        line(room.row, ''),
+        ...room.children.map((c) => line(c, c.name)),
+      ]),
     ]);
     const dutch = this.language.current() === 'nl';
-    const csv = toCsv(header, rows, { separator: dutch ? ';' : ',', decimalComma: dutch });
+    const csv = toCsv(header, lines, { separator: dutch ? ';' : ',', decimalComma: dutch });
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url;

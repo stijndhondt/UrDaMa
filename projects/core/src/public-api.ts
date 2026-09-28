@@ -40,6 +40,7 @@ export * from './lib/commands/add-opening';
 export * from './lib/commands/update-opening';
 export * from './lib/values/surfaces';
 export * from './lib/report/quantities';
+export * from './lib/report/quantity-tree';
 export * from './lib/commands/levels';
 export * from './lib/geometry/solids';
 export * from './lib/commands/set-wall-length';

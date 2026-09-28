@@ -28,6 +28,32 @@ export interface OpeningCut {
   readonly cut: number;
 }
 
+/**
+ * The part of one Wall face that bounds a Room (ticket 12): a Wall shared by two Rooms, or broken
+ * by a Room separator, has a face per Room.
+ */
+export interface RoomWallFace {
+  readonly wall: WallId;
+  /** The Wall's drawn face (on its Baseline) or its other face */
+  readonly face: 'drawn' | 'other';
+  /** mm, along the Room's outline */
+  readonly length: number;
+  /** mm, the Room height */
+  readonly height: number;
+  /** mm², length × height */
+  readonly gross: number;
+  /** The Openings in this face, as for the Room */
+  readonly openings: readonly OpeningCut[];
+  /** mm², this face's share of its Openings' reveals */
+  readonly revealArea: number;
+}
+
+/** Net area of a Room's Wall face under a Measurement rule. */
+export function faceNetArea(f: RoomWallFace, rule: MeasurementRule): number {
+  const min = MEASUREMENT_RULES[rule].minOpeningArea;
+  return f.openings.reduce((area, o) => (o.size < min ? area : area - o.cut), f.gross);
+}
+
 export interface RoomSurfaces {
   /** mm, the Room's outline along Wall faces (Room separators excluded) */
   readonly wallLength: number;
@@ -36,6 +62,8 @@ export interface RoomSurfaces {
   readonly openings: readonly OpeningCut[];
   /** mm², sides, head and window sill inside the wall thickness (this Room's share) */
   readonly revealArea: number;
+  /** The Wall faces around the Room; their areas and reveals add up to the Room's */
+  readonly faces: readonly RoomWallFace[];
 }
 
 /** Net wall area around a Room under a Measurement rule. */
@@ -57,11 +85,14 @@ export interface SurfaceInput {
 export const heightOverlap = (aBottom: number, aTop: number, bBottom: number, bTop: number) =>
   Math.max(0, Math.min(aTop, bTop) - Math.max(aBottom, bBottom));
 
-/** A Wall's frame with its two face offsets across the Baseline. */
+/** A Wall's frame with its two face offsets across the Baseline and how far each face runs. */
 interface Frame extends WallFrame {
   readonly wall: Wall;
   readonly lo: number;
   readonly hi: number;
+  /** mm along the Baseline: where the low and the high face start and end */
+  readonly loSpan: readonly [number, number];
+  readonly hiSpan: readonly [number, number];
 }
 
 const ON = 0.5; // mm: an edge closer than this to a face lies on it
@@ -69,7 +100,27 @@ const ON_SEPARATOR = 0.01; // mm: separator strips are 0.002 mm wide
 
 function frameOf(wall: Wall, outline: WallOutline): Frame {
   const f = wallFrame(wall);
-  return { ...f, wall, lo: f.across(outline[0]), hi: f.across(outline[3]) };
+  const span = (a: Vec, b: Vec): [number, number] => {
+    const ta = f.along(a);
+    const tb = f.along(b);
+    return [Math.min(ta, tb), Math.max(ta, tb)];
+  };
+  return {
+    ...f,
+    wall,
+    lo: f.across(outline[0]),
+    hi: f.across(outline[3]),
+    loSpan: span(outline[0], outline[1]),
+    hiSpan: span(outline[3], outline[2]),
+  };
+}
+
+/** One Room's part of one Wall face while it is being measured. */
+interface FaceTally {
+  readonly frame: Frame;
+  readonly side: 'lo' | 'hi';
+  length: number;
+  readonly widths: Map<ResolvedOpening, number>;
 }
 
 /**
@@ -90,12 +141,13 @@ export function levelRoomSurfaces<K>(
     const outline = outlines.get(w.id);
     if (outline) frames.set(w.id, frameOf(w, outline));
   }
-  // Per Room: its wall length and, per Opening, the width of it along the Room's edges.
-  const found = new Map<K, { wallLength: number; widths: Map<ResolvedOpening, number> }>();
+  // Per Room: its wall length and, per Wall face it touches, the length along it and the width
+  // of each Opening in it.
+  const found = new Map<K, { wallLength: number; faces: Map<string, FaceTally> }>();
   const roomsPerOpening = new Map<ResolvedOpening, number>();
   for (const [key, room] of rooms) {
     let wallLength = 0;
-    const widths = new Map<ResolvedOpening, number>();
+    const faces = new Map<string, FaceTally>();
     for (const ring of room.rings) {
       ring.forEach((a, i) => {
         const b = ring[(i + 1) % ring.length]!;
@@ -104,44 +156,85 @@ export function levelRoomSurfaces<K>(
         const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
         if (separators.some((s) => distanceToSegment(mid, s.start, s.end) <= ON_SEPARATOR)) return;
         wallLength += length;
-        for (const o of openings) {
-          const f = frames.get(o.wall);
-          if (!f) continue;
+        for (const f of frames.values()) {
           const sa = f.across(a);
           const sb = f.across(b);
-          const onFace = (face: number) => Math.abs(sa - face) <= ON && Math.abs(sb - face) <= ON;
-          if (!onFace(f.lo) && !onFace(f.hi)) continue;
-          const ta = f.along(a);
-          const tb = f.along(b);
-          const overlap =
-            Math.min(Math.max(ta, tb), o.offset + o.width) - Math.max(Math.min(ta, tb), o.offset);
-          if (overlap > 1e-6) widths.set(o, (widths.get(o) ?? 0) + overlap);
+          for (const side of ['lo', 'hi'] as const) {
+            const face = f[side];
+            if (Math.abs(sa - face) > ON || Math.abs(sb - face) > ON) continue;
+            // The edge's part along this face (collinear Walls each take their own stretch).
+            const [s0, s1] = side === 'lo' ? f.loSpan : f.hiSpan;
+            const t0 = Math.max(Math.min(f.along(a), f.along(b)), s0);
+            const t1 = Math.min(Math.max(f.along(a), f.along(b)), s1);
+            if (t1 - t0 <= 1e-6) continue;
+            const faceKey = `${f.wall.id}:${side}`;
+            let tally = faces.get(faceKey);
+            if (!tally) {
+              tally = { frame: f, side, length: 0, widths: new Map() };
+              faces.set(faceKey, tally);
+            }
+            tally.length += t1 - t0;
+            for (const o of openings) {
+              if (o.wall !== f.wall.id) continue;
+              const overlap = Math.min(t1, o.offset + o.width) - Math.max(t0, o.offset);
+              if (overlap > 1e-6) tally.widths.set(o, (tally.widths.get(o) ?? 0) + overlap);
+            }
+          }
         }
       });
     }
-    for (const o of widths.keys()) roomsPerOpening.set(o, (roomsPerOpening.get(o) ?? 0) + 1);
-    found.set(key, { wallLength, widths });
+    const inRoom = new Set([...faces.values()].flatMap((t) => [...t.widths.keys()]));
+    for (const o of inRoom) roomsPerOpening.set(o, (roomsPerOpening.get(o) ?? 0) + 1);
+    found.set(key, { wallLength, faces });
   }
 
   const result = new Map<K, RoomSurfaces>();
-  for (const [key, { wallLength, widths }] of found) {
+  const byOpening = (x: OpeningCut, y: OpeningCut) =>
+    x.opening < y.opening ? -1 : x.opening > y.opening ? 1 : 0;
+  for (const [key, { wallLength, faces }] of found) {
     const { floor, height } = rooms.get(key)!;
     const ceiling = floor + height;
-    let revealArea = 0;
-    const cuts: OpeningCut[] = [];
-    for (const [o, width] of widths) {
-      const bottom = elevation + o.sill;
-      const top = bottom + o.height;
-      const below = heightOverlap(bottom, top, floor, ceiling);
-      cuts.push({ opening: o.id, size: o.width * o.height, cut: width * below });
-      const f = frames.get(o.wall)!;
-      const depth = Math.abs(f.hi - f.lo) / (roomsPerOpening.get(o) ?? 1);
-      const head = top <= ceiling && top > floor ? o.width : 0;
-      const sill = o.kind === 'window' && bottom > floor && bottom < ceiling ? o.width : 0;
-      revealArea += depth * (2 * below + head + sill);
+    const roomFaces: RoomWallFace[] = [];
+    for (const tally of faces.values()) {
+      const f = tally.frame;
+      let revealArea = 0;
+      const cuts: OpeningCut[] = [];
+      for (const [o, width] of tally.widths) {
+        const bottom = elevation + o.sill;
+        const top = bottom + o.height;
+        const below = heightOverlap(bottom, top, floor, ceiling);
+        cuts.push({ opening: o.id, size: o.width * o.height, cut: width * below });
+        const depth = Math.abs(f.hi - f.lo) / (roomsPerOpening.get(o) ?? 1);
+        const head = top <= ceiling && top > floor ? o.width : 0;
+        const sill = o.kind === 'window' && bottom > floor && bottom < ceiling ? o.width : 0;
+        revealArea += depth * (2 * below + head + sill);
+      }
+      roomFaces.push({
+        wall: f.wall.id,
+        face: Math.abs(f[tally.side]) <= ON ? 'drawn' : 'other',
+        length: tally.length,
+        height,
+        gross: tally.length * height,
+        openings: cuts.sort(byOpening),
+        revealArea,
+      });
     }
-    cuts.sort((x, y) => (x.opening < y.opening ? -1 : x.opening > y.opening ? 1 : 0));
-    result.set(key, { wallLength, grossWallArea: wallLength * height, openings: cuts, revealArea });
+    roomFaces.sort((x, y) =>
+      x.wall < y.wall ? -1 : x.wall > y.wall ? 1 : x.face < y.face ? -1 : 1,
+    );
+    // The Room's Openings: an Opening across two faces of the Room (rare) counts once, summed.
+    const cutsByOpening = new Map<OpeningId, OpeningCut>();
+    for (const c of roomFaces.flatMap((rf) => rf.openings)) {
+      const had = cutsByOpening.get(c.opening);
+      cutsByOpening.set(c.opening, had ? { ...had, cut: had.cut + c.cut } : c);
+    }
+    result.set(key, {
+      wallLength,
+      grossWallArea: wallLength * height,
+      openings: [...cutsByOpening.values()].sort(byOpening),
+      revealArea: roomFaces.reduce((sum, rf) => sum + rf.revealArea, 0),
+      faces: roomFaces,
+    });
   }
   return result;
 }

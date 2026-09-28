@@ -393,7 +393,24 @@
       "revealArea": "Dagkanten"
     },
     "export": "CSV exporteren",
-    "fileName": "hoeveelheden"
+    "fileName": "hoeveelheden",
+    "tree": {
+      "length": "Lengte",
+      "height": "Hoogte",
+      "gross": "Bruto",
+      "openings": "Openingen",
+      "net": "Netto",
+      "reveals": "Dagkanten",
+      "volume": "Volume",
+      "floor": "Vloer",
+      "ceiling": "Plafond",
+      "face": "Muur {n} · {face}",
+      "drawn": "getekende zijde",
+      "other": "andere zijde",
+      "level": "Bouwlaag",
+      "room": "Ruimte",
+      "surface": "Oppervlak"
+    }
   },
   "view3d": {
     "toggle": "3D",

@@ -393,7 +393,24 @@
       "revealArea": "Reveals"
     },
     "export": "Export CSV",
-    "fileName": "quantities"
+    "fileName": "quantities",
+    "tree": {
+      "length": "Length",
+      "height": "Height",
+      "gross": "Gross",
+      "openings": "Openings",
+      "net": "Net",
+      "reveals": "Reveals",
+      "volume": "Volume",
+      "floor": "Floor",
+      "ceiling": "Ceiling",
+      "face": "Wall {n} · {face}",
+      "drawn": "drawn face",
+      "other": "other face",
+      "level": "Level",
+      "room": "Room",
+      "surface": "Surface"
+    }
   },
   "view3d": {
     "toggle": "3D",
