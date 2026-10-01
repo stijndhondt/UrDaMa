@@ -199,7 +199,8 @@
       "delete": "Openingstype verwijderen",
       "update": "Openingstype wijzigen voor al zijn openingen",
       "inUse": "Geweigerd: {count, plural, one {# opening gebruikt} other {# openingen gebruiken}} dit type. Geef {count, plural, one {die} other {ze}} eerst een ander type.",
-      "otherFamily": "Geweigerd: een opening kan alleen een type van haar eigen familie krijgen."
+      "otherFamily": "Geweigerd: een opening kan alleen een type van haar eigen familie krijgen.",
+      "nameTaken": "Geweigerd: een ander type van deze familie heet al \"{name}\"."
     },
     "level": {
       "add": "Bouwlaag {name} toevoegen",

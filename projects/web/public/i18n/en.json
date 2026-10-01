@@ -199,7 +199,8 @@
       "delete": "Delete Opening type",
       "update": "Change Opening type for all its Openings",
       "inUse": "Refused: {count, plural, one {# Opening uses} other {# Openings use}} this type. Give {count, plural, one {it} other {them}} another type first.",
-      "otherFamily": "Refused: an Opening can only take a type of its own family."
+      "otherFamily": "Refused: an Opening can only take a type of its own family.",
+      "nameTaken": "Refused: another type of this family is already called \"{name}\"."
     },
     "level": {
       "add": "Add Level {name}",

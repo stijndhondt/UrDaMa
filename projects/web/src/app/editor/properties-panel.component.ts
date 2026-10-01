@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   deleteLevel,
+  familyTypes,
   hasSill,
   netWallArea,
   openingsOfType,
@@ -732,15 +733,12 @@ export class PropertiesPanelComponent {
     const o = this.selection.opening();
     const model = this.project.store.model();
     const family = o && model.openingTypes[o.type]?.family;
-    return Object.values(model.openingTypes)
-      .filter((t) => t.family === family)
-      .sort((a, b) => a.width - b.width || a.height - b.height || (a.id < b.id ? -1 : 1))
-      .map((t) => ({
-        value: t.id,
-        label: t.name
-          ? `${t.name} · ${this.format.openingSize(t.width, t.height)}`
-          : this.format.openingSize(t.width, t.height),
-      }));
+    return familyTypes(model, family ?? undefined).map((t) => ({
+      value: t.id,
+      label: t.name
+        ? `${t.name} · ${this.format.openingSize(t.width, t.height)}`
+        : this.format.openingSize(t.width, t.height),
+    }));
   });
 
   protected openTypes(type: OpeningTypeId): void {

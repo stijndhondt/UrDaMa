@@ -12,6 +12,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import {
   addOpeningType,
   deleteOpeningType,
+  familyTypes,
   openingsOfType,
   renameOpeningType,
   updateOpeningType,
@@ -250,14 +251,11 @@ export class OpeningTypesDialogComponent {
   protected readonly types = computed(() => {
     const f = this.family();
     const model = this.project.store.model();
-    return Object.values(model.openingTypes)
-      .filter((t) => t.family === f)
-      .sort((a, b) => a.width - b.width || a.height - b.height || (a.id < b.id ? -1 : 1))
-      .map((t) => ({
-        ...t,
-        sizes: this.format.openingSize(t.width, t.height),
-        used: openingsOfType(model, t.id),
-      }));
+    return familyTypes(model, f ?? undefined).map((t) => ({
+      ...t,
+      sizes: this.format.openingSize(t.width, t.height),
+      used: openingsOfType(model, t.id),
+    }));
   });
 
   open(family: OpeningFamilyId): void {

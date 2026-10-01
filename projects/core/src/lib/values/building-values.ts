@@ -111,8 +111,9 @@ export interface LevelValues {
   /** The surfaces around each enclosed Room (a door's reveals are shared, hence per Level). */
   readonly roomSurfaces: Derived<ReadonlyMap<RoomId, RoomSurfaces>>;
   /**
-   * The Wall faces that face no Room (ticket 13): the outer faces of the merged footprint, from
-   * the top of the Slab up the storey height, so the Levels' faces stack without gaps.
+   * The Wall faces that face no Room (ticket 13): around the merged footprint, and around enclosed
+   * areas without a Room (a courtyard). From the top of the Slab up the storey height, so the
+   * Levels' faces stack without gaps.
    */
   readonly outsideFaces: Derived<readonly RoomWallFace[]>;
   /** Things to fix: Rooms not enclosed or sharing one area, Wall ends connected to nothing. */
@@ -344,9 +345,13 @@ export class BuildingValues {
       () => `${name()} · outside Wall faces`,
       (): readonly RoomWallFace[] => {
         const s = slice();
+        const f = fp();
         const here = this.levelHeights().get(id);
         const outside = {
-          rings: fp().outer,
+          rings: [
+            ...f.outer,
+            ...f.areas.filter((a) => !a.rooms.length).flatMap((a) => [a.outline, ...a.islands]),
+          ],
           floor: here?.slabTop ?? -s.presets.floorBuildUp,
           height: here?.storeyHeight ?? s.level?.storeyHeight ?? 0,
         };

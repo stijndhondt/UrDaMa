@@ -1,4 +1,5 @@
 import { addOpening } from '../commands/add-opening';
+import { deleteElements } from '../commands/delete-elements';
 import { drawRoom } from '../commands/draw-room';
 import { addLevel } from '../commands/levels';
 import { counterIds } from '../model/ids';
@@ -109,5 +110,19 @@ describe('the exterior Façades (ticket 13)', () => {
     // One plane over both Levels: one part, with a face per Level.
     expect(front.parts).toHaveLength(1);
     expect(front.parts[0]!.faces).toHaveLength(2);
+  });
+
+  it('counts the faces around an enclosed area without a Room as outside faces', () => {
+    const { store, draw } = setup();
+    draw('Hall', 0, 0, 3000, 3000);
+    const before = facadeTree(store.model(), store.values, 'exact');
+    const room = Object.values(store.model().rooms)[0]!;
+    expect(store.run(deleteElements, { walls: [], rooms: [room.id] }).ok).toBe(true);
+    const after = facadeTree(store.model(), store.values, 'exact');
+    // The inside faces now face no Room: each Façade gains the face looking its way.
+    const height = Object.values(store.model().levels)[0]!.storeyHeight;
+    expect(Math.round(sum(after.map((f) => f.gross)) - sum(before.map((f) => f.gross)))).toBe(
+      Math.round(4 * 3000 * height),
+    );
   });
 });

@@ -6,7 +6,7 @@
  */
 import { levelsInOrder } from '../model/levels';
 import type { LevelId, Model, OpeningId, OpeningKind, SlabId, WallId } from '../model/types';
-import { FACADE_VIEW, placedOutsideFaces, type FacadeSide } from '../report/facades';
+import { FACADE_VIEW, placedOutsideFaces, type FacadeSide } from './outside';
 import type { BuildingValues } from '../values/building-values';
 import type { WallFaceName } from '../values/surfaces';
 import { dot } from './vec';

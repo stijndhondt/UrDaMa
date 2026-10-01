@@ -45,5 +45,6 @@ export * from './lib/report/quantity-tree';
 export * from './lib/report/facades';
 export * from './lib/commands/levels';
 export * from './lib/geometry/solids';
+export * from './lib/geometry/outside';
 export * from './lib/geometry/elevation';
 export * from './lib/commands/set-wall-length';

@@ -188,10 +188,6 @@ export class ElevationView {
             ctx.moveTo(x, y + (h * i) / 5);
             ctx.lineTo(x + w, y + (h * i) / 5);
           }
-        } else if (s.openingKind === 'door') {
-          // The handle side.
-          ctx.moveTo(x + w * 0.85, y + h * 0.5);
-          ctx.lineTo(x + w * 0.85, y + h * 0.56);
         }
         ctx.stroke();
         return;

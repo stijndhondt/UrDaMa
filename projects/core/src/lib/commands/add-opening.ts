@@ -23,13 +23,20 @@ export interface AddOpeningArgs {
   readonly swing?: Opening['swing'];
 }
 
+/** Why an Opening type's sizes are not possible, if they aren't: both above 0. */
+export function typeSizeProblem(width: number, height: number): Message | null {
+  return width > 0 && height > 0 ? null : message('commands.opening.badSize');
+}
+
 /** Why an Opening's size is not possible, if it isn't: sizes above 0, a sill not below the floor. */
 export function openingSizeProblem(o: {
   readonly width: number;
   readonly height: number;
   readonly sill: number;
 }): Message | null {
-  return o.width > 0 && o.height > 0 && o.sill >= 0 ? null : message('commands.opening.badSize');
+  return (
+    typeSizeProblem(o.width, o.height) ?? (o.sill >= 0 ? null : message('commands.opening.badSize'))
+  );
 }
 
 export const addOpening: Command<AddOpeningArgs> = (model, args, { ids }) => {

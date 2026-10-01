@@ -28,12 +28,13 @@ export interface OpeningCut {
   readonly cut: number;
 }
 
+/** A Wall's drawn face (on its Baseline), its other face, or one of its ends where it shows. */
+export type WallFaceName = 'drawn' | 'other' | 'end';
+
 /**
  * The part of one Wall face that bounds a Room (ticket 12): a Wall shared by two Rooms, or broken
  * by a Room separator, has a face per Room.
  */
-/** A Wall's drawn face (on its Baseline), its other face, or one of its ends where it shows. */
-export type WallFaceName = 'drawn' | 'other' | 'end';
 
 export interface RoomWallFace {
   readonly wall: WallId;
@@ -154,6 +155,17 @@ function joinSpans(spans: readonly (readonly [number, number])[]): [number, numb
   return out;
 }
 
+/** The tally of one face of a Wall for one Room, started when first met. */
+function tallyOf(faces: Map<string, FaceTally>, frame: Frame, side: FaceTally['side']): FaceTally {
+  const key = `${frame.wall.id}:${side}`;
+  let tally = faces.get(key);
+  if (!tally) {
+    tally = { frame, side, length: 0, spans: [], segments: [], widths: new Map() };
+    faces.set(key, tally);
+  }
+  return tally;
+}
+
 const FACE_ORDER: Readonly<Record<WallFaceName, number>> = { drawn: 0, other: 1, end: 2 };
 
 /** A tallied face's name, the way it looks and its plan segments. */
@@ -218,12 +230,7 @@ export function levelRoomSurfaces<K>(
             const t0 = Math.max(Math.min(f.along(a), f.along(b)), s0);
             const t1 = Math.min(Math.max(f.along(a), f.along(b)), s1);
             if (t1 - t0 <= 1e-6) continue;
-            const faceKey = `${f.wall.id}:${side}`;
-            let tally = faces.get(faceKey);
-            if (!tally) {
-              tally = { frame: f, side, length: 0, spans: [], segments: [], widths: new Map() };
-              faces.set(faceKey, tally);
-            }
+            const tally = tallyOf(faces, f, side);
             tally.length += t1 - t0;
             tally.spans.push([t0, t1]);
             for (const o of openings) {
@@ -238,19 +245,7 @@ export function levelRoomSurfaces<K>(
           for (const end of f.ends) {
             if (distanceToSegment(a, end.a, end.b) > ON || distanceToSegment(b, end.a, end.b) > ON)
               continue;
-            const faceKey = `${f.wall.id}:${end.at}`;
-            let tally = faces.get(faceKey);
-            if (!tally) {
-              tally = {
-                frame: f,
-                side: end.at,
-                length: 0,
-                spans: [],
-                segments: [],
-                widths: new Map(),
-              };
-              faces.set(faceKey, tally);
-            }
+            const tally = tallyOf(faces, f, end.at);
             tally.length += length;
             tally.segments.push([a, b]);
           }

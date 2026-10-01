@@ -121,4 +121,37 @@ describe('Opening types (ticket 18)', () => {
       false,
     );
   });
+
+  it('keeps one unnamed type per size: a type resized onto another merges into it', () => {
+    const { store, doors, a, c } = house();
+    // The 800 type of the third door, resized to the shared 930: one type for all three.
+    expect(store.run(updateOpeningType, { type: c.type, width: a.width }).ok).toBe(true);
+    const types = new Set(doors().map((d) => d.type));
+    expect(types).toEqual(new Set([a.type]));
+    expect(store.model().openingTypes[c.type]).toBeUndefined();
+    // Clearing a name onto a size an unnamed type has: merged as well.
+    store.run(addOpeningType, {
+      family: BUILT_IN_FAMILIES.door,
+      name: 'Spare',
+      width: a.width,
+      height: a.height,
+    });
+    const spare = Object.values(store.model().openingTypes).find((t) => t.name === 'Spare')!;
+    store.run(renameOpeningType, { type: spare.id, name: '' });
+    expect(store.model().openingTypes[spare.id]).toBeUndefined();
+  });
+
+  it('refuses a name another type of the family already has', () => {
+    const { store, a, c } = house();
+    store.run(renameOpeningType, { type: a.type, name: 'Front door' });
+    const refused = store.run(renameOpeningType, { type: c.type, name: ' Front door ' });
+    expect(!refused.ok && refused.reason.key).toBe('commands.openingType.nameTaken');
+    const added = store.run(addOpeningType, {
+      family: BUILT_IN_FAMILIES.door,
+      name: 'Front door',
+      width: 700,
+      height: 2000,
+    });
+    expect(added.ok).toBe(false);
+  });
 });

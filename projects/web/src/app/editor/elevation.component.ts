@@ -83,9 +83,9 @@ export class ElevationComponent {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private view: ElevationView | null = null;
 
-  /** Recalculated after every committed edit (not on every frame of a drag). */
+  /** Follows the model live, as the Derived values it reads do (a drag shows as it happens). */
   private readonly drawing = computed(() =>
-    elevation(this.project.store.committedModel(), this.project.store.values, this.side()),
+    elevation(this.project.store.model(), this.project.store.values, this.side()),
   );
 
   protected readonly empty = computed(() => {

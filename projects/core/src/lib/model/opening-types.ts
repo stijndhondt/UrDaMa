@@ -163,3 +163,9 @@ export function detachedType(
   };
   return { model: put(model, 'openingTypes', type), type: type.id };
 }
+
+/** A family's types, smallest first (width, then height). */
+export const familyTypes = (model: Model, family: OpeningFamilyId | undefined): OpeningType[] =>
+  Object.values(model.openingTypes)
+    .filter((t) => t.family === family)
+    .sort((a, b) => a.width - b.width || a.height - b.height || (a.id < b.id ? -1 : 1));
