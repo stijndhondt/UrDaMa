@@ -1,5 +1,11 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import { resolveOpening, type ResolvedOpening, type Room, type Wall } from '@lakudemis/core';
+import {
+  resolveOpening,
+  type FacadeSide,
+  type ResolvedOpening,
+  type Room,
+  type Wall,
+} from '@lakudemis/core';
 import type { Selection } from '@lakudemis/editor2d';
 import { ProjectService } from '../project/project.service';
 
@@ -8,6 +14,24 @@ import { ProjectService } from '../project/project.service';
 export class SelectionService {
   private readonly project = inject(ProjectService);
   readonly current = signal<readonly Selection[]>([]);
+
+  /** A Façade or Façade part picked in the Quantities (ticket 15): its side and Wall faces. */
+  private readonly picked = signal<{
+    readonly side: FacadeSide;
+    readonly faces: ReadonlySet<string>;
+    readonly with: readonly Selection[];
+  } | null>(null);
+  /** The picked Façade, while its Walls are still what is selected. */
+  readonly facade = computed(() => {
+    const p = this.picked();
+    return p && p.with === this.current() ? p : null;
+  });
+
+  /** Selects a Façade's Walls and remembers its faces, to highlight in its Elevation. */
+  selectFacade(side: FacadeSide, faces: ReadonlySet<string>, walls: readonly Selection[]): void {
+    this.current.set(walls);
+    this.picked.set({ side, faces, with: walls });
+  }
 
   /** The one selected element, when exactly one is selected. */
   private readonly single = computed<Selection | null>(() => {

@@ -545,7 +545,10 @@
       "right": "Right side"
     },
     "elevationLabel": "{side} Elevation of the building",
-    "elevationEmpty": "Nothing to see from this side yet ({side}): draw Rooms on the plan."
+    "elevationEmpty": "Nothing to see from this side yet ({side}): draw Rooms on the plan.",
+    "heights": {
+      "total": "Total height"
+    }
   },
   "openingTypes": {
     "title": "Opening types: {family}",

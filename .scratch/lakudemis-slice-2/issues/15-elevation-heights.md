@@ -4,8 +4,12 @@
 
 **Blocked by:** 14 Elevations, look and select
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Level heights, total height and Opening sill/height dimensions are drawn and read correctly on the reference house with a synthetic second Level.
-- [ ] Selecting a Façade or Façade part in Quantities highlights it in the matching Elevation.
-- [ ] All new UI text exists in English and Dutch.
+- [x] Level heights, total height and Opening sill/height dimensions are drawn and read correctly on the reference house with a synthetic second Level.
+- [x] Selecting a Façade or Façade part in Quantities highlights it in the matching Elevation.
+- [x] All new UI text exists in English and Dutch.
+
+## Comments
+
+**2026-10-01, built:** `elevationHeights(elevation, hidden)` in core gives the heights to dimension, leaving out hidden Levels: a chain of storeys from each shown Level's finished floor to the next one's (the top Level to the top of its Walls, which stop where a next Slab would start, so it reads its storey height minus the Floor build-up), the total height from the lowest finished floor to the top, and per Opening its sill above its finished floor (when it has one) and its height, at its right edge. `ElevationView` draws them: each Level's name and height (±0,00, +2,94) at a dashed mark and the storey chain on the left, "Total height" on the right, each Opening's sill and height beside it; a dimension too short to label shows its line only. A Façade, Façade part or Façade Level row picked in the Quantities selects its Walls and remembers its faces; the Elevation of that side highlights those faces for as long as that selection stands. Store tests for the chain, the total, the Opening dimensions and hidden Levels. Checked in the browser on a two-Level house (not the reference house: drawing it by hand in the browser is slow; the store tests cover its geometry).

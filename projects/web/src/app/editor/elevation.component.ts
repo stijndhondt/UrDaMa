@@ -20,6 +20,7 @@ import {
   type WallId,
 } from '@lakudemis/core';
 import { ElevationView } from '@lakudemis/editor2d';
+import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { ProjectService } from '../project/project.service';
 import { ThemeService } from '../shell/theme.service';
@@ -79,6 +80,7 @@ export class ElevationComponent {
   private readonly visibility = inject(LevelVisibilityService);
   private readonly theme = inject(ThemeService);
   private readonly language = inject(LanguageService);
+  private readonly format = inject(FormatService);
   private readonly planColors = inject(PlanColorsService);
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private view: ElevationView | null = null;
@@ -100,6 +102,8 @@ export class ElevationComponent {
       this.view = new ElevationView(this.canvas().nativeElement, {
         colors: () => this.planColors.colors(),
         picked: (shape) => this.pick(shape),
+        height: (mm) => this.format.decimal(mm / 1000),
+        text: (key) => this.language.text(key),
       });
       this.view.set(this.drawing(), this.visibility.hidden());
       this.view.setSelection(this.selected());
@@ -115,6 +119,7 @@ export class ElevationComponent {
     });
     effect(() => {
       this.theme.dark();
+      this.language.current();
       untracked(() => this.view?.redraw());
     });
     inject(DestroyRef).onDestroy(() => this.view?.destroy());
@@ -123,11 +128,14 @@ export class ElevationComponent {
   private readonly selected = computed(() => {
     const walls = new Set<WallId>();
     const openings = new Set<OpeningId>();
+    // A Façade picked in the Quantities shows in the Elevation of its side.
+    const facade = this.selection.facade();
+    const faces = facade?.side === this.side() ? facade.faces : new Set<string>();
     for (const s of this.selection.current()) {
       if (s.kind === 'wall') walls.add(s.id);
       else if (s.kind === 'opening') openings.add(s.id);
     }
-    return { walls, openings };
+    return { walls, openings, faces };
   });
 
   /** A click selects the Wall or Opening on its Level, everywhere; empty space clears. */

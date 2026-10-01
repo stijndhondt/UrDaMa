@@ -5,6 +5,7 @@ import {
   facadeTree,
   quantityTree,
   toCsv,
+  type FacadeSide,
   type LevelId,
   type QuantityFace,
   type QuantityFacade,
@@ -14,7 +15,7 @@ import {
   type QuantityRoom,
   type WallFaceName,
 } from '@lakudemis/core';
-import type { Selection } from '@lakudemis/editor2d';
+import { wallFaceKey, type Selection } from '@lakudemis/editor2d';
 import type { TreeNode } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { SelectModule } from '@openng/optimus-ui/select';
@@ -51,6 +52,8 @@ interface Row {
   readonly figures: Partial<Record<Column, number | null>>;
   /** What a click selects */
   readonly select: readonly Selection[];
+  /** A Façade row: its side and Wall faces, highlighted in that side's Elevation */
+  readonly facade?: { readonly side: FacadeSide; readonly faces: ReadonlySet<string> };
   /** The Level a click shows in the plan, if it is about one */
   readonly levelId: LevelId | null;
 }
@@ -284,6 +287,10 @@ export class QuantitiesPanelComponent {
               room: name,
               levelId: l.level,
               select: this.walls(faces.filter((x) => x.level === l.level)),
+              facade: this.facadeOf(
+                f.side,
+                faces.filter((x) => x.level === l.level),
+              ),
               figures: { gross: l.gross, openings: l.openings, net: l.net },
             }),
           )
@@ -301,6 +308,7 @@ export class QuantitiesPanelComponent {
               room: name,
               levelId: null,
               select: this.walls(p.faces),
+              facade: this.facadeOf(f.side, p.faces),
               figures: { gross: p.gross, openings: p.openings, net: p.net },
             },
             children: [
@@ -319,6 +327,7 @@ export class QuantitiesPanelComponent {
         room: name,
         levelId: null,
         select: this.walls(faces),
+        facade: this.facadeOf(f.side, faces),
         figures: { gross: f.gross, openings: f.openings, net: f.net },
       },
       children: [...perLevel(f.levels, key, faces), ...parts],
@@ -343,6 +352,10 @@ export class QuantitiesPanelComponent {
         net: f.net,
       },
     };
+  }
+
+  private facadeOf(side: FacadeSide, faces: readonly QuantityFacadeFace[]) {
+    return { side, faces: new Set(faces.map((f) => wallFaceKey(f.level, f.wall, f.face))) };
   }
 
   /** Each Wall of these faces once. */
@@ -449,7 +462,8 @@ export class QuantitiesPanelComponent {
     const row = node?.data as Row | undefined;
     if (!row?.select.length) return;
     if (row.levelId && row.levelId !== this.project.level()) this.project.selectLevel(row.levelId);
-    this.selection.current.set(row.select);
+    if (row.facade) this.selection.selectFacade(row.facade.side, row.facade.faces, row.select);
+    else this.selection.current.set(row.select);
   }
 
   /** The CSV: the same tree, one line per row, with its Level, Room and surface named. */

@@ -545,7 +545,10 @@
       "right": "Rechterzijgevel"
     },
     "elevationLabel": "Gevelaanzicht {side} van het gebouw",
-    "elevationEmpty": "Van deze kant ({side}) is nog niets te zien: teken ruimtes op de plattegrond."
+    "elevationEmpty": "Van deze kant ({side}) is nog niets te zien: teken ruimtes op de plattegrond.",
+    "heights": {
+      "total": "Totale hoogte"
+    }
   },
   "openingTypes": {
     "title": "Openingstypes: {family}",

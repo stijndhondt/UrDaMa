@@ -159,3 +159,52 @@ export function elevation(model: Model, values: BuildingValues, side: FacadeSide
     : { u0: 0, u1: 0, z0: 0, z1: 0 };
   return { side, shapes: order, levels, bounds };
 }
+
+/**
+ * A height to dimension in an Elevation (ticket 15), z0 below z1 in mm: a Level's storey (its
+ * finished floor to the next one's, or to its top), the total height, or an Opening's sill above
+ * its finished floor and its own height, beside its right edge (`u`).
+ */
+export interface HeightDimension {
+  readonly kind: 'level' | 'total' | 'sill' | 'openingHeight';
+  readonly level: LevelId;
+  readonly z0: number;
+  readonly z1: number;
+  /** mm: where an Opening's dimensions stand; null for the chain and the total at the sides */
+  readonly u: number | null;
+  readonly opening?: OpeningId;
+}
+
+/** The heights to show in an Elevation, leaving out hidden Levels. */
+export function elevationHeights(e: Elevation, hidden: ReadonlySet<LevelId>): HeightDimension[] {
+  const shown = new Set(e.shapes.filter((s) => !hidden.has(s.level)).map((s) => s.level));
+  const levels = e.levels.filter((l) => shown.has(l.level));
+  const out: HeightDimension[] = levels.map((l, i) => ({
+    kind: 'level',
+    level: l.level,
+    z0: l.elevation,
+    z1: levels[i + 1]?.elevation ?? l.top,
+    u: null,
+  }));
+  const lowest = levels[0];
+  const highest = levels[levels.length - 1];
+  if (lowest && highest)
+    out.push({
+      kind: 'total',
+      level: highest.level,
+      z0: lowest.elevation,
+      z1: highest.top,
+      u: null,
+    });
+  const floors = new Map(levels.map((l) => [l.level, l.elevation]));
+  const done = new Set<OpeningId>();
+  for (const s of e.shapes) {
+    if (s.kind !== 'opening' || done.has(s.opening) || !floors.has(s.level)) continue;
+    done.add(s.opening);
+    const floor = floors.get(s.level)!;
+    const at = { level: s.level, u: s.rect.u1, opening: s.opening };
+    if (s.rect.z0 - floor > 0.5) out.push({ kind: 'sill', z0: floor, z1: s.rect.z0, ...at });
+    out.push({ kind: 'openingHeight', z0: s.rect.z0, z1: s.rect.z1, ...at });
+  }
+  return out;
+}
