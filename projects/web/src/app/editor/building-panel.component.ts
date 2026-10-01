@@ -233,7 +233,8 @@ interface LevelNode {
       padding-right: 4px;
       border-radius: 5px;
     }
-    .row button {
+    .row button,
+    button.row {
       border: 0;
       background: transparent;
       color: inherit;
