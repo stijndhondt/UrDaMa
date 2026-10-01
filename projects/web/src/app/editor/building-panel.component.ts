@@ -21,9 +21,12 @@ import {
   type LevelId,
 } from '@lakudemis/core';
 import type { Selection } from '@lakudemis/editor2d';
-import type { MenuItem } from '@openng/optimus-ui/api';
+import { SharedModule, type MenuItem, type TreeNode } from '@openng/optimus-ui/api';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { Menu, MenuModule } from '@openng/optimus-ui/menu';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
+import { TreeModule } from '@openng/optimus-ui/tree';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
@@ -43,6 +46,13 @@ interface ElementRow {
   readonly icon: IconName;
 }
 
+/** What a tree node holds, by its type (Optimus picks the template by type). */
+type NodeData =
+  | { readonly level: LevelNode }
+  | { readonly group: Group; readonly count: number }
+  | { readonly row: ElementRow; readonly level: LevelId }
+  | Record<string, never>;
+
 interface LevelNode {
   readonly id: LevelId;
   readonly name: string;
@@ -60,131 +70,133 @@ interface LevelNode {
 @Component({
   selector: 'lk-building-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, MenuModule, TooltipModule, IconComponent, AddLevelDialogComponent],
+  imports: [
+    TranslatePipe,
+    ButtonModule,
+    InputTextModule,
+    MenuModule,
+    SharedModule,
+    TooltipModule,
+    TreeModule,
+    IconComponent,
+    AddLevelDialogComponent,
+  ],
   template: `
     <div class="actions">
-      <button type="button" (click)="addDialog().open('above')">
+      <p-button
+        size="small"
+        severity="secondary"
+        [text]="true"
+        (onClick)="addDialog().open('above')"
+      >
         <lk-icon name="plus" /> {{ 'levels.addAbove' | translate }}
-      </button>
-      <button type="button" (click)="addDialog().open('below')">
+      </p-button>
+      <p-button
+        size="small"
+        severity="secondary"
+        [text]="true"
+        (onClick)="addDialog().open('below')"
+      >
         <lk-icon name="plus" /> {{ 'levels.addBelow' | translate }}
-      </button>
+      </p-button>
     </div>
-    <ul class="tree" role="tree" [attr.aria-label]="'shell.building' | translate">
-      @for (level of tree(); track level.id) {
+    <p-tree
+      [value]="nodes()"
+      selectionMode="multiple"
+      [metaKeySelection]="true"
+      [selection]="selectedNodes()"
+      [ariaLabel]="'shell.building' | translate"
+      [indentation]="0.75"
+      (onNodeSelect)="picked($event.node, $event.originalEvent, true)"
+      (onNodeUnselect)="picked($event.node, $event.originalEvent, false)"
+      (onNodeExpand)="setOpen($event.node, true)"
+      (onNodeCollapse)="setOpen($event.node, false)"
+    >
+      <ng-template pTemplate="level" let-node>
+        @let level = node.data.level;
         @let current = level.id === project.level();
         @let hidden = visibility.isHidden(level.id);
-        <li role="treeitem" [attr.aria-expanded]="isOpen(level.id)" [attr.aria-selected]="current">
-          <div class="row level" [class.current]="current" [class.hidden]="hidden">
+        <span class="level" [class.current]="current" [class.hidden]="hidden">
+          @if (renaming() === level.id) {
+            <input
+              #rename
+              pInputText
+              pSize="small"
+              class="rename"
+              [value]="level.name"
+              [attr.aria-label]="'panel.level.name' | translate"
+              (click)="$event.stopPropagation()"
+              (keydown)="$event.stopPropagation()"
+              (keydown.enter)="finishRename(level.id, rename.value)"
+              (keydown.escape)="renaming.set(null)"
+              (blur)="finishRename(level.id, rename.value)"
+            />
+          } @else {
             <button
               type="button"
-              class="chevron"
-              [attr.aria-label]="
-                (isOpen(level.id) ? 'building.collapse' : 'building.expand') | translate
-              "
-              (click)="toggleOpen(level.id)"
+              class="name"
+              [pTooltip]="'building.drawOn' | translate"
+              tooltipPosition="right"
+              [tooltipOptions]="{ showDelay: 600 }"
+              (click)="choose(level.id)"
+              (dblclick)="startRename(level.id)"
             >
-              <lk-icon [name]="isOpen(level.id) ? 'chevron-down' : 'chevron-right'" />
-            </button>
-            @if (renaming() === level.id) {
-              <input
-                #rename
-                class="rename"
-                [value]="level.name"
-                [attr.aria-label]="'panel.level.name' | translate"
-                (keydown.enter)="finishRename(level.id, rename.value)"
-                (keydown.escape)="renaming.set(null)"
-                (blur)="finishRename(level.id, rename.value)"
-              />
-            } @else {
-              <button
-                type="button"
-                class="name"
-                [pTooltip]="'building.drawOn' | translate"
-                tooltipPosition="right"
-                [tooltipOptions]="{ showDelay: 600 }"
-                (click)="choose(level.id)"
-                (dblclick)="startRename(level.id)"
-              >
-                <lk-icon name="layers" />
-                <span>{{ level.name }}</span>
-                @if (level.key) {
-                  <kbd>{{ level.key }}</kbd>
-                }
-              </button>
-            }
-            <button
-              type="button"
-              class="tool"
-              [disabled]="current"
-              [attr.aria-pressed]="!hidden"
-              [attr.aria-label]="(hidden ? 'building.show' : 'building.hide') | translate"
-              [pTooltip]="
-                (current ? 'building.currentShown' : hidden ? 'building.show' : 'building.hide')
-                  | translate
-              "
-              tooltipPosition="left"
-              (click)="visibility.toggle(level.id)"
-            >
-              <lk-icon [name]="hidden ? 'eye-off' : 'eye'" />
-            </button>
-            <button
-              type="button"
-              class="tool"
-              [attr.aria-label]="'building.levelActions' | translate"
-              [pTooltip]="'building.levelActions' | translate"
-              tooltipPosition="left"
-              (click)="openMenu($event, level.id)"
-            >
-              <lk-icon name="ellipsis" />
-            </button>
-          </div>
-          @if (isOpen(level.id)) {
-            <ul role="group">
-              @for (g of level.groups; track g.group) {
-                @let key = level.id + '/' + g.group;
-                <li role="treeitem" aria-selected="false" [attr.aria-expanded]="isOpen(key)">
-                  <div class="row group">
-                    <button
-                      type="button"
-                      class="chevron"
-                      (click)="toggleOpen(key)"
-                      [attr.aria-label]="'building.' + g.group | translate"
-                    >
-                      <lk-icon [name]="isOpen(key) ? 'chevron-down' : 'chevron-right'" />
-                    </button>
-                    <button type="button" class="name" (click)="toggleOpen(key)">
-                      <span>{{ 'building.' + g.group | translate }}</span>
-                      <small>{{ g.rows.length }}</small>
-                    </button>
-                  </div>
-                  @if (isOpen(key)) {
-                    <ul role="group">
-                      @for (r of g.rows; track r.select.id) {
-                        <li role="treeitem" [attr.aria-selected]="isSelected(r.select)">
-                          <button
-                            type="button"
-                            class="row element"
-                            [attr.data-id]="r.select.id"
-                            [class.on]="isSelected(r.select)"
-                            (click)="select(level.id, r.select, $event.shiftKey)"
-                          >
-                            <lk-icon [name]="r.icon" />
-                            <span>{{ r.label }}</span>
-                          </button>
-                        </li>
-                      } @empty {
-                        <li class="empty">{{ 'building.empty' | translate }}</li>
-                      }
-                    </ul>
-                  }
-                </li>
+              <lk-icon name="layers" />
+              <span class="text">{{ level.name }}</span>
+              @if (level.key) {
+                <kbd>{{ level.key }}</kbd>
               }
-            </ul>
+            </button>
           }
-        </li>
-      }
-    </ul>
+          <p-button
+            size="small"
+            severity="secondary"
+            [text]="true"
+            [rounded]="true"
+            [disabled]="current"
+            [ariaLabel]="(hidden ? 'building.show' : 'building.hide') | translate"
+            [pTooltip]="
+              (current ? 'building.currentShown' : hidden ? 'building.show' : 'building.hide')
+                | translate
+            "
+            tooltipPosition="left"
+            (onClick)="visibility.toggle(level.id); $event.stopPropagation()"
+          >
+            <lk-icon [name]="hidden ? 'eye-off' : 'eye'" />
+          </p-button>
+          <p-button
+            size="small"
+            severity="secondary"
+            [text]="true"
+            [rounded]="true"
+            [ariaLabel]="'building.levelActions' | translate"
+            [pTooltip]="'building.levelActions' | translate"
+            tooltipPosition="left"
+            (onClick)="openMenu($event, level.id)"
+          >
+            <lk-icon name="ellipsis" />
+          </p-button>
+        </span>
+      </ng-template>
+      <ng-template pTemplate="group" let-node>
+        <span class="group">
+          <span class="text">{{ 'building.' + node.data.group | translate }}</span>
+          <small>{{ node.data.count }}</small>
+        </span>
+      </ng-template>
+      <ng-template pTemplate="element" let-node>
+        <span class="element" [attr.data-id]="node.data.row.select.id">
+          <lk-icon [name]="node.data.row.icon" />
+          <span class="text">{{ node.data.row.label }}</span>
+        </span>
+      </ng-template>
+      <ng-template pTemplate="empty" let-node>
+        <span class="empty">{{ 'building.empty' | translate }}</span>
+      </ng-template>
+      <ng-template pTemplate="togglericon" let-expanded>
+        <lk-icon [name]="expanded ? 'chevron-down' : 'chevron-right'" />
+      </ng-template>
+    </p-tree>
     <p-menu #menu [model]="menuItems()" [popup]="true" appendTo="body" />
     <lk-add-level-dialog />
   `,
@@ -195,99 +207,58 @@ interface LevelNode {
     }
     .actions {
       display: flex;
-      gap: 4px;
-      padding: 0 8px 8px;
-    }
-    .actions button {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      border: 1px dashed var(--line);
-      border-radius: 6px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .actions button:hover {
-      color: var(--ink);
-      border-color: var(--accent);
+      gap: 2px;
+      padding: 0 6px 6px;
     }
     .actions lk-icon {
       font-size: 12px;
     }
-    ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
+    p-tree {
+      --p-tree-padding: 0 4px;
+      --p-tree-node-padding: 1px 4px;
+      --p-tree-gap: 1px;
+      --p-tree-node-toggle-button-size: 1.375rem;
     }
-    ul ul {
-      padding-left: 14px;
+    /* The node's label takes the row, so a Level's buttons sit at its right edge. */
+    :host ::ng-deep .p-tree-node-label {
+      flex: 1;
+      min-width: 0;
     }
-    .row {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      min-height: 26px;
-      padding-right: 4px;
-      border-radius: 5px;
-    }
-    .row button,
-    button.row {
-      border: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      cursor: pointer;
-    }
-    .chevron,
-    .tool {
-      width: 22px;
-      height: 22px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      color: var(--muted) !important;
-    }
-    .chevron lk-icon,
-    .tool lk-icon {
-      font-size: 14px;
-    }
-    .tool:hover:not(:disabled),
-    .chevron:hover {
-      background: var(--hover) !important;
-      color: var(--ink) !important;
-    }
-    .tool:disabled {
-      opacity: 0.35;
-      cursor: default;
-    }
-    .name {
+    .level,
+    .group,
+    .element {
       flex: 1;
       min-width: 0;
       display: flex;
       align-items: center;
       gap: 6px;
-      height: 24px;
-      padding: 0 4px;
-      text-align: left;
     }
-    .name span {
+    /* A button that reads as the Level's name: none of the browser's own button look. */
+    .name {
+      flex: 1;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .text {
       flex: 1;
       min-width: 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .name lk-icon {
+    .level lk-icon,
+    .element lk-icon {
       font-size: 14px;
       color: var(--muted);
-    }
-    .level.current {
-      background: var(--accent-soft);
     }
     .level.current .name {
       color: var(--accent);
@@ -300,6 +271,13 @@ interface LevelNode {
       color: var(--muted);
       text-decoration: line-through;
     }
+    .level p-button lk-icon {
+      font-size: 14px;
+    }
+    .group {
+      color: var(--muted);
+      font-size: 12px;
+    }
     kbd,
     small {
       font-size: 11px;
@@ -308,41 +286,10 @@ interface LevelNode {
     .rename {
       flex: 1;
       min-width: 0;
-      height: 24px;
-      padding: 0 6px;
-      border: 1px solid var(--accent);
-      border-radius: 4px;
-      background: var(--inset);
-      color: var(--ink);
-    }
-    .group .name {
-      color: var(--muted);
-      font-size: 12px;
-    }
-    .element {
-      width: 100%;
-      gap: 6px !important;
-      padding: 0 6px !important;
-      text-align: left;
-    }
-    .element lk-icon {
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .element:hover {
-      background: var(--hover) !important;
-    }
-    .element.on {
-      background: var(--accent-soft) !important;
-      color: var(--accent) !important;
-    }
-    .element.on lk-icon {
-      color: var(--accent);
     }
     .empty {
-      padding: 2px 8px;
-      font-size: 12px;
       color: var(--muted);
+      font-size: 12px;
     }
   `,
 })
@@ -418,6 +365,44 @@ export class BuildingPanelComponent {
     });
   });
 
+  /** The tree for Optimus: Levels → Rooms / Walls / Openings → elements. */
+  protected readonly nodes = computed<TreeNode<NodeData>[]>(() =>
+    this.tree().map((level) => ({
+      key: level.id,
+      type: 'level',
+      data: { level },
+      selectable: false,
+      expanded: this.isOpen(level.id),
+      children: level.groups.map((g) => {
+        const key = `${level.id}/${g.group}`;
+        return {
+          key,
+          type: 'group',
+          data: { group: g.group, count: g.rows.length },
+          selectable: false,
+          expanded: this.isOpen(key),
+          leaf: false,
+          children: g.rows.length
+            ? g.rows.map((row) => ({
+                key: row.select.id,
+                type: 'element',
+                data: { row, level: level.id },
+              }))
+            : [{ key: `${key}/empty`, type: 'empty', data: {}, selectable: false, leaf: true }],
+        };
+      }),
+    })),
+  );
+
+  /** The tree's selected element nodes: what is selected everywhere. */
+  protected readonly selectedNodes = computed(() => {
+    const chosen = new Set(this.selection.current().map((s) => s.id as string));
+    return this.nodes()
+      .flatMap((l) => l.children ?? [])
+      .flatMap((g) => g.children ?? [])
+      .filter((n) => n.type === 'element' && chosen.has(n.key!));
+  });
+
   constructor() {
     // An element selected elsewhere is revealed here: its Level and group open, its row in view.
     effect(() => {
@@ -457,6 +442,24 @@ export class BuildingPanelComponent {
 
   private expand(key: string): void {
     if (!this.isOpen(key)) this.toggleOpen(key);
+  }
+
+  /** The tree's own toggler opened or closed a Level or group. */
+  protected setOpen(node: TreeNode | undefined, open: boolean): void {
+    if (node?.key && this.isOpen(node.key) !== open) this.toggleOpen(node.key);
+  }
+
+  /**
+   * A click on an element: it alone is selected, or with Shift, Ctrl or Cmd it is added to (or
+   * taken from) the selection.
+   */
+  protected picked(node: TreeNode<NodeData> | undefined, e: Event | undefined, on: boolean): void {
+    const data = node?.data;
+    if (!data || !('row' in data)) return;
+    const mouse = e as MouseEvent | undefined;
+    const add = !!(mouse?.shiftKey || mouse?.ctrlKey || mouse?.metaKey);
+    if (!on && !add) return;
+    this.select(data.level, data.row.select, add);
   }
 
   protected isSelected(s: Selection): boolean {

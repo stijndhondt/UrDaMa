@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  computed,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
@@ -21,6 +13,10 @@ import {
   type OpeningTypeId,
 } from '@lakudemis/core';
 import { parseLength } from '@lakudemis/editor2d';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { DialogModule } from '@openng/optimus-ui/dialog';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { TableModule } from '@openng/optimus-ui/table';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
@@ -35,13 +31,29 @@ import { IconComponent } from '../shell/icon.component';
 @Component({
   selector: 'lk-opening-types-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TranslatePipe, TooltipModule, IconComponent],
+  imports: [
+    FormsModule,
+    TranslatePipe,
+    ButtonModule,
+    DialogModule,
+    InputTextModule,
+    TableModule,
+    TooltipModule,
+    IconComponent,
+  ],
   template: `
-    <dialog #dialog (close)="family.set(null)">
+    <p-dialog
+      [header]="'openingTypes.title' | translate: { family: familyName() }"
+      [visible]="family() !== null"
+      (visibleChange)="$event || family.set(null)"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [style]="{ width: '520px' }"
+    >
       @if (family(); as f) {
-        <h2>{{ 'openingTypes.title' | translate: { family: familyName() } }}</h2>
-        <table>
-          <thead>
+        <p-table [value]="types()" size="small" dataKey="id">
+          <ng-template #header>
             <tr>
               <th>{{ 'openingTypes.name' | translate }}</th>
               <th class="num">{{ 'openingTypes.width' | translate }}</th>
@@ -49,180 +61,133 @@ import { IconComponent } from '../shell/icon.component';
               <th class="num">{{ 'openingTypes.used' | translate }}</th>
               <th></th>
             </tr>
-          </thead>
-          <tbody>
-            @for (t of types(); track t.id) {
-              <tr>
-                <td>
-                  <input
-                    [value]="t.name ?? ''"
-                    [placeholder]="t.sizes"
-                    [attr.aria-label]="'openingTypes.name' | translate"
-                    (change)="
-                      run(renameOpeningType, { type: t.id, name: $any($event.target).value })
-                    "
-                  />
-                </td>
-                <td class="num">
-                  <input
-                    class="mm"
-                    [value]="t.width"
-                    [attr.aria-label]="'openingTypes.width' | translate"
-                    (change)="resize(t.id, 'width', $any($event.target).value)"
-                  />
-                </td>
-                <td class="num">
-                  <input
-                    class="mm"
-                    [value]="t.height"
-                    [attr.aria-label]="'openingTypes.height' | translate"
-                    (change)="resize(t.id, 'height', $any($event.target).value)"
-                  />
-                </td>
-                <td class="num">{{ t.used }}</td>
-                <td>
-                  <button
-                    type="button"
-                    class="icon"
-                    [disabled]="t.used > 0"
-                    [attr.aria-label]="'openingTypes.delete' | translate"
-                    [pTooltip]="
-                      t.used > 0
-                        ? ('commands.openingType.inUse' | translate: { count: t.used })
-                        : ('openingTypes.delete' | translate)
-                    "
-                    tooltipPosition="left"
-                    (click)="run(deleteOpeningType, { type: t.id })"
-                  >
-                    <lk-icon name="trash-2" />
-                  </button>
-                </td>
-              </tr>
-            }
-          </tbody>
-          <tfoot>
+          </ng-template>
+          <ng-template #body let-t>
             <tr>
               <td>
                 <input
-                  [ngModel]="newName()"
-                  (ngModelChange)="newName.set($event)"
-                  [placeholder]="'openingTypes.newName' | translate"
-                  [attr.aria-label]="'openingTypes.newName' | translate"
+                  pInputText
+                  pSize="small"
+                  class="name"
+                  [value]="t.name ?? ''"
+                  [placeholder]="t.sizes"
+                  [attr.aria-label]="'openingTypes.name' | translate"
+                  (change)="run(renameOpeningType, { type: t.id, name: $any($event.target).value })"
                 />
               </td>
               <td class="num">
                 <input
+                  pInputText
+                  pSize="small"
                   class="mm"
-                  [ngModel]="newWidth()"
-                  (ngModelChange)="newWidth.set($event)"
+                  [value]="t.width"
                   [attr.aria-label]="'openingTypes.width' | translate"
+                  (change)="resize(t.id, 'width', $any($event.target).value)"
                 />
               </td>
               <td class="num">
                 <input
+                  pInputText
+                  pSize="small"
                   class="mm"
-                  [ngModel]="newHeight()"
-                  (ngModelChange)="newHeight.set($event)"
+                  [value]="t.height"
                   [attr.aria-label]="'openingTypes.height' | translate"
+                  (change)="resize(t.id, 'height', $any($event.target).value)"
                 />
               </td>
-              <td colspan="2">
-                <button type="button" (click)="add(f)">{{ 'openingTypes.add' | translate }}</button>
+              <td class="num">{{ t.used }}</td>
+              <td>
+                <!-- A disabled button shows no tooltip, so the reason sits on its wrapper. -->
+                <span
+                  [pTooltip]="
+                    t.used > 0
+                      ? ('commands.openingType.inUse' | translate: { count: t.used })
+                      : ('openingTypes.delete' | translate)
+                  "
+                  tooltipPosition="left"
+                >
+                  <p-button
+                    size="small"
+                    severity="secondary"
+                    [text]="true"
+                    [disabled]="t.used > 0"
+                    [ariaLabel]="'openingTypes.delete' | translate"
+                    (onClick)="run(deleteOpeningType, { type: t.id })"
+                  >
+                    <lk-icon name="trash-2" />
+                  </p-button>
+                </span>
               </td>
             </tr>
-          </tfoot>
-        </table>
-        <p class="note">{{ 'openingTypes.note' | translate }}</p>
-        <div class="buttons">
-          <button type="button" class="primary" (click)="dialog.close()">
-            {{ 'common.close' | translate }}
-          </button>
+          </ng-template>
+        </p-table>
+        <div class="add">
+          <input
+            pInputText
+            pSize="small"
+            class="name"
+            [ngModel]="newName()"
+            (ngModelChange)="newName.set($event)"
+            [placeholder]="'openingTypes.newName' | translate"
+            [attr.aria-label]="'openingTypes.newName' | translate"
+          />
+          <input
+            pInputText
+            pSize="small"
+            class="mm"
+            [ngModel]="newWidth()"
+            (ngModelChange)="newWidth.set($event)"
+            [attr.aria-label]="'openingTypes.width' | translate"
+          />
+          <input
+            pInputText
+            pSize="small"
+            class="mm"
+            [ngModel]="newHeight()"
+            (ngModelChange)="newHeight.set($event)"
+            [attr.aria-label]="'openingTypes.height' | translate"
+          />
+          <p-button
+            size="small"
+            severity="secondary"
+            [label]="'openingTypes.add' | translate"
+            (onClick)="add(f)"
+          />
         </div>
+        <p class="note">{{ 'openingTypes.note' | translate }}</p>
       }
-    </dialog>
+      <ng-template #footer>
+        <p-button [label]="'common.close' | translate" (onClick)="family.set(null)" />
+      </ng-template>
+    </p-dialog>
   `,
   styles: `
-    dialog {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 18px 20px;
-      background: var(--panel);
-      color: var(--ink);
-      min-width: 440px;
-    }
-    h2 {
-      font-size: 17px;
-      margin: 0 0 12px;
-    }
-    table {
-      border-collapse: collapse;
-      font-size: 13px;
-      width: 100%;
-    }
-    th {
-      text-align: left;
-      font-weight: 500;
-      color: var(--muted);
-      padding: 0 4px 6px;
-    }
-    td {
-      padding: 2px 4px;
-    }
     .num {
-      text-align: right;
-    }
-    tfoot td {
-      padding-top: 10px;
-      border-top: 1px solid var(--line);
-    }
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 4px 6px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--inset);
-      color: var(--ink);
-      font-size: 13px;
-    }
-    input.mm {
-      width: 70px;
       text-align: right;
       font-variant-numeric: tabular-nums;
     }
-    button {
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-      color: var(--ink);
-      font-size: 13px;
-      padding: 4px 10px;
-      cursor: pointer;
+    input.name {
+      width: 100%;
     }
-    button.icon {
-      border: 0;
-      background: transparent;
-      padding: 4px;
+    input.mm {
+      width: 72px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .add {
       display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-top: 10px;
     }
-    button:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
-    button.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: var(--accent-ink);
+    .add .name {
+      flex: 1;
+      min-width: 0;
     }
     .note {
       font-size: 12px;
       color: var(--muted);
-      margin: 12px 0;
-      max-width: 440px;
-    }
-    .buttons {
-      display: flex;
-      justify-content: flex-end;
+      margin: 12px 0 0;
     }
   `,
 })
@@ -231,7 +196,6 @@ export class OpeningTypesDialogComponent {
   private readonly messages = inject(MessagesService);
   private readonly format = inject(FormatService);
   private readonly language = inject(LanguageService);
-  private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
   protected readonly family = signal<OpeningFamilyId | null>(null);
   protected readonly renameOpeningType = renameOpeningType;
@@ -264,7 +228,6 @@ export class OpeningTypesDialogComponent {
     this.newName.set('');
     this.newWidth.set(first ? String(first.width) : '');
     this.newHeight.set(first ? String(first.height) : '');
-    this.dialog().nativeElement.showModal();
   }
 
   protected resize(type: OpeningTypeId, field: 'width' | 'height', text: string): void {

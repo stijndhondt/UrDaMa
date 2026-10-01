@@ -1,156 +1,136 @@
-import { Component, ElementRef, inject, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { DEFAULT_PRESETS } from '@lakudemis/core';
+import { ButtonModule } from '@openng/optimus-ui/button';
+import { DialogModule } from '@openng/optimus-ui/dialog';
+import { InputNumberModule } from '@openng/optimus-ui/inputnumber';
+import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { LayoutService } from '../shell/layout.service';
 import { ProjectService } from './project.service';
 
 /**
  * The new-project dialog (Slice 1 spec): name, wall-thickness Preset and Room-height Preset.
- * The project opens with one Level, "Ground floor", at elevation 0.
+ * The project opens with one Level, "Ground floor", at elevation 0. Optimus's dialog and fields
+ * (ADR 0008).
  */
 @Component({
   selector: 'lk-new-project-dialog',
-  imports: [FormsModule, TranslatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    FormsModule,
+    TranslatePipe,
+    ButtonModule,
+    DialogModule,
+    InputNumberModule,
+    InputTextModule,
+  ],
   template: `
-    <dialog #dialog (close)="closed.emit()" (cancel)="closed.emit()">
-      <form method="dialog" (submit)="create($event)">
-        <h2>{{ 'project.new.title' | translate }}</h2>
+    <p-dialog
+      [header]="'project.new.title' | translate"
+      [visible]="isOpen()"
+      (visibleChange)="isOpen.set($event)"
+      (onHide)="closed.emit()"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [style]="{ width: '360px' }"
+    >
+      <form class="form" (submit)="create($event)">
+        <!-- Enter in a field creates the project. -->
+        <button type="submit" hidden></button>
         @if (project.unsaved()) {
           <p class="warn">{{ 'project.new.unsavedWarning' | translate }}</p>
         }
-        <label>
-          {{ 'project.new.name' | translate }}
-          <input
-            name="name"
-            [(ngModel)]="name"
-            [placeholder]="'project.untitled' | translate"
-            autocomplete="off"
-          />
-        </label>
-        <label>
-          {{ 'project.new.wallThickness' | translate }}
-          <span class="unit"
-            ><input
-              name="wall"
-              type="number"
-              min="50"
-              max="1000"
-              step="10"
-              [(ngModel)]="wallThickness"
-              required
-            />
-            mm</span
-          >
-        </label>
-        <label>
-          {{ 'project.new.roomHeight' | translate }}
-          <span class="unit"
-            ><input
-              name="height"
-              type="number"
-              min="1500"
-              max="6000"
-              step="10"
-              [(ngModel)]="roomHeight"
-              required
-            />
-            mm</span
-          >
-        </label>
-        <div class="buttons">
-          <button type="button" (click)="dialog.close()">{{ 'common.cancel' | translate }}</button>
-          <button type="submit" class="primary">{{ 'project.new.create' | translate }}</button>
-        </div>
+        <label for="new-project-name">{{ 'project.new.name' | translate }}</label>
+        <input
+          pInputText
+          id="new-project-name"
+          name="name"
+          [ngModel]="name()"
+          (ngModelChange)="name.set($event)"
+          [placeholder]="'project.untitled' | translate"
+          autocomplete="off"
+        />
+        <label for="new-project-wall">{{ 'project.new.wallThickness' | translate }}</label>
+        <p-inputnumber
+          inputId="new-project-wall"
+          name="wall"
+          [ngModel]="wallThickness()"
+          (ngModelChange)="wallThickness.set($event)"
+          [min]="50"
+          [max]="1000"
+          [step]="10"
+          [useGrouping]="false"
+          suffix=" mm"
+          [showButtons]="true"
+        />
+        <label for="new-project-height">{{ 'project.new.roomHeight' | translate }}</label>
+        <p-inputnumber
+          inputId="new-project-height"
+          name="height"
+          [ngModel]="roomHeight()"
+          (ngModelChange)="roomHeight.set($event)"
+          [min]="1500"
+          [max]="6000"
+          [step]="10"
+          [useGrouping]="false"
+          suffix=" mm"
+          [showButtons]="true"
+        />
       </form>
-    </dialog>
+      <ng-template #footer>
+        <p-button
+          [label]="'common.cancel' | translate"
+          severity="secondary"
+          [text]="true"
+          (onClick)="isOpen.set(false)"
+        />
+        <p-button [label]="'project.new.create' | translate" (onClick)="create()" />
+      </ng-template>
+    </p-dialog>
   `,
   styles: `
-    dialog {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 18px 20px;
-      min-width: 320px;
-    }
-    h2 {
-      font-size: 17px;
-      margin: 0 0 12px;
-    }
-    form {
+    .form {
       display: grid;
-      gap: 10px;
+      gap: 6px;
     }
     label {
-      display: grid;
-      gap: 4px;
+      margin-top: 6px;
       color: var(--muted);
-    }
-    input {
-      padding: 5px 7px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      color: var(--ink);
-    }
-    .unit {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--ink);
-    }
-    .unit input {
-      width: 110px;
+      font-size: 13px;
     }
     .warn {
       margin: 0;
       color: var(--warn);
-    }
-    .buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 6px;
-    }
-    button {
-      padding: 5px 12px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel);
-      cursor: pointer;
-    }
-    button.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: var(--accent-ink);
     }
   `,
 })
 export class NewProjectDialogComponent {
   protected readonly project = inject(ProjectService);
   private readonly layout = inject(LayoutService);
-  protected readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
   readonly closed = output<void>();
 
-  protected name = '';
-  protected wallThickness = DEFAULT_PRESETS.wallThickness;
-  protected roomHeight = DEFAULT_PRESETS.roomHeight;
-  readonly isOpen = signal(false);
+  protected readonly name = signal('');
+  protected readonly wallThickness = signal(DEFAULT_PRESETS.wallThickness);
+  protected readonly roomHeight = signal(DEFAULT_PRESETS.roomHeight);
+  protected readonly isOpen = signal(false);
 
   open(): void {
-    this.name = '';
-    this.wallThickness = DEFAULT_PRESETS.wallThickness;
-    this.roomHeight = DEFAULT_PRESETS.roomHeight;
-    this.dialog().nativeElement.showModal();
+    this.name.set('');
+    this.wallThickness.set(DEFAULT_PRESETS.wallThickness);
+    this.roomHeight.set(DEFAULT_PRESETS.roomHeight);
     this.isOpen.set(true);
   }
 
-  protected create(event: Event): void {
-    event.preventDefault();
+  protected create(event?: Event): void {
+    event?.preventDefault();
     this.project.newProject({
-      name: this.name,
-      wallThickness: this.wallThickness,
-      roomHeight: this.roomHeight,
+      name: this.name(),
+      wallThickness: this.wallThickness(),
+      roomHeight: this.roomHeight(),
     });
     this.layout.reset();
-    this.dialog().nativeElement.close();
+    this.isOpen.set(false);
   }
 }
