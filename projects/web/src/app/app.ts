@@ -19,6 +19,7 @@ import { MenubarModule } from '@openng/optimus-ui/menubar';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { TabsModule } from '@openng/optimus-ui/tabs';
+import { ToggleButtonModule } from '@openng/optimus-ui/togglebutton';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { en } from 'primelocale/js/en.js';
 import { nl } from 'primelocale/js/nl.js';
@@ -80,6 +81,7 @@ const PX_PER_MM = 96 / 25.4;
     ButtonModule,
     MenubarModule,
     TabsModule,
+    ToggleButtonModule,
     TooltipModule,
     ChangeSummaryComponent,
     ContextMenuComponent,
@@ -184,49 +186,43 @@ const PX_PER_MM = 96 / 25.4;
       </p-menubar>
 
       <nav class="icons" [attr.aria-label]="'shell.panels' | translate">
-        <button
-          type="button"
-          [class.on]="sideOpen()"
-          [attr.aria-pressed]="sideOpen()"
-          [attr.aria-label]="'shell.building' | translate"
+        <p-togglebutton
+          [ngModel]="sideOpen()"
+          (onChange)="sideOpen.set($event.checked)"
+          [ariaLabel]="'shell.building' | translate"
           [pTooltip]="'shell.building' | translate"
           tooltipPosition="right"
-          (click)="sideOpen.set(!sideOpen())"
         >
-          <lk-icon name="building-2" />
-        </button>
+          <ng-template #content><lk-icon name="building-2" /></ng-template>
+        </p-togglebutton>
         <span class="spacer"></span>
-        <button
-          type="button"
-          [class.on]="shows('view3d')"
-          [attr.aria-pressed]="shows('view3d')"
-          [attr.aria-label]="'view3d.toggle' | translate"
+        <p-togglebutton
+          [ngModel]="shows('view3d')"
+          (onChange)="toggle3d()"
+          [ariaLabel]="'view3d.toggle' | translate"
           [pTooltip]="'view3d.toggle' | translate"
           tooltipPosition="right"
-          (click)="toggle3d()"
         >
-          <lk-icon name="box" />
-        </button>
-        <button
-          type="button"
-          [class.on]="bottomOpen() && bottomTab() === 'quantities'"
-          [attr.aria-label]="'quantities.title' | translate"
+          <ng-template #content><lk-icon name="box" /></ng-template>
+        </p-togglebutton>
+        <p-togglebutton
+          [ngModel]="bottomOpen() && bottomTab() === 'quantities'"
+          (onChange)="showBottom('quantities')"
+          [ariaLabel]="'quantities.title' | translate"
           [pTooltip]="('quantities.title' | translate) + ' (Q)'"
           tooltipPosition="right"
-          (click)="showBottom('quantities')"
         >
-          <lk-icon name="sheet" />
-        </button>
-        <button
-          type="button"
-          [class.on]="bottomOpen() && bottomTab() === 'warnings'"
-          [attr.aria-label]="'panel.warnings' | translate"
+          <ng-template #content><lk-icon name="sheet" /></ng-template>
+        </p-togglebutton>
+        <p-togglebutton
+          [ngModel]="bottomOpen() && bottomTab() === 'warnings'"
+          (onChange)="showBottom('warnings')"
+          [ariaLabel]="'panel.warnings' | translate"
           [pTooltip]="'panel.warnings' | translate"
           tooltipPosition="right"
-          (click)="showBottom('warnings')"
         >
-          <lk-icon name="triangle-alert" />
-        </button>
+          <ng-template #content><lk-icon name="triangle-alert" /></ng-template>
+        </p-togglebutton>
       </nav>
 
       @if (sideOpen()) {
@@ -390,14 +386,16 @@ const PX_PER_MM = 96 / 25.4;
             {{ 'app.hints.' + (editor()?.tool() ?? 'room') | translate }}
           }
         </span>
-        <button
-          type="button"
+        <p-button
           class="chip"
-          (click)="showBottom('warnings')"
-          [attr.aria-label]="'panel.warnings' | translate"
+          size="small"
+          severity="secondary"
+          [text]="true"
+          [ariaLabel]="'panel.warnings' | translate"
+          (onClick)="showBottom('warnings')"
         >
           <lk-icon name="triangle-alert" /> {{ warnings().length }}
-        </button>
+        </p-button>
         <span>{{ levelName() }}</span>
         <span>{{ 'shell.units' | translate }}</span>
         @if (drawingScale(); as s) {
@@ -498,28 +496,8 @@ const PX_PER_MM = 96 / 25.4;
       border-right: 1px solid var(--line);
       background: var(--panel);
     }
-    .icons button {
-      width: 34px;
-      height: 34px;
-      border: 0;
-      border-radius: 8px;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .icons button lk-icon {
+    .icons lk-icon {
       font-size: 18px;
-    }
-    .icons button:hover {
-      color: var(--ink);
-      background: var(--hover);
-    }
-    .icons button.on {
-      color: var(--accent);
-      background: var(--accent-soft);
     }
     .side {
       grid-area: side;
@@ -673,15 +651,11 @@ const PX_PER_MM = 96 / 25.4;
     .status .refused {
       font-weight: 600;
     }
+    /* On the coloured status bar the text button takes the bar's text colour. */
     .chip {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      border: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      cursor: pointer;
+      --p-button-text-secondary-color: currentColor;
+      --p-button-text-secondary-hover-background: rgba(255, 255, 255, 0.15);
+      --p-button-text-secondary-active-background: rgba(255, 255, 255, 0.25);
     }
     .chip lk-icon {
       font-size: 13px;

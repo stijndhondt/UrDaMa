@@ -8,7 +8,9 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { buildingSolids, type SolidRef } from '@lakudemis/core';
 import {
   CAMERA_PRESETS,
@@ -28,16 +30,20 @@ import { SelectionService } from './selection.service';
  */
 @Component({
   selector: 'lk-view3d',
-  imports: [TranslatePipe],
+  imports: [FormsModule, TranslatePipe, SelectButtonModule],
   template: `
     <div class="bar">
-      <span class="group" role="group" [attr.aria-label]="'view3d.camera' | translate">
-        @for (p of presets; track p) {
-          <button type="button" [class.on]="preset() === p" (click)="setPreset(p)">
-            {{ 'view3d.presets.' + p | translate }}
-          </button>
-        }
-      </span>
+      <p-selectbutton
+        size="small"
+        [options]="presetOptions"
+        optionValue="value"
+        [allowEmpty]="false"
+        [ngModel]="preset()"
+        (ngModelChange)="setPreset($event)"
+        [ariaLabel]="'view3d.camera' | translate"
+      >
+        <ng-template #item let-o>{{ 'view3d.presets.' + o.value | translate }}</ng-template>
+      </p-selectbutton>
       @if (building()) {
         <span class="busy">{{ 'view3d.updating' | translate }}</span>
       }
@@ -62,25 +68,12 @@ import { SelectionService } from './selection.service';
       background: var(--panel);
       font-size: 12px;
     }
-    .group {
-      display: flex;
-      gap: 3px;
+    /* Compact camera choices: Optimus's small toggle size, with less padding. */
+    p-selectbutton {
       flex-wrap: wrap;
-      align-items: center;
-    }
-    button {
-      font-size: 11px;
-      padding: 2px 7px;
-      border: 1px solid var(--line);
-      border-radius: 5px;
-      background: var(--panel);
-      color: var(--ink);
-    }
-    button.on {
-      background: var(--accent-soft);
-      border-color: var(--accent);
-      color: var(--accent);
-      font-weight: 600;
+      --p-togglebutton-sm-padding: 0.2rem;
+      --p-togglebutton-content-sm-padding: 0.15rem 0.45rem;
+      --p-togglebutton-sm-font-size: 0.75rem;
     }
     label {
       display: flex;
@@ -105,7 +98,7 @@ export class View3dComponent {
   private readonly messages = inject(MessagesService);
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('view');
 
-  protected readonly presets = CAMERA_PRESETS;
+  protected readonly presetOptions = CAMERA_PRESETS.map((value) => ({ value }));
   protected readonly preset = signal<CameraPreset>('orbit');
   /** Hidden Levels come from the Building panel (ticket 10). */
   private readonly visibility = inject(LevelVisibilityService);

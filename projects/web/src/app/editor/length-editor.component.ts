@@ -10,12 +10,16 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { setWallLength, wallLength, type SetWallLengthArgs, type Wall } from '@lakudemis/core';
 import { growOptions, parseLength, type GrowOption } from '@lakudemis/editor2d';
+import { ButtonModule } from '@openng/optimus-ui/button';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { FormatService } from '../format.service';
+import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { IconComponent } from '../shell/icon.component';
@@ -40,7 +44,15 @@ const GROW_ICONS: Record<GrowOption['label'], IconName> = {
 @Component({
   selector: 'lk-length-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, InputTextModule, TooltipModule, IconComponent],
+  imports: [
+    FormsModule,
+    TranslatePipe,
+    ButtonModule,
+    InputTextModule,
+    SelectButtonModule,
+    TooltipModule,
+    IconComponent,
+  ],
   template: `
     <div class="editor" tabindex="-1" (keydown.escape)="close($event)">
       <label class="line">
@@ -56,44 +68,44 @@ const GROW_ICONS: Record<GrowOption['label'], IconName> = {
         <span class="unit">m</span>
       </label>
       <div class="toggles">
-        <div class="group" role="group" [attr.aria-label]="'panel.wall.grows' | translate">
-          @for (o of grows(); track $index) {
-            <button
-              type="button"
-              [class.on]="growIndex() === $index"
-              [attr.aria-pressed]="growIndex() === $index"
-              [attr.aria-label]="'panel.wall.grow.' + o.label | translate"
-              [pTooltip]="
-                ('panel.wall.grows' | translate) + ': ' + ('panel.wall.grow.' + o.label | translate)
-              "
+        <p-selectbutton
+          size="small"
+          [options]="growChoices()"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="growIndex()"
+          (ngModelChange)="growIndex.set($event)"
+          [ariaLabel]="'panel.wall.grows' | translate"
+        >
+          <ng-template #item let-o>
+            <lk-icon
+              [name]="o.icon"
+              [pTooltip]="('panel.wall.grows' | translate) + ': ' + o.label"
               tooltipPosition="bottom"
-              (click)="growIndex.set($index)"
-            >
-              <lk-icon [name]="growIcon(o)" />
-            </button>
-          }
-        </div>
-        <div class="group" role="group" [attr.aria-label]="'panel.wall.lengthMode' | translate">
-          @for (m of modes; track m.value) {
-            <button
-              type="button"
-              [class.on]="choice.mode() === m.value"
-              [attr.aria-pressed]="choice.mode() === m.value"
-              [attr.aria-label]="'panel.wall.modes.' + m.value | translate"
-              [pTooltip]="'panel.wall.modes.' + m.value | translate"
-              tooltipPosition="bottom"
-              (click)="choice.mode.set(m.value)"
-            >
-              <lk-icon [name]="m.icon" />
-            </button>
-          }
-        </div>
+            />
+          </ng-template>
+        </p-selectbutton>
+        <p-selectbutton
+          size="small"
+          [options]="modeChoices()"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="choice.mode()"
+          (ngModelChange)="choice.mode.set($event)"
+          [ariaLabel]="'panel.wall.lengthMode' | translate"
+        >
+          <ng-template #item let-o>
+            <lk-icon [name]="o.icon" [pTooltip]="o.label" tooltipPosition="bottom" />
+          </ng-template>
+        </p-selectbutton>
       </div>
       <div class="keys">
         <span>{{ 'panel.lengthKeys' | translate }}</span>
-        <button type="button" class="ok" (click)="apply(field.value)">
+        <p-button size="small" (onClick)="apply(field.value)">
           <lk-icon name="check" /> {{ 'common.apply' | translate }}
-        </button>
+        </p-button>
       </div>
     </div>
   `,
@@ -128,30 +140,6 @@ const GROW_ICONS: Record<GrowOption['label'], IconName> = {
       justify-content: flex-end;
       gap: 8px;
     }
-    .group {
-      display: flex;
-      gap: 2px;
-      padding: 2px;
-      border-radius: 6px;
-      background: var(--inset);
-    }
-    .group button {
-      width: 32px;
-      height: 26px;
-      border: 0;
-      border-radius: 4px;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .group button.on {
-      background: var(--panel);
-      color: var(--accent);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
-    }
     .keys {
       display: flex;
       align-items: center;
@@ -159,21 +147,8 @@ const GROW_ICONS: Record<GrowOption['label'], IconName> = {
       font-size: 11px;
       color: var(--muted);
     }
-    .ok {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      height: 22px;
-      padding: 0 8px;
-      border: 0;
-      border-radius: 4px;
-      background: var(--accent);
-      color: var(--accent-ink);
-      font-size: 11px;
-      cursor: pointer;
-    }
-    .ok lk-icon {
-      font-size: 12px;
+    lk-icon {
+      font-size: 14px;
     }
   `,
 })
@@ -192,6 +167,7 @@ export class LengthEditorComponent {
   private readonly messages = inject(MessagesService);
   private readonly format = inject(FormatService);
   protected readonly choice = inject(LengthChoiceService);
+  private readonly language = inject(LanguageService);
   private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
 
   protected readonly grows = computed(() => growOptions(this.wall()));
@@ -204,6 +180,22 @@ export class LengthEditorComponent {
     { value: 'room', icon: 'panel-right' },
     { value: 'wall', icon: 'slash' },
   ];
+
+  /** The grow directions and the modes as choices, with their icons and translated names. */
+  protected readonly growChoices = computed(() =>
+    this.grows().map((o, value) => ({
+      value,
+      icon: this.growIcon(o),
+      label: this.language.text('panel.wall.grow.' + o.label),
+    })),
+  );
+  protected readonly modeChoices = computed(() =>
+    this.modes.map((m) => ({
+      value: m.value,
+      icon: m.icon,
+      label: this.language.text('panel.wall.modes.' + m.value),
+    })),
+  );
 
   constructor() {
     afterNextRender(() => {

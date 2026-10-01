@@ -8,11 +8,14 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { OPENING_KINDS, type OpeningKind, type OpeningTypeId } from '@lakudemis/core';
 import type { ToolName } from '@lakudemis/editor2d';
 import type { MenuItem } from '@openng/optimus-ui/api';
+import { ButtonModule } from '@openng/optimus-ui/button';
 import { Menu, MenuModule } from '@openng/optimus-ui/menu';
+import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
@@ -50,27 +53,39 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
 @Component({
   selector: 'lk-plan-toolbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, MenuModule, TooltipModule, IconComponent],
+  imports: [
+    FormsModule,
+    TranslatePipe,
+    ButtonModule,
+    MenuModule,
+    SelectButtonModule,
+    TooltipModule,
+    IconComponent,
+  ],
   template: `
     <div class="bar" role="toolbar" [attr.aria-label]="'app.tools' | translate">
-      @for (group of groups; track $index; let first = $first) {
+      @for (group of groupChoices(); track $index; let first = $first) {
         @if (!first) {
           <span class="sep"></span>
         }
-        @for (t of group; track t.name) {
-          <button
-            type="button"
-            [class.on]="tool() === t.name"
-            [attr.aria-pressed]="tool() === t.name"
-            [attr.aria-label]="
-              ('tools.' + t.name + '.name' | translate) + (t.key ? ' (' + t.key + ')' : '')
-            "
-            [pTooltip]="tip"
-            tooltipPosition="top"
-            [tooltipOptions]="{ showDelay: 300 }"
-            (click)="choose.emit(t.name)"
-          >
-            <lk-icon [name]="t.icon" />
+        <!-- One choice per group: the tool in use is the chosen one of its group. -->
+        <p-selectbutton
+          size="small"
+          [options]="group"
+          optionLabel="label"
+          optionValue="name"
+          [allowEmpty]="false"
+          [ngModel]="tool()"
+          (ngModelChange)="$event && choose.emit($event)"
+          [ariaLabel]="'app.tools' | translate"
+        >
+          <ng-template #item let-t>
+            <lk-icon
+              [name]="t.icon"
+              [pTooltip]="tip"
+              tooltipPosition="top"
+              [tooltipOptions]="{ showDelay: 300 }"
+            />
             <ng-template #tip>
               <div class="tip">
                 <b>{{ 'tools.' + t.name + '.name' | translate }}</b>
@@ -80,11 +95,14 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
                 <div>{{ 'tools.' + t.name + '.hint' | translate }}</div>
               </div>
             </ng-template>
-          </button>
-        }
+          </ng-template>
+        </p-selectbutton>
       }
       <button
+        pButton
         type="button"
+        severity="secondary"
+        [text]="true"
         class="flyout"
         [attr.aria-label]="'shell.openingTypes' | translate"
         [pTooltip]="'shell.openingTypes' | translate"
@@ -124,34 +142,23 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
         0 6px 20px rgba(0, 0, 0, 0.18),
         0 0 0 1px var(--line);
     }
-    button {
+    /* Compact tool buttons: Optimus's small toggle size, with less padding round the icon. */
+    p-selectbutton {
       flex-shrink: 0;
-      width: 36px;
-      height: 36px;
-      border: 0;
-      border-radius: 8px;
-      background: transparent;
-      color: var(--ink);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      --p-togglebutton-sm-padding: 0.25rem;
+      --p-togglebutton-content-sm-padding: 0.3rem 0.45rem;
     }
-    button lk-icon {
-      font-size: 18px;
-    }
-    button:hover:not(.on) {
-      background: var(--hover);
-    }
-    button.on {
-      background: var(--accent);
-      color: var(--accent-ink);
+    lk-icon {
+      font-size: 17px;
     }
     .flyout {
-      width: 22px !important;
+      flex-shrink: 0;
+      width: 24px;
+      height: 36px;
+      padding: 0;
     }
     .flyout lk-icon {
-      font-size: 14px !important;
+      font-size: 14px;
     }
     .type {
       display: flex;
@@ -185,7 +192,15 @@ export class PlanToolbarComponent {
   readonly choose = output<ToolName>();
   /** An Opening type chosen in the flyout (ticket 17) */
   readonly placeType = output<{ kind: OpeningKind; type: OpeningTypeId }>();
-  protected readonly groups = TOOL_GROUPS;
+  /** The tool groups as choices, named in the user's language with their shortcut. */
+  protected readonly groupChoices = computed(() =>
+    TOOL_GROUPS.map((group) =>
+      group.map((t) => ({
+        ...t,
+        label: this.language.text('tools.' + t.name + '.name') + (t.key ? ` (${t.key})` : ''),
+      })),
+    ),
+  );
 
   private readonly project = inject(ProjectService);
   private readonly language = inject(LanguageService);

@@ -133,7 +133,11 @@ interface LevelNode {
             />
           } @else {
             <button
+              pButton
               type="button"
+              size="small"
+              severity="secondary"
+              [text]="true"
               class="name"
               [pTooltip]="'building.drawOn' | translate"
               tooltipPosition="right"
@@ -233,15 +237,15 @@ interface LevelNode {
       align-items: center;
       gap: 6px;
     }
-    /* A button that reads as the Level's name: none of the browser's own button look. */
+    /* An Optimus text button that reads as the Level's name. */
     .name {
       flex: 1;
       min-width: 0;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: inherit;
-      font: inherit;
+      justify-content: flex-start;
+      padding: 0 4px;
+      color: var(--ink);
+      font-weight: normal;
+      font-size: inherit;
       text-align: left;
       display: flex;
       align-items: center;

@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ButtonModule } from '@openng/optimus-ui/button';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
@@ -35,6 +36,7 @@ export interface PropChoice {
   imports: [
     FormsModule,
     TranslatePipe,
+    ButtonModule,
     InputTextModule,
     SelectButtonModule,
     TooltipModule,
@@ -44,7 +46,10 @@ export interface PropChoice {
     @if (!editing()) {
       <div class="row">
         <button
+          pButton
           type="button"
+          severity="secondary"
+          [text]="true"
           class="read"
           [disabled]="!editable()"
           [attr.title]="hint() || null"
@@ -56,7 +61,12 @@ export interface PropChoice {
         </button>
         @if (resetLabel(); as r) {
           <button
+            pButton
             type="button"
+            size="small"
+            severity="secondary"
+            [text]="true"
+            [rounded]="true"
             class="reset"
             [attr.aria-label]="r"
             [pTooltip]="r"
@@ -111,30 +121,22 @@ export interface PropChoice {
       align-items: center;
       padding-right: 8px;
     }
+    /* An Optimus text button laid out as a row: label, value, unit. */
     .read {
       flex: 1;
       min-width: 0;
       min-height: 30px;
-      display: flex;
-      align-items: center;
+      justify-content: flex-start;
       gap: 8px;
       padding: 0 0 0 14px;
-      border: 0;
-      background: transparent;
+      border-radius: 0;
       color: var(--ink);
-      font: inherit;
+      font-weight: normal;
+      font-size: inherit;
       text-align: left;
-      cursor: pointer;
-    }
-    .read:hover:not(:disabled) {
-      background: var(--hover);
     }
     .read:disabled {
-      cursor: default;
-    }
-    .read:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: -2px;
+      opacity: 1;
     }
     .label {
       flex: 1;
@@ -164,21 +166,9 @@ export interface PropChoice {
     }
     .reset {
       padding: 0;
-      border: 0;
-      border-radius: 4px;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
     .reset lk-icon {
       font-size: 13px;
-    }
-    .reset:hover {
-      color: var(--ink);
-      background: var(--hover);
     }
     .edit {
       padding: 4px 14px 6px;

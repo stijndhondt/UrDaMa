@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
+import { ButtonModule } from '@openng/optimus-ui/button';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { IconComponent } from './icon.component';
 import type { PanelId } from './layout-grid';
@@ -12,14 +13,19 @@ import { LayoutService } from './layout.service';
 @Component({
   selector: 'lk-panel-header',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, TooltipModule, IconComponent],
+  imports: [TranslatePipe, ButtonModule, TooltipModule, IconComponent],
   template: `
     <span class="title">{{ title() }}</span>
     <ng-content />
     <span class="spacer"></span>
     @if (canMaximize()) {
       <button
+        pButton
         type="button"
+        size="small"
+        severity="secondary"
+        [text]="true"
+        [rounded]="true"
         [attr.aria-label]="(maximized() ? 'layout.restore' : 'layout.maximize') | translate"
         [pTooltip]="(maximized() ? 'layout.restore' : 'layout.maximize') | translate"
         tooltipPosition="left"
@@ -49,20 +55,9 @@ import { LayoutService } from './layout.service';
       flex: 1;
     }
     button {
-      width: 24px;
-      height: 24px;
-      border: 0;
-      border-radius: 4px;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    button:hover {
-      background: var(--hover);
-      color: var(--ink);
+      width: 26px;
+      height: 26px;
+      padding: 0;
     }
     lk-icon {
       font-size: 14px;
