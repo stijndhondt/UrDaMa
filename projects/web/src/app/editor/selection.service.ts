@@ -9,28 +9,34 @@ import {
 import type { Selection } from '@lakudemis/editor2d';
 import { ProjectService } from '../project/project.service';
 
+/** A Façade, Façade part or one Level of it, picked in the Quantities (ticket 15). */
+export interface FacadePick {
+  readonly side: FacadeSide;
+  /** Its Wall faces, as wallFaceKey writes them */
+  readonly faces: ReadonlySet<string>;
+}
+
 /** The selected Walls, Rooms, Room separators and Openings, shared by the plan and the properties panel. */
 @Injectable({ providedIn: 'root' })
 export class SelectionService {
   private readonly project = inject(ProjectService);
   readonly current = signal<readonly Selection[]>([]);
 
-  /** A Façade or Façade part picked in the Quantities (ticket 15): its side and Wall faces. */
+  /** The last Façade picked, and the selection it made. */
   private readonly picked = signal<{
-    readonly side: FacadeSide;
-    readonly faces: ReadonlySet<string>;
-    readonly with: readonly Selection[];
+    readonly facade: FacadePick;
+    readonly selection: readonly Selection[];
   } | null>(null);
-  /** The picked Façade, while its Walls are still what is selected. */
-  readonly facade = computed(() => {
+  /** The picked Façade, for as long as the selection it made stands (the same array). */
+  readonly facade = computed<FacadePick | null>(() => {
     const p = this.picked();
-    return p && p.with === this.current() ? p : null;
+    return p && p.selection === this.current() ? p.facade : null;
   });
 
   /** Selects a Façade's Walls and remembers its faces, to highlight in its Elevation. */
-  selectFacade(side: FacadeSide, faces: ReadonlySet<string>, walls: readonly Selection[]): void {
+  selectFacade(facade: FacadePick, walls: readonly Selection[]): void {
     this.current.set(walls);
-    this.picked.set({ side, faces, with: walls });
+    this.picked.set({ facade, selection: walls });
   }
 
   /** The one selected element, when exactly one is selected. */

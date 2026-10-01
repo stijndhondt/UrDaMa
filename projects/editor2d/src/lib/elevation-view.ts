@@ -1,6 +1,6 @@
 /**
  * An Elevation on a canvas (tickets 14, 15): core's Elevation drawn straight on, in the plan's
- * colours, fitted to the panel, with its heights: each Level's finished floor and storey height on
+ * colours, fitted to the panel, with its heights: each Level's finished floor and its height on
  * the left, the total height on the right, and each Opening's sill and height beside it. Look and
  * select only: a click picks the front-most Wall face or Opening.
  */
@@ -11,6 +11,7 @@ import {
   type HeightDimension,
   type LevelId,
   type OpeningId,
+  type WallFaceName,
   type WallId,
 } from '@lakudemis/core';
 import { DEFAULT_PLAN_COLORS, planColors, usePlanColors, type PlanColors } from './draw-plan';
@@ -20,8 +21,8 @@ export interface ElevationHost {
   colors?(): PlanColors;
   /** A click: the shape under the pointer, or null for empty space */
   picked(shape: ElevationShape | null): void;
-  /** A height in mm as the user reads it ("2,94") */
-  height(mm: number): string;
+  /** mm as metres the way the user reads them ("2,94") */
+  metres(mm: number): string;
   /** A translated text ("Total height") */
   text(key: string): string;
 }
@@ -34,7 +35,7 @@ export interface ElevationSelection {
 }
 
 /** The key of one Wall face of a Level, as ElevationSelection.faces holds it. */
-export const wallFaceKey = (level: LevelId, wall: WallId, face: string): string =>
+export const wallFaceKey = (level: LevelId, wall: WallId, face: WallFaceName): string =>
   `${level}/${wall}/${face}`;
 
 /** px around the drawing: room for the heights on the left and the right */
@@ -56,6 +57,8 @@ export class ElevationView {
   private frame = 0;
   /** px per mm and the screen position of u = 0, z = 0 */
   private k = 1;
+  /** The shown drawing's extent in the Elevation (mm), from the last fit */
+  private extent = { u0: 0, u1: 0 };
   private ox = 0;
   private oy = 0;
 
@@ -138,6 +141,7 @@ export class ElevationView {
     const u1 = Math.max(...shapes.map((s) => s.rect.u1));
     const z0 = Math.min(...shapes.map((s) => s.rect.z0));
     const z1 = Math.max(...shapes.map((s) => s.rect.z1));
+    this.extent = { u0, u1 };
     const w = Math.max(this.width - MARGIN.left - MARGIN.right, 1);
     const h = Math.max(this.height - MARGIN.top - MARGIN.bottom, 1);
     this.k = Math.min(w / Math.max(u1 - u0, 1), h / Math.max(z1 - z0, 1));
@@ -170,15 +174,15 @@ export class ElevationView {
     if (this.elevation) this.drawHeights(elevationHeights(this.elevation, this.hidden), shapes, c);
   }
 
-  /** The heights: Levels and their storeys on the left, the total on the right, Openings beside. */
+  /** The heights: the Levels on the left, the total on the right, each Opening beside it. */
   private drawHeights(
     dims: readonly HeightDimension[],
     shapes: readonly ElevationShape[],
     c: PlanColors,
   ): void {
     const ctx = this.ctx;
-    const left = this.x(Math.min(...shapes.map((s) => s.rect.u0)));
-    const right = this.x(Math.max(...shapes.map((s) => s.rect.u1)));
+    const left = this.x(this.extent.u0);
+    const right = this.x(this.extent.u1);
     ctx.save();
     ctx.font = FONT;
     ctx.textBaseline = 'middle';
@@ -196,13 +200,12 @@ export class ElevationView {
         ctx.fillStyle = c.label;
         ctx.textAlign = 'right';
         const sign = d.z0 > 0.5 ? '+' : d.z0 < -0.5 ? '−' : '±';
-        const name = this.elevation?.levels.find((l) => l.level === d.level)?.name ?? '';
-        ctx.fillText(this.fitText(name, MARGIN.left - 40), left - 32, y - 19);
-        ctx.fillText(`${sign}${this.host.height(Math.abs(d.z0))}`, left - 32, y - 7);
+        ctx.fillText(this.fitText(d.name, MARGIN.left - 40), left - 32, y - 19);
+        ctx.fillText(`${sign}${this.host.metres(Math.abs(d.z0))}`, left - 32, y - 7);
         this.dimension(left - 16, d, c, 'left');
       } else if (d.kind === 'total') {
         this.dimension(right + 16, d, c, 'right', this.host.text('layout.heights.total'));
-      } else if (d.u !== null) {
+      } else {
         this.dimension(this.x(d.u) + 6, d, c, 'right');
       }
     }
@@ -240,7 +243,7 @@ export class ElevationView {
     ctx.stroke();
     // Too short to label: the line alone.
     if (Math.abs(y0 - y1) < 12) return;
-    const value = this.host.height(d.z1 - d.z0);
+    const value = this.host.metres(d.z1 - d.z0);
     ctx.fillStyle = d.kind === 'total' ? c.label : c.muted;
     ctx.textAlign = side === 'left' ? 'right' : 'left';
     const dx = side === 'left' ? -4 : 4;

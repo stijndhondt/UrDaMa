@@ -5,7 +5,12 @@ import { counterIds } from '../model/ids';
 import { createProject } from '../model/new-project';
 import type { LevelId, Wall } from '../model/types';
 import { ProjectStore } from '../store/project-store';
-import { elevation, elevationHeights, type ElevationShape } from './elevation';
+import {
+  elevation,
+  elevationHeights,
+  type ElevationShape,
+  type HeightDimension,
+} from './elevation';
 
 /** Two Levels of two Rooms side by side (an interior Wall between them), 6 × 3 m inside. */
 function twoLevelHouse() {
@@ -115,49 +120,132 @@ describe('Elevations (ticket 14)', () => {
 });
 
 describe('heights in Elevations (ticket 15)', () => {
-  it("dimensions each Level's height, the total height, and every Opening's sill and height", () => {
-    const { store, ground, first, heights } = twoLevelHouse();
-    const wall = Object.values(store.model().walls).find(
-      (w: Wall) => w.level === ground && w.start.y === 3000 && w.end.y === 3000,
+  const levelDims = (dims: readonly HeightDimension[]) =>
+    dims.flatMap((d) => (d.kind === 'level' ? [[d.level, d.z0, d.z1]] : []));
+  const totalOf = (dims: readonly HeightDimension[]) => {
+    const t = dims.find((d) => d.kind === 'total')!;
+    return [t.z0, t.z1];
+  };
+  const openingDims = (dims: readonly HeightDimension[], id: string) =>
+    dims.flatMap((d) =>
+      (d.kind === 'sill' || d.kind === 'openingHeight') && d.opening === id
+        ? [[d.kind, d.z1 - d.z0]]
+        : [],
+    );
+
+  it('dimensions the reference house with a second Level, as the model has it', () => {
+    const ids = counterIds();
+    const store = new ProjectStore(
+      createProject({ name: 'T', levelName: 'Ground floor' }, ids),
+      ids,
+    );
+    const ground = Object.keys(store.model().levels)[0] as LevelId;
+    store.run(addLevel, { relativeTo: ground, position: 'above', name: 'First floor' });
+    const first = Object.values(store.model().levels).find((l) => l.name === 'First floor')!.id;
+    const draw = (name: string, x0: number, y0: number, x1: number, y1: number, level = ground) =>
+      store.run(drawRoom, {
+        level,
+        from: { x: x0, y: y0 },
+        to: { x: x1, y: y1 },
+        size: 'inside',
+        name,
+      });
+    draw('Keuken', 0, 0, 2670, 3730);
+    draw('Achterhal', 0, -140 - 3940, 2670, -140);
+    draw('Badkamer', 0, -280 - 3940 - 1910, 2950, -280 - 3940);
+    draw('Berging', 0, -420 - 3940 - 1910 - 1940, 3010, -420 - 3940 - 1910);
+    draw('WC', 0, -140 - 3940, 1120, -140 - 3940 + 1000);
+    draw('Eetkamer', 0, 3730 + 140, 2650, 3730 + 140 + 3570);
+    draw('Living', 0, 3730 + 280 + 3570, 3340, 3730 + 280 + 3570 + 3320);
+    // The second Level: one bedroom over the Living, a window in its front Wall.
+    draw('Slaapkamer', 0, 3730 + 280 + 3570, 3340, 3730 + 280 + 3570 + 3320, first);
+    const front = Object.values(store.model().walls).find(
+      (w: Wall) => w.level === first && w.start.y === w.end.y && w.start.y === 10900,
     )!;
-    store.run(addOpening, { wall: wall.id, kind: 'window', offset: 600, width: 1200, sill: 900 });
-    store.run(addOpening, { wall: wall.id, kind: 'door', offset: 2000 });
-    const front = elevation(store.model(), store.values, 'front');
-    const dims = elevationHeights(front, new Set());
-    const g = heights.get(ground)!;
-    const f = heights.get(first)!;
+    store.run(addOpening, { wall: front.id, kind: 'window', offset: 1000, width: 1200, sill: 900 });
+    const window = Object.values(store.model().openings)[0]!;
 
-    // A chain of storey heights from finished floor to finished floor, then to the top.
-    expect(dims.filter((d) => d.kind === 'level').map((d) => [d.level, d.z0, d.z1])).toEqual([
-      [ground, g.elevation, f.elevation],
-      [first, f.elevation, f.slabTop + f.storeyHeight],
+    const e = elevation(store.model(), store.values, 'front');
+    const dims = elevationHeights(e, new Set());
+    const g = store.values.levelHeights().get(ground)!;
+    const f = store.values.levelHeights().get(first)!;
+    // Each Level's storey height, from its finished floor, as typed in the panel.
+    expect(levelDims(dims)).toEqual([
+      [ground, g.elevation, g.elevation + g.storeyHeight],
+      [first, f.elevation, f.elevation + f.storeyHeight],
     ]);
-    // The total height, from the lowest finished floor to the top.
-    const total = dims.find((d) => d.kind === 'total')!;
-    expect([total.z0, total.z1]).toEqual([g.elevation, f.slabTop + f.storeyHeight]);
-
-    // The window: sill above the finished floor, then its height; the door has no sill.
-    const window = Object.values(store.model().openings).find((o) => o.sill === 900)!;
-    const door = Object.values(store.model().openings).find((o) => o.sill === 0)!;
-    const of = (id: string) =>
-      dims.filter((d) => d.opening === id).map((d) => [d.kind, d.z1 - d.z0]);
-    expect(of(window.id)).toEqual([
+    // The total: from the ground line under the lowest Slab to the top of the highest Walls.
+    expect(totalOf(dims)).toEqual([g.slabTop - g.slabThickness, f.slabTop + f.storeyHeight]);
+    // The window: 900 above the first floor's finished floor, 1200 high, beside its right edge.
+    expect(openingDims(dims, window.id)).toEqual([
       ['sill', 900],
       ['openingHeight', 1200],
     ]);
-    expect(of(door.id)).toEqual([['openingHeight', 2115]]);
-    // Beside the Opening, at its right edge.
-    const shape = front.shapes.find((s) => s.kind === 'opening' && s.opening === window.id)!;
-    expect(dims.find((d) => d.opening === window.id)!.u).toBe(shape.rect.u1);
+    const shape = e.shapes.find((x) => x.kind === 'opening' && x.opening === window.id)!;
+    const d = dims.find((x) => x.kind === 'openingHeight' && x.opening === window.id)!;
+    expect(d.kind === 'openingHeight' && d.u).toBe(shape.rect.u1);
   });
 
-  it('leaves hidden Levels out of the chain and the total', () => {
-    const { store, ground, first, heights } = twoLevelHouse();
-    const front = elevation(store.model(), store.values, 'front');
-    const dims = elevationHeights(front, new Set([first]));
+  it('gives a door its height and no sill', () => {
+    const { store, ground } = twoLevelHouse();
+    const wall = Object.values(store.model().walls).find(
+      (w: Wall) => w.level === ground && w.start.y === 3000 && w.end.y === 3000,
+    )!;
+    store.run(addOpening, { wall: wall.id, kind: 'door', offset: 1000 });
+    const door = Object.values(store.model().openings)[0]!;
+    const dims = elevationHeights(elevation(store.model(), store.values, 'front'), new Set());
+    expect(openingDims(dims, door.id)).toEqual([['openingHeight', 2115]]);
+  });
+
+  it('leaves a hidden Level out without changing the others', () => {
+    const { store, ground, first } = twoLevelHouse();
+    store.run(addLevel, { relativeTo: first, position: 'above', name: 'Attic' });
+    const attic = Object.values(store.model().levels).find((l) => l.name === 'Attic')!.id;
+    store.run(drawRoom, {
+      level: attic,
+      from: { x: 0, y: 0 },
+      to: { x: 6000, y: 3000 },
+      size: 'inside',
+      name: 'Attic',
+    });
+    const heights = store.values.levelHeights();
+    const dims = elevationHeights(
+      elevation(store.model(), store.values, 'front'),
+      new Set([first]),
+    );
     const g = heights.get(ground)!;
-    expect(dims.filter((d) => d.kind === 'level').map((d) => d.level)).toEqual([ground]);
-    const total = dims.find((d) => d.kind === 'total')!;
-    expect([total.z0, total.z1]).toEqual([g.elevation, g.slabTop + g.storeyHeight]);
+    const a = heights.get(attic)!;
+    // The ground floor keeps its own storey height, not the gap up to the next shown Level.
+    expect(levelDims(dims)).toEqual([
+      [ground, g.elevation, g.elevation + g.storeyHeight],
+      [attic, a.elevation, a.elevation + a.storeyHeight],
+    ]);
+    expect(totalOf(dims)).toEqual([g.slabTop - g.slabThickness, a.slabTop + a.storeyHeight]);
+  });
+
+  it('gives no dimensions to an Opening hidden behind a nearer face', () => {
+    const ids = counterIds();
+    const store = new ProjectStore(
+      createProject({ name: 'T', levelName: 'Ground floor' }, ids),
+      ids,
+    );
+    const level = Object.keys(store.model().levels)[0] as LevelId;
+    const draw = (name: string, x0: number, y0: number, x1: number, y1: number) =>
+      store.run(drawRoom, {
+        level,
+        from: { x: x0, y: y0 },
+        to: { x: x1, y: y1 },
+        size: 'inside',
+        name,
+      });
+    draw('House', 0, 0, 6000, 3000);
+    draw('Shed', 1000, 5000, 5000, 8000);
+    const wall = Object.values(store.model().walls).find(
+      (w: Wall) => w.start.y === 3000 && w.end.y === 3000,
+    )!;
+    store.run(addOpening, { wall: wall.id, kind: 'window', offset: 2400, width: 1200, sill: 900 });
+    const window = Object.values(store.model().openings)[0]!;
+    const dims = elevationHeights(elevation(store.model(), store.values, 'front'), new Set());
+    expect(openingDims(dims, window.id)).toEqual([]);
   });
 });

@@ -46,8 +46,12 @@ export interface ElevationLevel {
   readonly name: string;
   /** mm: finished floor */
   readonly elevation: number;
-  /** mm: top of its Slab, and the top of its outside faces */
+  /** mm, finished floor to the next one, as typed */
+  readonly storeyHeight: number;
+  /** mm: the bottom and top of its Slab (where its outside faces start) */
+  readonly slabBottom: number;
   readonly slabTop: number;
+  /** mm: the top of its outside faces (where a next Slab would start) */
   readonly top: number;
 }
 
@@ -142,6 +146,8 @@ export function elevation(model: Model, values: BuildingValues, side: FacadeSide
             level: l.id,
             name: l.name,
             elevation: h.elevation,
+            storeyHeight: h.storeyHeight,
+            slabBottom: h.slabTop - h.slabThickness,
             slabTop: h.slabTop,
             top: h.slabTop + h.storeyHeight,
           },
@@ -161,50 +167,78 @@ export function elevation(model: Model, values: BuildingValues, side: FacadeSide
 }
 
 /**
- * A height to dimension in an Elevation (ticket 15), z0 below z1 in mm: a Level's storey (its
- * finished floor to the next one's, or to its top), the total height, or an Opening's sill above
- * its finished floor and its own height, beside its right edge (`u`).
+ * A height to dimension in an Elevation (ticket 15), z0 below z1 in mm: a Level's height (its
+ * finished floor up its storey height), the total height (the ground line under the lowest Slab to
+ * the top of the highest Walls), or an Opening's sill above its finished floor and its own height,
+ * standing beside its right edge (`u`).
  */
-export interface HeightDimension {
-  readonly kind: 'level' | 'total' | 'sill' | 'openingHeight';
-  readonly level: LevelId;
-  readonly z0: number;
-  readonly z1: number;
-  /** mm: where an Opening's dimensions stand; null for the chain and the total at the sides */
-  readonly u: number | null;
-  readonly opening?: OpeningId;
-}
+export type HeightDimension =
+  | {
+      readonly kind: 'level';
+      readonly level: LevelId;
+      readonly name: string;
+      readonly z0: number;
+      readonly z1: number;
+    }
+  | { readonly kind: 'total'; readonly z0: number; readonly z1: number }
+  | {
+      readonly kind: 'sill' | 'openingHeight';
+      readonly level: LevelId;
+      readonly opening: OpeningId;
+      readonly u: number;
+      readonly z0: number;
+      readonly z1: number;
+    };
 
-/** The heights to show in an Elevation, leaving out hidden Levels. */
+const SAME = 0.5; // mm: closer than this counts as equal
+
+/** Whether a nearer Wall face covers this rectangle entirely. */
+const covered = (r: ElevationRect, depth: number, faces: readonly ElevationShape[]) =>
+  faces.some(
+    (f) =>
+      f.depth > depth + SAME &&
+      f.rect.u0 <= r.u0 + SAME &&
+      f.rect.u1 >= r.u1 - SAME &&
+      f.rect.z0 <= r.z0 + SAME &&
+      f.rect.z1 >= r.z1 - SAME,
+  );
+
+/**
+ * The heights to show in an Elevation. Hidden Levels are left out; the others keep their own
+ * heights. An Opening split over faces gets one set, over its whole width; one hidden behind a
+ * nearer face gets none.
+ */
 export function elevationHeights(e: Elevation, hidden: ReadonlySet<LevelId>): HeightDimension[] {
-  const shown = new Set(e.shapes.filter((s) => !hidden.has(s.level)).map((s) => s.level));
+  const shapes = e.shapes.filter((s) => !hidden.has(s.level));
+  const shown = new Set(shapes.map((s) => s.level));
   const levels = e.levels.filter((l) => shown.has(l.level));
-  const out: HeightDimension[] = levels.map((l, i) => ({
+  const out: HeightDimension[] = levels.map((l) => ({
     kind: 'level',
     level: l.level,
+    name: l.name,
     z0: l.elevation,
-    z1: levels[i + 1]?.elevation ?? l.top,
-    u: null,
+    z1: l.elevation + l.storeyHeight,
   }));
   const lowest = levels[0];
   const highest = levels[levels.length - 1];
-  if (lowest && highest)
-    out.push({
-      kind: 'total',
-      level: highest.level,
-      z0: lowest.elevation,
-      z1: highest.top,
-      u: null,
-    });
+  if (lowest && highest) out.push({ kind: 'total', z0: lowest.slabBottom, z1: highest.top });
+
   const floors = new Map(levels.map((l) => [l.level, l.elevation]));
-  const done = new Set<OpeningId>();
-  for (const s of e.shapes) {
-    if (s.kind !== 'opening' || done.has(s.opening) || !floors.has(s.level)) continue;
-    done.add(s.opening);
-    const floor = floors.get(s.level)!;
-    const at = { level: s.level, u: s.rect.u1, opening: s.opening };
-    if (s.rect.z0 - floor > 0.5) out.push({ kind: 'sill', z0: floor, z1: s.rect.z0, ...at });
-    out.push({ kind: 'openingHeight', z0: s.rect.z0, z1: s.rect.z1, ...at });
+  const faces = shapes.filter((s) => s.kind === 'wallFace');
+  const pieces = new Map<OpeningId, Extract<ElevationShape, { kind: 'opening' }>[]>();
+  for (const s of shapes) {
+    if (s.kind !== 'opening' || covered(s.rect, s.depth, faces)) continue;
+    pieces.set(s.opening, [...(pieces.get(s.opening) ?? []), s]);
+  }
+  for (const [opening, parts] of pieces) {
+    const level = parts[0]!.level;
+    const floor = floors.get(level)!;
+    const u = Math.max(...parts.map((p) => p.rect.u1));
+    const z0 = Math.min(...parts.map((p) => p.rect.z0));
+    const z1 = Math.max(...parts.map((p) => p.rect.z1));
+    const at = { level, opening, u };
+    if (z0 - floor > SAME) out.push({ kind: 'sill', z0: floor, z1: z0, ...at });
+    out.push({ kind: 'openingHeight', z0, z1, ...at });
   }
   return out;
 }

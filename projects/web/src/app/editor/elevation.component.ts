@@ -102,7 +102,7 @@ export class ElevationComponent {
       this.view = new ElevationView(this.canvas().nativeElement, {
         colors: () => this.planColors.colors(),
         picked: (shape) => this.pick(shape),
-        height: (mm) => this.format.decimal(mm / 1000),
+        metres: (mm) => this.format.decimal(mm / 1000),
         text: (key) => this.language.text(key),
       });
       this.view.set(this.drawing(), this.visibility.hidden());
@@ -128,9 +128,16 @@ export class ElevationComponent {
   private readonly selected = computed(() => {
     const walls = new Set<WallId>();
     const openings = new Set<OpeningId>();
-    // A Façade picked in the Quantities shows in the Elevation of its side.
+    // A Façade picked in the Quantities shows as its faces, in the Elevation of its side only
+    // (not as its whole Walls, whose ends other sides see).
     const facade = this.selection.facade();
-    const faces = facade?.side === this.side() ? facade.faces : new Set<string>();
+    if (facade)
+      return {
+        walls,
+        openings,
+        faces: facade.side === this.side() ? facade.faces : new Set<string>(),
+      };
+    const faces = new Set<string>();
     for (const s of this.selection.current()) {
       if (s.kind === 'wall') walls.add(s.id);
       else if (s.kind === 'opening') openings.add(s.id);

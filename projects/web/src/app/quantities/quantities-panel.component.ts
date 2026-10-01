@@ -20,7 +20,7 @@ import type { TreeNode } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { TreeTableModule } from '@openng/optimus-ui/treetable';
-import { SelectionService } from '../editor/selection.service';
+import { SelectionService, type FacadePick } from '../editor/selection.service';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { ProjectService } from '../project/project.service';
@@ -53,7 +53,7 @@ interface Row {
   /** What a click selects */
   readonly select: readonly Selection[];
   /** A Façade row: its side and Wall faces, highlighted in that side's Elevation */
-  readonly facade?: { readonly side: FacadeSide; readonly faces: ReadonlySet<string> };
+  readonly facade?: FacadePick;
   /** The Level a click shows in the plan, if it is about one */
   readonly levelId: LevelId | null;
 }
@@ -278,22 +278,20 @@ export class QuantitiesPanelComponent {
       faces: readonly QuantityFacadeFace[],
     ) =>
       levels.length > 1
-        ? levels.map((l) =>
-            leaf({
+        ? levels.map((l) => {
+            const here = faces.filter((x) => x.level === l.level);
+            return leaf({
               key: `${at}/${l.level}`,
               kind: 'facadeLevel',
               name: l.name,
               level: l.name,
               room: name,
               levelId: l.level,
-              select: this.walls(faces.filter((x) => x.level === l.level)),
-              facade: this.facadeOf(
-                f.side,
-                faces.filter((x) => x.level === l.level),
-              ),
+              select: this.walls(here),
+              facade: this.facadeOf(f.side, here),
               figures: { gross: l.gross, openings: l.openings, net: l.net },
-            }),
-          )
+            });
+          })
         : [];
     const faceRows = (faces: readonly QuantityFacadeFace[], at: string) =>
       faces.map((x) => leaf(this.facadeFaceRow(x, at, name)));
@@ -354,7 +352,7 @@ export class QuantitiesPanelComponent {
     };
   }
 
-  private facadeOf(side: FacadeSide, faces: readonly QuantityFacadeFace[]) {
+  private facadeOf(side: FacadeSide, faces: readonly QuantityFacadeFace[]): FacadePick {
     return { side, faces: new Set(faces.map((f) => wallFaceKey(f.level, f.wall, f.face))) };
   }
 
@@ -462,7 +460,7 @@ export class QuantitiesPanelComponent {
     const row = node?.data as Row | undefined;
     if (!row?.select.length) return;
     if (row.levelId && row.levelId !== this.project.level()) this.project.selectLevel(row.levelId);
-    if (row.facade) this.selection.selectFacade(row.facade.side, row.facade.faces, row.select);
+    if (row.facade) this.selection.selectFacade(row.facade, row.select);
     else this.selection.current.set(row.select);
   }
 
