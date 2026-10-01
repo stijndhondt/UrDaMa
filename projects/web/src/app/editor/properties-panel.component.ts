@@ -6,13 +6,18 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
   deleteLevel,
   hasSill,
   netWallArea,
+  openingsOfType,
   presetSize,
+  setOpeningType,
+  updateOpeningType,
   resizeRoom,
   setPresets,
   setWallThickness,
@@ -24,10 +29,13 @@ import {
   wallLength,
   wallThickness,
   type Command,
+  type OpeningId,
+  type OpeningTypeId,
   type Presets,
 } from '@lakudemis/core';
 import { parseLength } from '@lakudemis/editor2d';
 import { ButtonModule } from '@openng/optimus-ui/button';
+import { SelectModule } from '@openng/optimus-ui/select';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { MeasurementService } from '../quantities/measurement.service';
@@ -37,6 +45,7 @@ import { IconComponent } from '../shell/icon.component';
 import { OPENING_ICONS } from '../shell/opening-icons';
 import { EditorActionsService } from './editor-actions.service';
 import { LengthEditorComponent } from './length-editor.component';
+import { OpeningTypesDialogComponent } from './opening-types-dialog.component';
 import { PropRowComponent, type PropChoice } from './prop-row.component';
 import { SelectionService } from './selection.service';
 
@@ -69,7 +78,16 @@ interface Figure {
 @Component({
   selector: 'lk-properties-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, ButtonModule, IconComponent, LengthEditorComponent, PropRowComponent],
+  imports: [
+    FormsModule,
+    TranslatePipe,
+    ButtonModule,
+    SelectModule,
+    IconComponent,
+    LengthEditorComponent,
+    OpeningTypesDialogComponent,
+    PropRowComponent,
+  ],
   template: `
     @if (selection.room(); as room) {
       <header>
@@ -226,7 +244,26 @@ interface Figure {
         }
       </section>
       <section>
-        <h3>{{ 'panel.opening.sizes' | translate }}</h3>
+        <h3>{{ 'panel.opening.typeSection' | translate }}</h3>
+        <div class="type-row">
+          <p-select
+            size="small"
+            [options]="typeChoices()"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            [ngModel]="opening.type"
+            (ngModelChange)="run(setOpeningType, { opening: opening.id, type: $event })"
+            [ariaLabel]="'panel.opening.typeSection' | translate"
+          />
+          <p-button
+            size="small"
+            severity="secondary"
+            [text]="true"
+            [label]="'panel.opening.manageTypes' | translate"
+            (onClick)="openTypes(opening.type)"
+          />
+        </div>
         <lk-prop
           [label]="'panel.opening.width' | translate"
           [value]="mm(opening.width)"
@@ -235,8 +272,8 @@ interface Figure {
           [resetLabel]="
             opening.width === openingPreset().width ? null : resetText(openingPreset().width)
           "
-          (restore)="run(updateOpening, { opening: opening.id, width: openingPreset().width })"
-          (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'width')"
+          (restore)="resizeOpening(opening.id, 'width', openingPreset().width)"
+          (commit)="resizeOpeningText(opening.id, 'width', $event)"
         />
         <lk-prop
           [label]="'panel.opening.height' | translate"
@@ -246,10 +283,40 @@ interface Figure {
           [resetLabel]="
             opening.height === openingPreset().height ? null : resetText(openingPreset().height)
           "
-          (restore)="run(updateOpening, { opening: opening.id, height: openingPreset().height })"
-          (commit)="commitMm($event, updateOpening, { opening: opening.id }, 'height')"
+          (restore)="resizeOpening(opening.id, 'height', openingPreset().height)"
+          (commit)="resizeOpeningText(opening.id, 'height', $event)"
         />
+        @if (pendingSize(); as p) {
+          <div class="ask" role="group">
+            <p>
+              {{
+                'panel.opening.scopeQuestion' | translate: { count: p.count, value: mm(p.value) }
+              }}
+            </p>
+            <div class="actions">
+              <p-button
+                size="small"
+                [label]="'panel.opening.scopeAll' | translate: { count: p.count }"
+                (onClick)="applySize('type')"
+              />
+              <p-button
+                size="small"
+                severity="secondary"
+                [label]="'panel.opening.scopeOne' | translate"
+                (onClick)="applySize('opening')"
+              />
+              <p-button
+                size="small"
+                severity="secondary"
+                [text]="true"
+                [label]="'common.cancel' | translate"
+                (onClick)="pendingSize.set(null)"
+              />
+            </div>
+          </div>
+        }
       </section>
+      <lk-opening-types-dialog />
     } @else if (selection.wall(); as wall) {
       <header>
         <span class="badge"><lk-icon name="brick-wall" /></span>
@@ -515,6 +582,29 @@ interface Figure {
       line-height: 1.45;
       color: var(--muted);
     }
+    .type-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px 6px 14px;
+    }
+    .type-row p-select {
+      flex: 1;
+      min-width: 0;
+    }
+    .ask {
+      margin: 6px 8px 4px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--inset);
+    }
+    .ask p {
+      margin: 8px 12px 2px;
+      font-size: 12.5px;
+    }
+    .ask .actions {
+      padding: 6px 10px 8px;
+    }
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -540,6 +630,15 @@ export class PropertiesPanelComponent {
   protected readonly hasSill = hasSill;
   protected readonly updateWall = updateWall;
   protected readonly updateOpening = updateOpening;
+  protected readonly setOpeningType = setOpeningType;
+  protected readonly typesDialog = viewChild.required(OpeningTypesDialogComponent);
+  /** A type size typed while other Openings share the type: waits for "all" or "only this one" */
+  protected readonly pendingSize = signal<{
+    readonly opening: OpeningId;
+    readonly field: 'width' | 'height';
+    readonly value: number;
+    readonly count: number;
+  } | null>(null);
   protected readonly updateLevel = updateLevel;
   protected readonly updateSlab = updateSlab;
   protected readonly setWallThickness = setWallThickness;
@@ -554,10 +653,13 @@ export class PropertiesPanelComponent {
   protected readonly depthSide = signal<'min' | 'max'>('max');
 
   constructor() {
-    // Another selection closes the length editor.
+    // Another selection closes the length editor and drops an unanswered size question.
     effect(() => {
       this.selection.current();
-      untracked(() => this.editingLength.set(false));
+      untracked(() => {
+        this.editingLength.set(false);
+        this.pendingSize.set(null);
+      });
     });
   }
 
@@ -624,6 +726,54 @@ export class PropertiesPanelComponent {
       `${this.plain().format(type.width / 10)} × ${this.plain().format(type.height / 10)}`
     );
   });
+
+  /** The types of the selected Opening's family, by size, named or shown by their sizes. */
+  protected readonly typeChoices = computed<PropChoice[]>(() => {
+    const o = this.selection.opening();
+    const model = this.project.store.model();
+    const family = o && model.openingTypes[o.type]?.family;
+    return Object.values(model.openingTypes)
+      .filter((t) => t.family === family)
+      .sort((a, b) => a.width - b.width || a.height - b.height || (a.id < b.id ? -1 : 1))
+      .map((t) => ({
+        value: t.id,
+        label: t.name
+          ? `${t.name} · ${this.format.openingSize(t.width, t.height)}`
+          : this.format.openingSize(t.width, t.height),
+      }));
+  });
+
+  protected openTypes(type: OpeningTypeId): void {
+    const family = this.project.store.model().openingTypes[type]?.family;
+    if (family) this.typesDialog().open(family);
+  }
+
+  protected resizeOpeningText(opening: OpeningId, field: 'width' | 'height', text: string): void {
+    const value = parseLength(text);
+    if (value !== null) this.resizeOpening(opening, field, value);
+  }
+
+  /**
+   * A new type size (ticket 18): with the type's only Opening the type itself changes; when other
+   * Openings share it the panel asks first, all of this type or only this one.
+   */
+  protected resizeOpening(opening: OpeningId, field: 'width' | 'height', value: number): void {
+    const model = this.project.store.model();
+    const o = model.openings[opening];
+    if (!o) return;
+    const count = openingsOfType(model, o.type);
+    if (count <= 1) this.run(updateOpeningType, { type: o.type, [field]: value });
+    else this.pendingSize.set({ opening, field, value, count });
+  }
+
+  protected applySize(scope: 'type' | 'opening'): void {
+    const p = this.pendingSize();
+    const o = p && this.project.store.model().openings[p.opening];
+    this.pendingSize.set(null);
+    if (!p || !o) return;
+    if (scope === 'type') this.run(updateOpeningType, { type: o.type, [p.field]: p.value });
+    else this.run(updateOpening, { opening: p.opening, [p.field]: p.value });
+  }
 
   /** The Presets for the selected Opening's kind: its sizes when it has its own. */
   protected readonly openingPreset = computed(() =>

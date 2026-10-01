@@ -2,12 +2,17 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
+  facadeTree,
   quantityTree,
   toCsv,
   type LevelId,
   type QuantityFace,
+  type QuantityFacade,
+  type QuantityFacadeFace,
+  type QuantityFacadeLevel,
   type QuantityLevel,
   type QuantityRoom,
+  type WallFaceName,
 } from '@lakudemis/core';
 import type { Selection } from '@lakudemis/editor2d';
 import type { TreeNode } from '@openng/optimus-ui/api';
@@ -37,20 +42,35 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm' | 'm²' | 'm�
 /** One row of the tree: its name and its figures (mm, mm², mm³; absent = not applicable). */
 interface Row {
   readonly key: string;
-  readonly kind: 'level' | 'room' | SurfaceKind | 'face';
+  readonly kind:
+    'level' | 'room' | SurfaceKind | 'face' | 'exterior' | 'facade' | 'facadePart' | 'facadeLevel';
   readonly name: string;
+  /** For the CSV: its Level, and its Room or Façade */
   readonly level: string;
   readonly room: string;
   readonly figures: Partial<Record<Column, number | null>>;
   /** What a click selects */
-  readonly select?: Selection;
-  readonly levelId: LevelId;
+  readonly select: readonly Selection[];
+  /** The Level a click shows in the plan, if it is about one */
+  readonly levelId: LevelId | null;
 }
 
+/** A row and the rows under it. */
+interface Branch {
+  readonly row: Row;
+  readonly children: readonly Branch[];
+  /** Open until the user closes it */
+  readonly open?: boolean;
+}
+
+const leaf = (row: Row): Branch => ({ row, children: [] });
+
 /**
- * The Quantities (ticket 12) in the bottom panel: a tree of Level → Room (its totals) → its floor,
- * its ceiling and each of its Wall faces, under the chosen Measurement rule. A click selects the
- * surface's Room or Wall everywhere; the CSV export writes the same tree in the UI language.
+ * The Quantities (tickets 12, 13) in the bottom panel: a tree of Level → Room (its totals) → its
+ * floor, its ceiling and each of its Wall faces, then the Exterior: each Façade → its Façade parts
+ * → its outside Wall faces, with totals per Level. All under the chosen Measurement rule. A click
+ * selects the surface's Room or Walls everywhere; the CSV export writes the same tree in the UI
+ * language.
  */
 @Component({
   selector: 'lk-quantities-panel',
@@ -154,8 +174,13 @@ interface Row {
     .kind-level td {
       font-weight: 600;
     }
-    .kind-room td.name {
+    .kind-room td.name,
+    .kind-exterior td,
+    .kind-facade td.name {
       font-weight: 600;
+    }
+    .kind-facadeLevel td {
+      color: var(--muted);
     }
   `,
 })
@@ -174,12 +199,19 @@ export class QuantitiesPanelComponent {
     quantityTree(this.project.store.model(), this.project.store.values, this.measurement.rule()),
   );
 
+  private readonly exterior = computed(() =>
+    facadeTree(this.project.store.model(), this.project.store.values, this.measurement.rule()),
+  );
+
+  private readonly t = (key: string, params?: object) => this.language.text(key, params);
+
   /** The tree as rows, with its names in the user's language. */
-  private readonly rows = computed(() => {
-    const t = (key: string, params?: object) => this.language.text(key, params);
-    return this.tree().map((level) => ({
+  private readonly rows = computed((): Branch[] => {
+    const t = this.t;
+    const levels = this.tree().map((level): Branch => ({
       row: this.levelRow(level),
-      rooms: level.rooms.map((room) => ({
+      open: true,
+      children: level.rooms.map((room) => ({
         row: this.roomRow(level, room),
         children: [
           this.surfaceRow(
@@ -197,34 +229,130 @@ export class QuantitiesPanelComponent {
             room.floorFinishArea,
           ),
           this.surfaceRow(level, room, 'ceiling', t('quantities.tree.ceiling'), room.ceilingArea),
-          ...room.faces.map((f) => this.faceRow(level, room, f, t)),
-        ],
+          ...room.faces.map((f) => this.faceRow(level, room, f)),
+        ].map(leaf),
       })),
     }));
+    const facades = this.exterior();
+    if (!facades.length) return levels;
+    const all = facades.flatMap((f) => f.parts.flatMap((p) => p.faces));
+    const exterior: Branch = {
+      row: {
+        key: 'exterior',
+        kind: 'exterior',
+        name: t('quantities.tree.exterior'),
+        level: '',
+        room: t('quantities.tree.exterior'),
+        levelId: null,
+        select: this.walls(all),
+        figures: {},
+      },
+      open: true,
+      children: facades.map((f) => this.facadeBranch(f)),
+    };
+    return [...levels, exterior];
   });
 
   protected readonly nodes = computed<TreeNode[]>(() => {
     const open = this.open();
-    const node = (row: Row, children?: TreeNode[], byDefault = false): TreeNode => ({
-      key: row.key,
-      data: row,
-      expanded: open.get(row.key) ?? byDefault,
-      children,
-      leaf: !children?.length,
+    const node = (b: Branch): TreeNode => ({
+      key: b.row.key,
+      data: b.row,
+      expanded: open.get(b.row.key) ?? b.open ?? false,
+      children: b.children.map(node),
+      leaf: !b.children.length,
     });
-    return this.rows().map((level) =>
-      node(
-        level.row,
-        level.rooms.map((room) =>
-          node(
-            room.row,
-            room.children.map((c) => node(c)),
-          ),
-        ),
-        true,
-      ),
-    );
+    return this.rows().map(node);
   });
+
+  /** A Façade: its totals per Level, then its parts (when it isn't flat) or its faces. */
+  private facadeBranch(f: QuantityFacade): Branch {
+    const name = this.t('quantities.facades.' + f.side);
+    const key = `exterior/${f.side}`;
+    const perLevel = (
+      levels: readonly QuantityFacadeLevel[],
+      at: string,
+      faces: readonly QuantityFacadeFace[],
+    ) =>
+      levels.length > 1
+        ? levels.map((l) =>
+            leaf({
+              key: `${at}/${l.level}`,
+              kind: 'facadeLevel',
+              name: l.name,
+              level: l.name,
+              room: name,
+              levelId: l.level,
+              select: this.walls(faces.filter((x) => x.level === l.level)),
+              figures: { gross: l.gross, openings: l.openings, net: l.net },
+            }),
+          )
+        : [];
+    const faceRows = (faces: readonly QuantityFacadeFace[], at: string) =>
+      faces.map((x) => leaf(this.facadeFaceRow(x, at, name)));
+    const parts =
+      f.parts.length > 1
+        ? f.parts.map((p): Branch => ({
+            row: {
+              key: `${key}/${p.number}`,
+              kind: 'facadePart',
+              name: this.t('quantities.tree.part', { n: p.number }),
+              level: '',
+              room: name,
+              levelId: null,
+              select: this.walls(p.faces),
+              figures: { gross: p.gross, openings: p.openings, net: p.net },
+            },
+            children: [
+              ...perLevel(p.levels, `${key}/${p.number}`, p.faces),
+              ...faceRows(p.faces, `${key}/${p.number}`),
+            ],
+          }))
+        : faceRows(f.parts[0]?.faces ?? [], key);
+    const faces = f.parts.flatMap((p) => p.faces);
+    return {
+      row: {
+        key,
+        kind: 'facade',
+        name,
+        level: '',
+        room: name,
+        levelId: null,
+        select: this.walls(faces),
+        figures: { gross: f.gross, openings: f.openings, net: f.net },
+      },
+      children: [...perLevel(f.levels, key, faces), ...parts],
+    };
+  }
+
+  private facadeFaceRow(f: QuantityFacadeFace, at: string, facade: string): Row {
+    const level = this.project.store.model().levels[f.level]?.name ?? '';
+    return {
+      key: `${at}/${f.level}/${f.wall}/${f.face}`,
+      kind: 'face',
+      name: `${level} · ${this.faceName(f.wallNumber, f.face)}`,
+      level,
+      room: facade,
+      levelId: f.level,
+      select: [{ kind: 'wall', id: f.wall }],
+      figures: {
+        length: f.length,
+        height: f.height,
+        gross: f.gross,
+        openings: f.openings,
+        net: f.net,
+      },
+    };
+  }
+
+  /** Each Wall of these faces once. */
+  private walls(faces: readonly QuantityFacadeFace[]): Selection[] {
+    return [...new Set(faces.map((f) => f.wall))].map((id) => ({ kind: 'wall', id }));
+  }
+
+  private faceName(n: number, face: WallFaceName): string {
+    return this.t('quantities.tree.face', { n, face: this.t('quantities.tree.' + face) });
+  }
 
   private levelRow(level: QuantityLevel): Row {
     return {
@@ -234,6 +362,7 @@ export class QuantitiesPanelComponent {
       level: level.name,
       room: '',
       levelId: level.level,
+      select: [],
       figures: { gross: level.grossFloorArea, net: level.netFloorArea, volume: level.volume },
     };
   }
@@ -246,7 +375,7 @@ export class QuantitiesPanelComponent {
       level: level.name,
       room: room.name,
       levelId: level.level,
-      select: { kind: 'room', id: room.room },
+      select: [{ kind: 'room', id: room.room }],
       // The Room's totals over its Wall faces; its floor and ceiling are rows below it.
       figures: {
         length: room.wallLength,
@@ -273,28 +402,20 @@ export class QuantitiesPanelComponent {
       level: level.name,
       room: room.name,
       levelId: level.level,
-      select: { kind: 'room', id: room.room },
+      select: [{ kind: 'room', id: room.room }],
       figures: { net: area },
     };
   }
 
-  private faceRow(
-    level: QuantityLevel,
-    room: QuantityRoom,
-    f: QuantityFace,
-    t: (key: string, params?: object) => string,
-  ): Row {
+  private faceRow(level: QuantityLevel, room: QuantityRoom, f: QuantityFace): Row {
     return {
       key: `${room.room}/${f.wall}/${f.face}`,
       kind: 'face',
-      name: t('quantities.tree.face', {
-        n: f.wallNumber,
-        face: t(f.face === 'drawn' ? 'quantities.tree.drawn' : 'quantities.tree.other'),
-      }),
+      name: this.faceName(f.wallNumber, f.face),
       level: level.name,
       room: room.name,
       levelId: level.level,
-      select: { kind: 'wall', id: f.wall },
+      select: [{ kind: 'wall', id: f.wall }],
       figures: {
         length: f.length,
         height: f.height,
@@ -326,9 +447,9 @@ export class QuantitiesPanelComponent {
 
   protected choose(node: TreeNode | undefined): void {
     const row = node?.data as Row | undefined;
-    if (!row?.select) return;
-    if (row.levelId !== this.project.level()) this.project.selectLevel(row.levelId);
-    this.selection.current.set([row.select]);
+    if (!row?.select.length) return;
+    if (row.levelId && row.levelId !== this.project.level()) this.project.selectLevel(row.levelId);
+    this.selection.current.set(row.select);
   }
 
   /** The CSV: the same tree, one line per row, with its Level, Room and surface named. */
@@ -336,7 +457,7 @@ export class QuantitiesPanelComponent {
     const t = (key: string) => this.language.text(key);
     const header = [
       t('quantities.tree.level'),
-      t('quantities.tree.room'),
+      t('quantities.tree.roomOrFacade'),
       t('quantities.tree.surface'),
       ...COLUMNS.map((c) => `${t('quantities.tree.' + c.key)} (${c.unit})`),
     ];
@@ -346,13 +467,13 @@ export class QuantitiesPanelComponent {
       surface,
       ...COLUMNS.map((c) => this.value(row, c.key)),
     ];
-    const lines = this.rows().flatMap((level) => [
-      line(level.row, ''),
-      ...level.rooms.flatMap((room) => [
-        line(room.row, ''),
-        ...room.children.map((c) => line(c, c.name)),
-      ]),
-    ]);
+    // Levels, Rooms and Façades name themselves in their own columns; the rest are surfaces.
+    const named = new Set<Row['kind']>(['level', 'room', 'exterior', 'facade', 'facadeLevel']);
+    const flat = (b: Branch): (string | number | null)[][] => [
+      line(b.row, named.has(b.row.kind) ? '' : b.row.name),
+      ...b.children.flatMap(flat),
+    ];
+    const lines = this.rows().flatMap(flat);
     const dutch = this.language.current() === 'nl';
     const csv = toCsv(header, lines, { separator: dutch ? ';' : ',', decimalComma: dutch });
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

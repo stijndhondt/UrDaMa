@@ -12,7 +12,13 @@ import { levelsInOrder } from '../model/levels';
 import { message, type Message } from '../model/message';
 import { footprint, type Footprint, type RoomDetection } from '../geometry/footprint';
 import { wallOutlines, type WallOutline } from '../geometry/wall-outlines';
-import { heightOverlap, levelRoomSurfaces, type RoomSurfaces, type SurfaceInput } from './surfaces';
+import {
+  heightOverlap,
+  levelRoomSurfaces,
+  type RoomSurfaces,
+  type RoomWallFace,
+  type SurfaceInput,
+} from './surfaces';
 import type {
   Ceiling,
   Level,
@@ -104,6 +110,11 @@ export interface LevelValues {
   readonly netFloorArea: Derived<number>;
   /** The surfaces around each enclosed Room (a door's reveals are shared, hence per Level). */
   readonly roomSurfaces: Derived<ReadonlyMap<RoomId, RoomSurfaces>>;
+  /**
+   * The Wall faces that face no Room (ticket 13): the outer faces of the merged footprint, from
+   * the top of the Slab up the storey height, so the Levels' faces stack without gaps.
+   */
+  readonly outsideFaces: Derived<readonly RoomWallFace[]>;
   /** Things to fix: Rooms not enclosed or sharing one area, Wall ends connected to nothing. */
   readonly warnings: Derived<readonly Message[]>;
 }
@@ -329,6 +340,28 @@ export class BuildingValues {
         );
       },
     );
+    const outsideFaces = derived(
+      () => `${name()} · outside Wall faces`,
+      (): readonly RoomWallFace[] => {
+        const s = slice();
+        const here = this.levelHeights().get(id);
+        const outside = {
+          rings: fp().outer,
+          floor: here?.slabTop ?? -s.presets.floorBuildUp,
+          height: here?.storeyHeight ?? s.level?.storeyHeight ?? 0,
+        };
+        return (
+          levelRoomSurfaces(
+            here?.elevation ?? 0,
+            new Map([['outside', outside]]),
+            s.walls,
+            outlines(),
+            [],
+            s.openings,
+          ).get('outside')?.faces ?? []
+        );
+      },
+    );
     const warnings = derived(
       () => `${name()} · warnings`,
       (): readonly Message[] => {
@@ -373,7 +406,16 @@ export class BuildingValues {
         return out;
       },
     );
-    return { slice, outlines, footprint: fp, grossArea, netFloorArea, roomSurfaces, warnings };
+    return {
+      slice,
+      outlines,
+      footprint: fp,
+      grossArea,
+      netFloorArea,
+      roomSurfaces,
+      outsideFaces,
+      warnings,
+    };
   }
 
   private createWall(id: WallId): WallValues {

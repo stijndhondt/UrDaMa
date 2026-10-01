@@ -5,7 +5,7 @@
  */
 import { put } from '../model/edit';
 import { message, type Message } from '../model/message';
-import { BUILT_IN_FAMILIES, presetSize, typeWithSize } from '../model/opening-types';
+import { BUILT_IN_FAMILIES, detachedType, presetSize, typeWithSize } from '../model/opening-types';
 import type { Opening, OpeningId, OpeningKind, OpeningTypeId, WallId } from '../model/types';
 import { refuse, type Command } from './command';
 
@@ -51,13 +51,9 @@ export const addOpening: Command<AddOpeningArgs> = (model, args, { ids }) => {
   const typed =
     chosen && size.width === chosen.width && size.height === chosen.height
       ? { model, type: chosen.id }
-      : typeWithSize(
-          model,
-          chosen?.family ?? BUILT_IN_FAMILIES[kind],
-          size.width,
-          size.height,
-          ids,
-        );
+      : chosen
+        ? detachedType(model, chosen, size.width, size.height, ids)
+        : typeWithSize(model, BUILT_IN_FAMILIES[kind], size.width, size.height, ids);
   const opening: Opening = {
     id: ids('openings') as OpeningId,
     wall: args.wall,

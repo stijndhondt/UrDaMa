@@ -39,7 +39,7 @@ import { FileService, type FileResult } from './project/file.service';
 import { NewProjectDialogComponent } from './project/new-project-dialog.component';
 import { ProjectService } from './project/project.service';
 import { QuantitiesPanelComponent } from './quantities/quantities-panel.component';
-import { ElevationPlaceholderComponent } from './shell/elevation-placeholder.component';
+import { ElevationComponent } from './editor/elevation.component';
 import { IconComponent } from './shell/icon.component';
 import type { IconName } from './shell/icons.generated';
 import {
@@ -83,7 +83,7 @@ const PX_PER_MM = 96 / 25.4;
     TooltipModule,
     ChangeSummaryComponent,
     ContextMenuComponent,
-    ElevationPlaceholderComponent,
+    ElevationComponent,
     FormsModule,
     IconComponent,
     PanelHeaderComponent,
@@ -303,7 +303,7 @@ const PX_PER_MM = 96 / 25.4;
               />
             </lk-panel-header>
             <div class="body">
-              <lk-elevation-placeholder [side]="layout.sides()[e]" />
+              <lk-elevation [side]="layout.sides()[e]" />
             </div>
           </section>
         }

@@ -6,13 +6,19 @@
 import { levelsInOrder, wallNumbers } from '../model/levels';
 import type { LevelId, Model, RoomId, WallId } from '../model/types';
 import type { BuildingValues } from '../values/building-values';
-import { faceNetArea, netWallArea, openingArea, type MeasurementRule } from '../values/surfaces';
+import {
+  faceNetArea,
+  netWallArea,
+  openingArea,
+  type MeasurementRule,
+  type WallFaceName,
+} from '../values/surfaces';
 
 export interface QuantityFace {
   readonly wall: WallId;
   /** The Wall's number on its Level (in ID order), as the Building panel shows it */
   readonly wallNumber: number;
-  readonly face: 'drawn' | 'other';
+  readonly face: WallFaceName;
   /** mm */
   readonly length: number;
   readonly height: number;

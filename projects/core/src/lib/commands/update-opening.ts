@@ -1,7 +1,7 @@
 /** UpdateOpening: a committed field of an Opening, or a flip of a door (F / Shift+F). One step each. */
 import { put } from '../model/edit';
 import { message } from '../model/message';
-import { resolveOpening, typeWithSize } from '../model/opening-types';
+import { detachedType, resolveOpening } from '../model/opening-types';
 import type { Opening, OpeningId } from '../model/types';
 import { openingSizeProblem } from './add-opening';
 import { refuse, type Command } from './command';
@@ -28,12 +28,12 @@ export const updateOpening: Command<UpdateOpeningArgs> = (model, args, { ids }) 
   const sill = args.sill ?? o.sill;
   const problem = openingSizeProblem({ width, height, sill });
   if (problem) return refuse(problem);
-  // A new size changes only this Opening: it moves to the type with that size (ticket 18 adds
-  // the choice to change the whole type instead).
+  // A new size here changes only this Opening ("only this one"): it detaches into a type of its
+  // own. Changing the type for all its Openings is UpdateOpeningType.
   const sized =
     width === resolved.width && height === resolved.height
       ? { model, type: o.type }
-      : typeWithSize(model, model.openingTypes[o.type]!.family, width, height, ids);
+      : detachedType(model, model.openingTypes[o.type]!, width, height, ids);
   const next: Opening = {
     ...o,
     type: sized.type,

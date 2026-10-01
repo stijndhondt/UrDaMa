@@ -13,19 +13,14 @@ import {
 } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import type { OpeningKind, OpeningTypeId } from '@lakudemis/core';
-import {
-  DEFAULT_PLAN_COLORS,
-  PlanEditor,
-  type EditorHost,
-  type PlanColors,
-  type ToolName,
-} from '@lakudemis/editor2d';
+import { PlanEditor, type EditorHost, type ToolName } from '@lakudemis/editor2d';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { SelectionService } from './selection.service';
 import { ThemeService } from '../shell/theme.service';
+import { PlanColorsService } from './plan-colors.service';
 import { ContextMenuService } from './context-menu.service';
 import { LengthEditService } from './length-edit.service';
 import { LevelVisibilityService } from './level-visibility.service';
@@ -65,8 +60,7 @@ export class PlanEditorComponent {
   private readonly lengthEdits = inject(LengthEditService);
   private readonly visibility = inject(LevelVisibilityService);
   private readonly theme = inject(ThemeService);
-  /** The plan's colours, read from the theme's CSS variables once per theme. */
-  private colorCache: { dark: boolean; colors: PlanColors } | null = null;
+  private readonly planColors = inject(PlanColorsService);
   private editor: PlanEditor | null = null;
 
   constructor() {
@@ -88,7 +82,7 @@ export class PlanEditorComponent {
         contextMenu: (at, target) => this.contextMenus.open(at, target),
         zoomChanged: (scale) => this.scale.set(scale),
         editLength: (wall, at, faceLength) => this.lengthEdits.open.set({ wall, at, faceLength }),
-        colors: () => this.planColors(),
+        colors: () => this.planColors.colors(),
       };
       this.editor = new PlanEditor(this.canvas().nativeElement, host);
       // Development only: lets end-to-end checks convert between mm and screen positions.
@@ -125,41 +119,6 @@ export class PlanEditorComponent {
       this.editor?.invalidate();
     });
     inject(DestroyRef).onDestroy(() => this.editor?.destroy());
-  }
-
-  /**
-   * The plan's colours from the app's theme (styles.css, --plan-* and friends), read when first
-   * drawn in a theme: a canvas needs the colours themselves, not CSS variables.
-   */
-  private planColors(): PlanColors {
-    const dark = this.theme.dark();
-    if (this.colorCache?.dark === dark) return this.colorCache.colors;
-    const style = getComputedStyle(document.documentElement);
-    const read = (name: string, fallback: string) =>
-      style.getPropertyValue(name).trim() || fallback;
-    const d = DEFAULT_PLAN_COLORS;
-    const colors: PlanColors = {
-      paper: read('--paper', d.paper),
-      gridMinor: read('--plan-grid-minor', d.gridMinor),
-      gridMajor: read('--plan-grid-major', d.gridMajor),
-      area: read('--plan-area', d.area),
-      areaChanged: read('--accent-soft', d.areaChanged),
-      hatch: read('--plan-hatch', d.hatch),
-      wallFill: read('--plan-wall-fill', d.wallFill),
-      wallStroke: read('--plan-wall-stroke', d.wallStroke),
-      separator: read('--plan-separator', d.separator),
-      levelBelow: d.levelBelow,
-      levelBelowStroke: d.levelBelowStroke,
-      label: read('--ink', d.label),
-      muted: read('--muted', d.muted),
-      ok: read('--ok', d.ok),
-      warn: read('--warn', d.warn),
-      bad: read('--bad', d.bad),
-      accent: read('--accent', d.accent),
-      onAccent: read('--accent-ink', d.onAccent),
-    };
-    this.colorCache = { dark, colors };
-    return colors;
   }
 
   /** A tool chosen by its button or key (an Opening tool places its kind's default size). */

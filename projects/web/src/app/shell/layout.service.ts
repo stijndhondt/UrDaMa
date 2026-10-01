@@ -1,4 +1,5 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
+import { FACADE_SIDES, type FacadeSide } from '@lakudemis/core';
 import { readJson, readSetting, writeSetting } from '../browser-setting';
 import {
   fittingLayout,
@@ -12,8 +13,9 @@ import {
   type PanelId,
 } from './layout-grid';
 
-export type ElevationSide = 'front' | 'back' | 'left' | 'right';
-export const ELEVATION_SIDES: readonly ElevationSide[] = ['front', 'back', 'left', 'right'];
+/** An Elevation panel shows one side of the building, as its Façades are named. */
+export type ElevationSide = FacadeSide;
+export const ELEVATION_SIDES: readonly ElevationSide[] = FACADE_SIDES;
 
 const LAYOUT_KEY = 'lakudemis.layout';
 const SPLIT_KEY = 'lakudemis.layoutSplit';

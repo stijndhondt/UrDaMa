@@ -114,9 +114,9 @@ export const resolveOpenings = (model: Model, openings: readonly Opening[]): Res
   openings.flatMap((o) => resolveOpening(model, o) ?? []);
 
 /**
- * The type of a family with exactly these sizes: the existing one (placing and migrating never
- * make two types of one size in a family), or a new unnamed one. Used where an Opening gets its
- * own size, which until ticket 18 always means "only this one".
+ * The unnamed type of a family with exactly these sizes: the existing one (placing and migrating
+ * never make two unnamed types of one size in a family), or a new one. Named types are the
+ * user's own and are never picked by size.
  */
 export function typeWithSize(
   model: Model,
@@ -126,9 +126,40 @@ export function typeWithSize(
   ids: IdGenerator,
 ): { readonly model: Model; readonly type: OpeningTypeId } {
   const same = Object.values(model.openingTypes).find(
-    (t) => t.family === family && t.width === width && t.height === height,
+    (t) => t.family === family && !t.name && t.width === width && t.height === height,
   );
   if (same) return { model, type: same.id };
   const type: OpeningType = { id: ids('openingTypes') as OpeningTypeId, family, width, height };
+  return { model: put(model, 'openingTypes', type), type: type.id };
+}
+
+/**
+ * The type an Opening of type `from` moves to when it gets its own sizes ("only this one",
+ * ticket 18): a named type gets a new type named after it, "Front door (2)", with the first free
+ * number; an unnamed one moves to the unnamed type of that size.
+ */
+export function detachedType(
+  model: Model,
+  from: OpeningType,
+  width: number,
+  height: number,
+  ids: IdGenerator,
+): { readonly model: Model; readonly type: OpeningTypeId } {
+  if (!from.name) return typeWithSize(model, from.family, width, height, ids);
+  const base = from.name.replace(/ \(\d+\)$/, '');
+  const used = new Set(
+    Object.values(model.openingTypes)
+      .filter((t) => t.family === from.family)
+      .map((t) => t.name),
+  );
+  let n = 2;
+  while (used.has(`${base} (${n})`)) n++;
+  const type: OpeningType = {
+    id: ids('openingTypes') as OpeningTypeId,
+    family: from.family,
+    name: `${base} (${n})`,
+    width,
+    height,
+  };
   return { model: put(model, 'openingTypes', type), type: type.id };
 }

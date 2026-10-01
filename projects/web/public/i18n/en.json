@@ -193,6 +193,14 @@
       "addWallOpening": "Place a wall opening",
       "addGarageDoor": "Place a garage door"
     },
+    "openingType": {
+      "add": "Add Opening type",
+      "rename": "Rename Opening type",
+      "delete": "Delete Opening type",
+      "update": "Change Opening type for all its Openings",
+      "inUse": "Refused: {count, plural, one {# Opening uses} other {# Openings use}} this type. Give {count, plural, one {it} other {them}} another type first.",
+      "otherFamily": "Refused: an Opening can only take a type of its own family."
+    },
     "level": {
       "add": "Add Level {name}",
       "update": "Change Level {name}",
@@ -335,7 +343,12 @@
       "type": "Opening type",
       "sizes": "Sizes (this Opening)",
       "wallOpening": "Wall opening",
-      "garageDoor": "Garage door"
+      "garageDoor": "Garage door",
+      "typeSection": "Type",
+      "manageTypes": "Types…",
+      "scopeQuestion": "{count} Openings share this type. Change it to {value} mm for all of them, or only for this one?",
+      "scopeAll": "All {count}",
+      "scopeOne": "Only this one"
     },
     "level": {
       "title": "Level",
@@ -424,7 +437,17 @@
       "other": "other face",
       "level": "Level",
       "room": "Room",
-      "surface": "Surface"
+      "surface": "Surface",
+      "exterior": "Exterior",
+      "part": "Part {n}",
+      "end": "end",
+      "roomOrFacade": "Room or Façade"
+    },
+    "facades": {
+      "front": "Front Façade",
+      "back": "Back Façade",
+      "left": "Left side Façade",
+      "right": "Right side Façade"
     }
   },
   "view3d": {
@@ -520,6 +543,18 @@
       "left": "Left side",
       "right": "Right side"
     },
-    "elevationLater": "{side}: the Elevation is drawn in a coming version."
+    "elevationLabel": "{side} Elevation of the building",
+    "elevationEmpty": "Nothing to see from this side yet ({side}): draw Rooms on the plan."
+  },
+  "openingTypes": {
+    "title": "Opening types: {family}",
+    "name": "Name",
+    "width": "Width (mm)",
+    "height": "Height (mm)",
+    "used": "Used",
+    "delete": "Delete this type",
+    "newName": "New type (name optional)",
+    "add": "Add",
+    "note": "Changing a size here changes every Opening of that type. A type without a name is shown by its sizes."
   }
 }

@@ -132,8 +132,12 @@ describe("a Room's Wall faces (ticket 12)", () => {
     const s = store.values.room(rooms[0]!.id).surfaces()!;
     const o = Object.values(store.model().openings)[0]!;
     const type = store.model().openingTypes[o.type]!;
+    // Both its faces and its free end bound the Room.
     const faces = s.faces.filter((f) => f.wall === stub.id);
-    expect(faces).toHaveLength(2);
+    expect(faces.map((f) => f.face)).toEqual(['drawn', 'other', 'end']);
+    expect(Math.round(faces[2]!.length)).toBe(
+      stub.thickness ?? store.model().project.presets.wallThickness,
+    );
     // Sides and head through the Wall's thickness, once.
     expect(Math.round(s.revealArea)).toBe(
       Math.round(

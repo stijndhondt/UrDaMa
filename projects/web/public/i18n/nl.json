@@ -193,6 +193,14 @@
       "addWallOpening": "Muuropening plaatsen",
       "addGarageDoor": "Garagepoort plaatsen"
     },
+    "openingType": {
+      "add": "Openingstype toevoegen",
+      "rename": "Openingstype hernoemen",
+      "delete": "Openingstype verwijderen",
+      "update": "Openingstype wijzigen voor al zijn openingen",
+      "inUse": "Geweigerd: {count, plural, one {# opening gebruikt} other {# openingen gebruiken}} dit type. Geef {count, plural, one {die} other {ze}} eerst een ander type.",
+      "otherFamily": "Geweigerd: een opening kan alleen een type van haar eigen familie krijgen."
+    },
     "level": {
       "add": "Bouwlaag {name} toevoegen",
       "update": "Bouwlaag {name} wijzigen",
@@ -335,7 +343,12 @@
       "type": "Openingtype",
       "sizes": "Maten (deze opening)",
       "wallOpening": "Muuropening",
-      "garageDoor": "Garagepoort"
+      "garageDoor": "Garagepoort",
+      "typeSection": "Type",
+      "manageTypes": "Types…",
+      "scopeQuestion": "{count} openingen delen dit type. Naar {value} mm voor allemaal, of alleen voor deze?",
+      "scopeAll": "Alle {count}",
+      "scopeOne": "Alleen deze"
     },
     "level": {
       "title": "Bouwlaag",
@@ -424,7 +437,17 @@
       "other": "andere zijde",
       "level": "Bouwlaag",
       "room": "Ruimte",
-      "surface": "Oppervlak"
+      "surface": "Oppervlak",
+      "exterior": "Buitenkant",
+      "part": "Deel {n}",
+      "end": "kopse kant",
+      "roomOrFacade": "Ruimte of gevel"
+    },
+    "facades": {
+      "front": "Voorgevel",
+      "back": "Achtergevel",
+      "left": "Linkerzijgevel",
+      "right": "Rechterzijgevel"
     }
   },
   "view3d": {
@@ -520,6 +543,18 @@
       "left": "Linkerzijgevel",
       "right": "Rechterzijgevel"
     },
-    "elevationLater": "{side}: het gevelaanzicht wordt getekend in een volgende versie."
+    "elevationLabel": "Gevelaanzicht {side} van het gebouw",
+    "elevationEmpty": "Van deze kant ({side}) is nog niets te zien: teken ruimtes op de plattegrond."
+  },
+  "openingTypes": {
+    "title": "Openingstypes: {family}",
+    "name": "Naam",
+    "width": "Breedte (mm)",
+    "height": "Hoogte (mm)",
+    "used": "Gebruikt",
+    "delete": "Dit type verwijderen",
+    "newName": "Nieuw type (naam optioneel)",
+    "add": "Toevoegen",
+    "note": "Een maat hier wijzigen wijzigt elke opening van dat type. Een type zonder naam wordt getoond met zijn maten."
   }
 }
