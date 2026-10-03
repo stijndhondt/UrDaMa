@@ -104,6 +104,7 @@ const leaf = (row: Row): Branch => ({ row, children: [] });
       size="small"
       [scrollable]="true"
       scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '880px' }"
       selectionMode="single"
       (onNodeSelect)="choose($event.node)"
       (onNodeExpand)="setOpen($event.node, true)"
@@ -111,7 +112,7 @@ const leaf = (row: Row): Branch => ({ row, children: [] });
     >
       <ng-template #header>
         <tr>
-          <th>{{ 'quantities.name' | translate }}</th>
+          <th class="name">{{ 'quantities.name' | translate }}</th>
           @for (c of columns; track c.key) {
             <th class="num">{{ 'quantities.tree.' + c.key | translate }} ({{ c.unit }})</th>
           }
@@ -171,8 +172,14 @@ const leaf = (row: Row): Branch => ({ row, children: [] });
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
+    /* The names get their own room; a narrow panel scrolls the table sideways rather than
+       squeezing the columns into each other. */
     .name {
+      width: 240px;
+      min-width: 240px;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .kind-level td {
       font-weight: 600;
