@@ -8,7 +8,7 @@
 import type { Command, CommandOutcome } from '../commands/command';
 import type { IdGenerator } from '../model/ids';
 import { checkInvariants } from '../model/invariants';
-import type { Message } from '../model/message';
+import { message, type Message } from '../model/message';
 import { applyPatch, diffModels, type Patch } from '../model/patch';
 import type { Model, RoomId } from '../model/types';
 import { derived, source, type Derived } from '../reactive';
@@ -102,6 +102,15 @@ export class ProjectStore {
     const outcome = this.execute(command, args, this.committed());
     if (outcome.ok) this.previewModel.set({ model: outcome.model, label: outcome.label });
     return outcome;
+  }
+
+  /**
+   * A drag goes on, showing nothing changed (back where it started, or at a refused position):
+   * still previewing, the committed model shown (ticket 33). Views that hold still during a drag
+   * then don't rebuild on the way, and committing it changes nothing.
+   */
+  holdPreview(): void {
+    this.previewModel.set({ model: this.committed(), label: message('commands.moveWall.nothing') });
   }
 
   cancelPreview(): void {

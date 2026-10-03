@@ -23,6 +23,7 @@ import { ElevationView } from '@lakudemis/editor2d';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { ProjectService } from '../project/project.service';
+import { settled } from '../project/settled';
 import { ThemeService } from '../shell/theme.service';
 import { LevelVisibilityService } from './level-visibility.service';
 import { PlanColorsService } from './plan-colors.service';
@@ -85,8 +86,11 @@ export class ElevationComponent {
   private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private view: ElevationView | null = null;
 
-  /** Follows the model live, as the Derived values it reads do (a drag shows as it happens). */
-  private readonly drawing = computed(() =>
+  /**
+   * Follows every edit, and holds still while a drag is previewed (ticket 33): working out the
+   * whole building's Elevation on every pointer move of a 200-Wall plan took up to 240 ms a move.
+   */
+  private readonly drawing = settled(this.project.store, () =>
     elevation(this.project.store.model(), this.project.store.values, this.side()),
   );
 

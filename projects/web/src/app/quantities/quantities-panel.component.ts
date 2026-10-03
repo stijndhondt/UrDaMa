@@ -24,6 +24,7 @@ import { SelectionService, type FacadePick } from '../editor/selection.service';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { ProjectService } from '../project/project.service';
+import { settled } from '../project/settled';
 import { IconComponent } from '../shell/icon.component';
 import { MeasurementService } from './measurement.service';
 
@@ -205,18 +206,20 @@ export class QuantitiesPanelComponent {
   /** Rows the user opened or closed; Levels start open. */
   private readonly open = signal<ReadonlyMap<string, boolean>>(new Map());
 
-  private readonly tree = computed(() =>
+  // The tables hold still during a drag and follow when it ends (ticket 33): rebuilding them on
+  // every pointer move of a 200-Wall plan took 190 ms a move.
+  private readonly tree = settled(this.project.store, () =>
     quantityTree(this.project.store.model(), this.project.store.values, this.measurement.rule()),
   );
 
-  private readonly exterior = computed(() =>
+  private readonly exterior = settled(this.project.store, () =>
     facadeTree(this.project.store.model(), this.project.store.values, this.measurement.rule()),
   );
 
   private readonly t = (key: string, params?: object) => this.language.text(key, params);
 
   /** The tree as rows, with its names in the user's language. */
-  private readonly rows = computed((): Branch[] => {
+  private readonly rows = settled(this.project.store, (): Branch[] => {
     const t = this.t;
     const levels = this.tree().map((level): Branch => ({
       row: this.levelRow(level),

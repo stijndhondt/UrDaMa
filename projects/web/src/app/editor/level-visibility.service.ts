@@ -16,12 +16,19 @@ export class LevelVisibilityService {
     () => `lakudemis.hiddenLevels.${this.project.store.committedModel().project.id}`,
   );
 
-  /** The hidden Levels that exist, never the one being drawn on. */
-  readonly hidden = computed<ReadonlySet<LevelId>>(() => {
-    const levels = this.project.store.model().levels;
-    const current = this.project.level();
-    return new Set([...this.stored()].filter((id) => id !== current && levels[id]) as LevelId[]);
-  });
+  /**
+   * The hidden Levels that exist, never the one being drawn on. From the committed model (a drag
+   * never adds or removes a Level), and the same set while it doesn't change: every view redraws
+   * when it changes, which on every pointer move of a drag cost the 3D view 11 ms (ticket 33).
+   */
+  readonly hidden = computed<ReadonlySet<LevelId>>(
+    () => {
+      const levels = this.project.store.committedModel().levels;
+      const current = this.project.level();
+      return new Set([...this.stored()].filter((id) => id !== current && levels[id]) as LevelId[]);
+    },
+    { equal: (a, b) => a.size === b.size && [...a].every((id) => b.has(id)) },
+  );
 
   constructor() {
     // Another project: its own remembered choice.

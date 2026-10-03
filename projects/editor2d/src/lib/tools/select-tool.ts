@@ -60,9 +60,11 @@ export class SelectTool implements Tool {
     const offset = roundToStep(this.ctx, p, raw);
     if (offset === this.drag.offset) return;
     this.drag.offset = offset;
-    if (offset === 0) this.ctx.host.store.cancelPreview();
+    // Back at the start, or at a refused position: the Wall shows where it was, and the drag goes
+    // on previewing, so the panels that hold still during a drag don't rebuild (ticket 33).
+    if (offset === 0) this.ctx.host.store.holdPreview();
     else if (!this.ctx.host.store.preview(moveWall, { wall: this.drag.wall, offset }).ok)
-      this.ctx.host.store.cancelPreview();
+      this.ctx.host.store.holdPreview();
     this.ctx.invalidate();
   }
 
@@ -70,8 +72,8 @@ export class SelectTool implements Tool {
     if (!this.drag) return;
     const { wall, offset } = this.drag;
     this.drag = null;
-    if (offset === 0) return;
     this.ctx.host.store.cancelPreview();
+    if (offset === 0) return;
     const result = this.ctx.host.store.run(moveWall, { wall, offset });
     if (!result.ok) this.ctx.host.refused(result.reason, p.screen);
     this.ctx.invalidate();

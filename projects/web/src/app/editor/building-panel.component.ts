@@ -14,6 +14,7 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 import {
   deleteLevel,
+  levelsInOrder,
   resolveOpening,
   updateLevel,
   wallLength,
@@ -107,6 +108,7 @@ interface LevelNode {
       [selection]="selectedNodes()"
       [ariaLabel]="'shell.building' | translate"
       [indentation]="0.75"
+      [trackBy]="trackByKey"
       (onNodeSelect)="picked($event.node, $event.originalEvent, true)"
       (onNodeUnselect)="picked($event.node, $event.originalEvent, false)"
       (onNodeExpand)="setOpen($event.node, true)"
@@ -316,9 +318,13 @@ export class BuildingPanelComponent {
   protected readonly renaming = signal<LevelId | null>(null);
   protected readonly menuItems = signal<MenuItem[]>([]);
 
+  /**
+   * Built from the committed model, not a drag's preview: rebuilding the tree on every pointer move
+   * of a 200-Wall plan took most of a second (ticket 33). Its lengths follow when a drag ends.
+   */
   protected readonly tree = computed<LevelNode[]>(() => {
-    const model = this.project.store.model();
-    const levels = this.project.levels();
+    const model = this.project.store.committedModel();
+    const levels = levelsInOrder(model);
     const t = (key: string, params?: object) => this.language.text(key, params);
     return [...levels].reverse().map((level): LevelNode => {
       const order = levels.indexOf(level);
@@ -399,6 +405,9 @@ export class BuildingPanelComponent {
   );
 
   /** The tree's selected element nodes: what is selected everywhere. */
+  /** Rows tracked by element, so an edit updates the rows it changed and keeps the others. */
+  protected readonly trackByKey = (_index: number, node: TreeNode): string | undefined => node.key;
+
   protected readonly selectedNodes = computed(() => {
     const chosen = new Set(this.selection.current().map((s) => s.id as string));
     return this.nodes()
