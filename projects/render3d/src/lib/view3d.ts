@@ -26,7 +26,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import type { LevelId, SolidRef } from '@lakudemis/core';
+import type { LevelId, OpeningPartKind, SolidRef } from '@lakudemis/core';
 import type { ElementMesh } from './solid-kernel';
 
 /** The element a mesh shows, without its geometry. */
@@ -63,11 +63,22 @@ const DIRECTIONS: Record<
   right: { dir: [1, 0, 0], up: [0, 1, 0] },
 };
 
-const COLORS: Record<SolidRef['kind'], number> = {
+const COLORS: Record<Exclude<SolidRef['kind'], 'openingPart'>, number> = {
   wall: 0xe4e1da,
   slab: 0xa9adb5,
   floorBuildUp: 0xd9c7a7,
 };
+/** Opening parts (ticket 19): a white frame, wooden leaves, light glass, grey sections. */
+const PART_COLORS: Record<OpeningPartKind, number> = {
+  frame: 0xf7f7f5,
+  leaf: 0xb98a5a,
+  glass: 0x9fc9e8,
+  section: 0x8f959e,
+};
+
+/** An element's own colour. */
+const colorOf = (ref: SolidRef): number =>
+  ref.kind === 'openingPart' ? PART_COLORS[ref.part] : COLORS[ref.kind];
 const SELECTED = 0x5b8ef0;
 
 export class View3D {
@@ -152,6 +163,7 @@ export class View3D {
         indices[i + 1] = m.indices[i + 2]!;
         indices[i + 2] = m.indices[i + 1]!;
       }
+      const glass = m.kind === 'openingPart' && m.part === 'glass';
       const geometry = new BufferGeometry();
       geometry.setAttribute('position', new BufferAttribute(positions, 3));
       geometry.setIndex(new BufferAttribute(indices, 1));
@@ -159,7 +171,11 @@ export class View3D {
       const mesh = new Mesh(
         geometry,
         new MeshStandardMaterial({
-          color: this.selected.has(m.id) ? SELECTED : COLORS[m.kind],
+          color: this.selected.has(m.id) ? SELECTED : colorOf(m),
+          // Glass lets the Room show through.
+          transparent: glass,
+          opacity: glass ? 0.45 : 1,
+          depthWrite: !glass,
           roughness: 0.9,
           metalness: 0,
           flatShading: true,
@@ -195,7 +211,7 @@ export class View3D {
       if (o instanceof Mesh) {
         const data = o.userData as Picked;
         (o.material as MeshStandardMaterial).color.setHex(
-          ids.has(data.id) ? SELECTED : COLORS[data.kind],
+          ids.has(data.id) ? SELECTED : colorOf(data),
         );
       }
     });

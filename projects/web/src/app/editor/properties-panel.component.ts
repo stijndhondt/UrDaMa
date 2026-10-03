@@ -15,6 +15,7 @@ import {
   familyTypes,
   hasSill,
   netWallArea,
+  openingShapeOf,
   openingsOfType,
   presetSize,
   setOpeningType,
@@ -781,6 +782,9 @@ export class PropertiesPanelComponent {
   protected readonly openingSummary = computed<Figure[]>(() => {
     const o = this.selection.opening();
     if (!o) return [];
+    const glass =
+      openingShapeOf(this.project.store.model(), this.project.store.values, o.id)?.shape
+        .glassArea ?? 0;
     return [
       { value: this.format.decimal(o.width / 1000), label: 'panel.summary.width' },
       { value: this.format.decimal(o.height / 1000), label: 'panel.summary.height' },
@@ -788,6 +792,10 @@ export class PropertiesPanelComponent {
         value: this.format.decimal((o.width * o.height) / 1e6),
         label: 'panel.summary.openingArea',
       },
+      // From the family's parts (ticket 19): only Openings with glass show it.
+      ...(glass > 0
+        ? [{ value: this.format.decimal(glass / 1e6), label: 'panel.summary.glassArea' }]
+        : []),
     ];
   });
 

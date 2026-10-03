@@ -6,7 +6,7 @@ import {
   boxesOverlap,
   interiorPoint,
   openingRect,
-  wallFrame,
+  placedOpeningShape,
   type Box,
   type LevelId,
   type LevelSlice,
@@ -470,7 +470,11 @@ export function openingOutline(
     : null;
 }
 
-/** Openings: cut out of their Wall, with a door leaf and swing, or window glass lines. */
+/**
+ * Openings in the plan (ticket 19): the hole through the Wall, then the plan symbol derived from
+ * the family's parts: what the plan cuts (frame, glass, sections), each door leaf standing open
+ * with its swing, and dashed what is above (a wall opening's head, a garage door's track).
+ */
 export function drawOpenings(
   ctx: CanvasRenderingContext2D,
   view: View,
@@ -478,24 +482,19 @@ export function drawOpenings(
   outlines: ReadonlyMap<WallId, WallOutline>,
 ): void {
   const walls = new Map(slice.walls.map((w) => [w.id as string, w]));
+  const c = planColors();
   ctx.save();
   for (const o of slice.openings) {
     const wall = walls.get(o.wall);
     const outline = outlines.get(o.wall);
     if (!wall || !outline) continue;
-    const f = wallFrame(wall);
-    const lo = f.across(outline[0]);
-    const hi = f.across(outline[3]);
-    const point = (t: number, s: number): Vec => view.toScreen(f.point(t, s));
-    const t0 = o.offset;
-    const t1 = o.offset + o.width;
-    const corners = openingRect(wall, outline, o).map((c) => view.toScreen(c));
+    const corners = openingRect(wall, outline, o).map((p) => view.toScreen(p));
     ctx.beginPath();
-    corners.forEach((c, i) => (i ? ctx.lineTo(c.x, c.y) : ctx.moveTo(c.x, c.y)));
+    corners.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
     ctx.closePath();
-    ctx.fillStyle = planColors().area;
+    ctx.fillStyle = c.area;
     ctx.fill();
-    ctx.strokeStyle = planColors().wallStroke;
+    ctx.strokeStyle = c.wallStroke;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(corners[0]!.x, corners[0]!.y);
@@ -503,85 +502,52 @@ export function drawOpenings(
     ctx.moveTo(corners[1]!.x, corners[1]!.y);
     ctx.lineTo(corners[2]!.x, corners[2]!.y);
     ctx.stroke();
-    if (o.kind === 'wallOpening' || o.kind === 'garageDoor') {
-      // A wall opening: the head above, dashed along both faces. A garage door: its door in the
-      // middle of the Wall, and its overhead track dashed into the Room.
-      ctx.lineWidth = 1;
-      ctx.setLineDash([5, 4]);
+
+    const { shape, point } = placedOpeningShape(wall, outline, o);
+    const at = (u: number, v: number) => view.toScreen(point(u, v));
+    for (const r of shape.plan.rects) {
+      const q = [at(r.u0, r.v0), at(r.u1, r.v0), at(r.u1, r.v1), at(r.u0, r.v1)];
       ctx.beginPath();
-      if (o.kind === 'wallOpening') {
-        for (const s of [lo, hi]) {
-          const a = point(t0, s);
-          const b = point(t1, s);
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-        }
-      } else {
-        const inward = o.swing === 'right' ? 1 : -1;
-        const face = inward > 0 ? Math.max(lo, hi) : Math.min(lo, hi);
-        const depth = Math.min(o.height, 2500);
-        for (const t of [t0, t1]) {
-          const a = point(t, face);
-          const b = point(t, face + inward * depth);
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-        }
-        const a = point(t0, face + inward * depth);
-        const b = point(t1, face + inward * depth);
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-      }
+      q.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+      ctx.closePath();
+      ctx.fillStyle = r.kind === 'glass' ? c.levelBelow : r.kind === 'frame' ? c.wallFill : c.area;
+      ctx.fill();
+      ctx.strokeStyle = c.wallStroke;
+      ctx.lineWidth = r.kind === 'glass' ? 0.75 : 1;
       ctx.stroke();
-      ctx.setLineDash([]);
-      if (o.kind === 'garageDoor') {
-        const mid = (lo + hi) / 2;
-        const a = point(t0, mid);
-        const b = point(t1, mid);
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-      }
-    } else if (o.kind === 'window') {
-      const mid = (lo + hi) / 2;
-      const gap = Math.max(1, Math.abs(hi - lo) * 0.12);
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (const s of [mid - gap, mid + gap]) {
-        const a = point(t0, s);
-        const b = point(t1, s);
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-      }
-      ctx.stroke();
-    } else {
-      // Door: the leaf stands open at 90° on the swing side, with the swing arc.
-      const face = o.swing === 'right' ? Math.max(lo, hi) : Math.min(lo, hi);
-      const outward = o.swing === 'right' ? 1 : -1;
-      const hingeT = o.hinge === 'start' ? t0 : t1;
-      const freeT = o.hinge === 'start' ? t1 : t0;
-      const hinge = point(hingeT, face);
-      const leafEnd = point(hingeT, face + outward * o.width);
-      const free = point(freeT, face);
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(hinge.x, hinge.y);
-      ctx.lineTo(leafEnd.x, leafEnd.y);
-      ctx.stroke();
-      const radius = Math.hypot(leafEnd.x - hinge.x, leafEnd.y - hinge.y);
-      const a0 = Math.atan2(leafEnd.y - hinge.y, leafEnd.x - hinge.x);
-      const a1 = Math.atan2(free.y - hinge.y, free.x - hinge.x);
+    }
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    for (const a of shape.plan.arcs) {
+      const center = at(a.center.u, a.center.v);
+      const from = at(a.from.u, a.from.v);
+      const to = at(a.to.u, a.to.v);
+      const a0 = Math.atan2(from.y - center.y, from.x - center.x);
+      const a1 = Math.atan2(to.y - center.y, to.x - center.x);
       let sweep = a1 - a0;
       while (sweep > Math.PI) sweep -= 2 * Math.PI;
       while (sweep < -Math.PI) sweep += 2 * Math.PI;
-      ctx.setLineDash([3, 3]);
-      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(hinge.x, hinge.y, radius, a0, a0 + sweep, sweep < 0);
+      ctx.arc(
+        center.x,
+        center.y,
+        Math.hypot(from.x - center.x, from.y - center.y),
+        a0,
+        a0 + sweep,
+        sweep < 0,
+      );
       ctx.stroke();
-      ctx.setLineDash([]);
     }
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    for (const [a, b] of shape.plan.dashed) {
+      const p = at(a.u, a.v);
+      const q = at(b.u, b.v);
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(q.x, q.y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
   ctx.restore();
 }

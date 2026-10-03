@@ -385,7 +385,8 @@
       "otherFace": "m² andere zijde",
       "width": "m breed",
       "height": "m hoog",
-      "openingArea": "m² opening"
+      "openingArea": "m² opening",
+      "glassArea": "m² glas"
     }
   },
   "presets": {

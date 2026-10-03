@@ -75,6 +75,25 @@ export function openingRect(
 }
 
 /**
+ * An Opening's own coordinates in the plan (ticket 19): `u` mm along the Baseline from the
+ * Opening's near edge, `v` mm across from the Wall's face on the low side of its normal, through
+ * the Wall's `depth` (its thickness).
+ */
+export function openingToPlan(
+  wall: Wall,
+  outline: WallOutline,
+  offset: number,
+): { readonly point: (u: number, v: number) => Vec; readonly depth: number } {
+  const f = wallFrame(wall);
+  const across = outline.map((p) => f.across(p));
+  const lo = Math.min(...across);
+  return {
+    point: (u, v) => f.point(offset + u, lo + v),
+    depth: Math.max(...across) - lo,
+  };
+}
+
+/**
  * Where along the Baseline (mm from its start) the Wall has its full thickness: both faces are
  * there. Openings stay inside this span; beyond it lies a corner or a T.
  */

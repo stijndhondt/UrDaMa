@@ -284,27 +284,27 @@ export class ElevationView {
         ctx.strokeRect(x, y, w, h);
         return;
       case 'opening': {
-        ctx.fillStyle = s.openingKind === 'window' ? c.levelBelow : c.paper;
+        // The hole, then the family's parts seen straight on (ticket 19); a plain wall
+        // opening has none and shows dashed.
+        ctx.fillStyle = c.paper;
         ctx.fillRect(x, y, w, h);
+        for (const p of s.parts) {
+          const px = this.x(p.rect.u0);
+          const py = this.y(p.rect.z1);
+          const pw = (p.rect.u1 - p.rect.u0) * this.k;
+          const ph = (p.rect.z1 - p.rect.z0) * this.k;
+          ctx.fillStyle =
+            p.kind === 'glass' ? c.levelBelow : p.kind === 'frame' ? c.area : c.wallFill;
+          ctx.fillRect(px, py, pw, ph);
+          ctx.strokeStyle = c.wallStroke;
+          ctx.lineWidth = p.kind === 'glass' ? 0.5 : 0.75;
+          ctx.strokeRect(px, py, pw, ph);
+        }
         ctx.strokeStyle = selected ? c.accent : c.wallStroke;
         ctx.lineWidth = selected ? 2 : 1.25;
-        if (s.openingKind === 'wallOpening') ctx.setLineDash([5, 4]);
+        if (!s.parts.length) ctx.setLineDash([5, 4]);
         ctx.strokeRect(x, y, w, h);
         ctx.setLineDash([]);
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        if (s.openingKind === 'window' && w > 12) {
-          // The frame's middle post.
-          ctx.moveTo(x + w / 2, y);
-          ctx.lineTo(x + w / 2, y + h);
-        } else if (s.openingKind === 'garageDoor') {
-          // Its sections.
-          for (let i = 1; i < 5; i++) {
-            ctx.moveTo(x, y + (h * i) / 5);
-            ctx.lineTo(x + w, y + (h * i) / 5);
-          }
-        }
-        ctx.stroke();
         return;
       }
     }

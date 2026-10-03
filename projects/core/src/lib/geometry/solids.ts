@@ -4,9 +4,11 @@
  * Turning them into meshes (and cutting the Openings) is the 3D renderer's job; nothing is
  * calculated from it (ADR 0003).
  */
-import type { LevelId, Model, RoomId, SlabId, Vec, WallId } from '../model/types';
+import type { OpeningPartKind } from '../model/opening-parts';
+import type { LevelId, Model, OpeningId, RoomId, SlabId, Vec, WallId } from '../model/types';
 import { levelsInOrder } from '../model/levels';
 import type { BuildingValues } from '../values/building-values';
+import { placedOpeningShape } from './opening-geometry';
 import { openingRect } from './wall-outlines';
 
 /** A vertical prism: plan rings (the first is the outline, the rest are holes), bottom to top. */
@@ -33,6 +35,14 @@ export type Solid =
       readonly id: RoomId;
       readonly level: LevelId;
       readonly body: Prism;
+    }
+  | {
+      /** One part of an Opening (ticket 19): its frame, a leaf, a pane of glass, a section */
+      readonly kind: 'openingPart';
+      readonly id: OpeningId;
+      readonly level: LevelId;
+      readonly part: OpeningPartKind;
+      readonly body: Prism;
     };
 
 /** Which element a solid (or its mesh) is: its kind, with the matching ID type, and its Level. */
@@ -41,6 +51,7 @@ export type SolidRef = Pick<Solid, 'kind' | 'id' | 'level'> &
     | { readonly kind: 'wall'; readonly id: WallId }
     | { readonly kind: 'slab'; readonly id: SlabId }
     | { readonly kind: 'floorBuildUp'; readonly id: RoomId }
+    | { readonly kind: 'openingPart'; readonly id: OpeningId; readonly part: OpeningPartKind }
   );
 
 export function solidRef(s: Solid): SolidRef {
@@ -51,6 +62,8 @@ export function solidRef(s: Solid): SolidRef {
       return { kind: s.kind, id: s.id, level: s.level };
     case 'floorBuildUp':
       return { kind: s.kind, id: s.id, level: s.level };
+    case 'openingPart':
+      return { kind: s.kind, id: s.id, level: s.level, part: s.part };
   }
 }
 
@@ -95,6 +108,32 @@ export function buildingSolids(model: Model, values: BuildingValues): BuildingSo
         body: { rings: [outline], bottom, top },
         cuts,
       });
+      // The Openings' parts: frames, leaves, glass, sections, from their family's design.
+      for (const o of slice.openings) {
+        if (o.wall !== wall.id) continue;
+        const { shape, point } = placedOpeningShape(wall, outline, o);
+        const base = h.elevation + o.sill;
+        for (const part of shape.parts) {
+          solids.push({
+            kind: 'openingPart',
+            id: o.id,
+            level: level.id,
+            part: part.kind,
+            body: {
+              rings: [
+                [
+                  point(part.u0, part.v0),
+                  point(part.u1, part.v0),
+                  point(part.u1, part.v1),
+                  point(part.u0, part.v1),
+                ],
+              ],
+              bottom: base + part.z0,
+              top: base + part.z1,
+            },
+          });
+        }
+      }
     }
 
     const slab = Object.values(model.slabs).find((s) => s.level === level.id);

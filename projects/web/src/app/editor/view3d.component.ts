@@ -149,7 +149,9 @@ export class View3dComponent {
     return new Set(
       this.selection
         .current()
-        .flatMap((s) => (s.kind === 'wall' || s.kind === 'room' ? [s.id] : [])),
+        .flatMap((s) =>
+          s.kind === 'wall' || s.kind === 'room' || s.kind === 'opening' ? [s.id] : [],
+        ),
     );
   }
 
@@ -184,6 +186,8 @@ export class View3dComponent {
     }
     if (picked.level !== this.project.level()) this.project.selectLevel(picked.level);
     if (picked.kind === 'wall') this.selection.current.set([{ kind: 'wall', id: picked.id }]);
+    else if (picked.kind === 'openingPart')
+      this.selection.current.set([{ kind: 'opening', id: picked.id }]);
     else if (picked.kind === 'floorBuildUp')
       this.selection.current.set([{ kind: 'room', id: picked.id }]);
     else this.selection.clear();

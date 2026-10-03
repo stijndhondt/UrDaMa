@@ -9,6 +9,8 @@ import type { LevelId, Model, OpeningId, OpeningKind, SlabId, WallId } from '../
 import { FACADE_VIEW, placedOutsideFaces, type FacadeSide } from './outside';
 import type { BuildingValues } from '../values/building-values';
 import type { WallFaceName } from '../values/surfaces';
+import type { OpeningPartKind } from '../model/opening-parts';
+import { placedOpeningShape } from './opening-geometry';
 import { dot } from './vec';
 import { wallFrame } from './wall-outlines';
 
@@ -38,6 +40,8 @@ export type ElevationShape =
       readonly opening: OpeningId;
       readonly wall: WallId;
       readonly openingKind: OpeningKind;
+      /** Its parts seen straight on (ticket 19), clipped to the shape; frames last */
+      readonly parts: readonly { readonly kind: OpeningPartKind; readonly rect: ElevationRect }[];
     })
   | (ShapeBase & { readonly kind: 'slabEdge'; readonly slab: SlabId | null });
 
@@ -80,8 +84,9 @@ export function elevation(model: Model, values: BuildingValues, side: FacadeSide
     const z0 = h.slabTop;
     const z1 = h.slabTop + face.height;
     const frame = wallFrame(wall);
+    const outline = values.level(level).outlines().get(wall.id);
     const openings =
-      face.face === 'end'
+      face.face === 'end' || !outline
         ? []
         : values
             .level(level)
@@ -118,13 +123,27 @@ export function elevation(model: Model, values: BuildingValues, side: FacadeSide
         const u1 = Math.min(Math.max(p, q), span.u1);
         if (u1 - u0 <= SEEN) continue;
         const bottom = h.elevation + o.sill;
+        const rect = { u0, u1, z0: Math.max(bottom, z0), z1: Math.min(bottom + o.height, z1) };
+        // The family's parts, seen face on: the Opening's u runs from p to q here.
+        const { shape } = placedOpeningShape(wall, outline!, o);
+        const at = (u: number) => p + ((q - p) * u) / o.width;
+        const parts = shape.parts.flatMap((part) => {
+          const r = {
+            u0: Math.max(Math.min(at(part.u0), at(part.u1)), rect.u0),
+            u1: Math.min(Math.max(at(part.u0), at(part.u1)), rect.u1),
+            z0: Math.max(bottom + part.z0, rect.z0),
+            z1: Math.min(bottom + part.z1, rect.z1),
+          };
+          return r.u1 - r.u0 > SEEN && r.z1 - r.z0 > SEEN ? [{ kind: part.kind, rect: r }] : [];
+        });
         shapes.push({
           kind: 'opening',
           opening: o.id,
           wall: wall.id,
           openingKind: o.kind,
+          parts,
           level,
-          rect: { u0, u1, z0: Math.max(bottom, z0), z1: Math.min(bottom + o.height, z1) },
+          rect,
           depth,
         });
       }
