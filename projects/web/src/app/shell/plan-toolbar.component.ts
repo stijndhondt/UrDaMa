@@ -16,10 +16,12 @@ import type { MenuItem } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { Menu, MenuModule } from '@openng/optimus-ui/menu';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
+import { ToggleButtonModule } from '@openng/optimus-ui/togglebutton';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { ProjectService } from '../project/project.service';
+import { SnapService } from '../editor/snap.service';
 import { OPENING_ICONS } from './opening-icons';
 import { IconComponent } from './icon.component';
 import type { IconName } from './icons.generated';
@@ -59,6 +61,7 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
     ButtonModule,
     MenuModule,
     SelectButtonModule,
+    ToggleButtonModule,
     TooltipModule,
     IconComponent,
   ],
@@ -111,6 +114,23 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
       >
         <lk-icon name="chevron-down" />
       </button>
+      <span class="sep"></span>
+      <p-togglebutton
+        class="snap"
+        [ngModel]="snap.on()"
+        (onChange)="snap.on.set($event.checked)"
+        [ariaLabel]="'shell.snap' | translate"
+        [pTooltip]="snapTip"
+        tooltipPosition="top"
+      >
+        <ng-template #content><lk-icon name="magnet" /></ng-template>
+      </p-togglebutton>
+      <ng-template #snapTip>
+        <div class="tip">
+          <b>{{ 'shell.snap' | translate }}</b>
+          <div>{{ 'shell.snapHint' | translate }}</div>
+        </div>
+      </ng-template>
     </div>
     <p-menu #types [model]="typeItems()" [popup]="true" appendTo="body">
       <ng-template #item let-item>
@@ -160,6 +180,17 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
     .flyout lk-icon {
       font-size: 14px;
     }
+    /* The snap toggle: an Optimus toggle sized like the tool buttons, without its own background
+       until it is on. */
+    .snap {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      --p-togglebutton-padding: 0;
+      --p-togglebutton-content-padding: 0;
+      --p-togglebutton-background: transparent;
+      --p-togglebutton-border-color: transparent;
+    }
     .type {
       display: flex;
       align-items: center;
@@ -203,6 +234,7 @@ export class PlanToolbarComponent {
   );
 
   private readonly project = inject(ProjectService);
+  protected readonly snap = inject(SnapService);
   private readonly language = inject(LanguageService);
   private readonly format = inject(FormatService);
   private readonly types = viewChild.required<Menu>('types');

@@ -33,6 +33,7 @@ import { BuildingPanelComponent } from './editor/building-panel.component';
 import { PlanEditorComponent } from './editor/plan-editor.component';
 import { PropertiesPanelComponent } from './editor/properties-panel.component';
 import { SelectionService } from './editor/selection.service';
+import { SnapService } from './editor/snap.service';
 import { View3dComponent } from './editor/view3d.component';
 import { LANGUAGES, LanguageService } from './language';
 import { MessagesService } from './messages.service';
@@ -682,6 +683,7 @@ export class App {
   private readonly translate = inject(TranslateService);
   private readonly optimus = inject(Optimus);
   private readonly selection = inject(SelectionService);
+  private readonly snap = inject(SnapService);
   private readonly actions = inject(EditorActionsService);
   private readonly contextMenus = inject(ContextMenuService);
   protected readonly editor = viewChild(PlanEditorComponent);
@@ -1005,6 +1007,11 @@ export class App {
     if (e.key === 'm' || e.key === 'M') {
       e.preventDefault();
       this.actions.merge();
+      return;
+    }
+    if (e.key === 'g' || e.key === 'G') {
+      e.preventDefault();
+      this.snap.toggle();
       return;
     }
     const tool = TOOLS.find((t) => t.key.toLowerCase() === e.key.toLowerCase());

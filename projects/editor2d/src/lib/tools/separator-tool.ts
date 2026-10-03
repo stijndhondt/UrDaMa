@@ -4,14 +4,16 @@
  */
 import { drawRoomSeparator, levelWallOutlines, type Vec } from '@lakudemis/core';
 import {
+  alignOrRound,
+  drawGuides,
   drawSnap,
   increment,
-  snapToIncrement,
   snapToWalls,
   SNAP_RADIUS_PX,
+  type AlignGuide,
   type WallSnap,
 } from '../snap';
-import { wallEnds, type PointerInfo, type Tool, type ToolContext } from './tool';
+import { snapping, wallEnds, type PointerInfo, type Tool, type ToolContext } from './tool';
 import { planColors } from '../draw-plan';
 
 const CLICK_PX = 4;
@@ -23,6 +25,7 @@ export class SeparatorTool implements Tool {
   private placed = false;
   private pressedAt: Vec | null = null;
   private snapped: WallSnap | null = null;
+  private guides: readonly AlignGuide[] = [];
 
   constructor(private readonly ctx: ToolContext) {}
 
@@ -73,6 +76,7 @@ export class SeparatorTool implements Tool {
 
   drawOverlay(ctx: CanvasRenderingContext2D): void {
     if (this.snapped) drawSnap(ctx, this.ctx.view.toScreen(this.snapped.point), this.snapped.kind);
+    drawGuides(ctx, (v) => this.ctx.view.toScreen(v), this.guides);
     if (!this.start || !this.end) return;
     const a = this.ctx.view.toScreen(this.start);
     const b = this.ctx.view.toScreen(this.end);
@@ -87,20 +91,25 @@ export class SeparatorTool implements Tool {
     ctx.restore();
   }
 
-  /** Ends snap to Wall faces (where a Room separator must end). */
+  /**
+   * Ends snap to Wall faces (where a Room separator must end), else to alignment guides, else to
+   * drag increments; with snapping off the point is where the pointer is (ticket 26).
+   */
   private point(p: PointerInfo): Vec {
-    const outlines = levelWallOutlines(
-      this.ctx.host.store.committedModel(),
-      this.ctx.host.level(),
-    ).values();
-    this.snapped = snapToWalls(
-      p.model,
-      outlines,
-      SNAP_RADIUS_PX / this.ctx.view.scale,
-      increment(p),
-      wallEnds(this.ctx),
-    );
-    return this.snapped?.point ?? snapToIncrement(p.model, increment(p));
+    this.guides = [];
+    if (!snapping(this.ctx, p)) {
+      this.snapped = null;
+      return p.model;
+    }
+    const outlines = [
+      ...levelWallOutlines(this.ctx.host.store.committedModel(), this.ctx.host.level()).values(),
+    ];
+    const radius = SNAP_RADIUS_PX / this.ctx.view.scale;
+    this.snapped = snapToWalls(p.model, outlines, radius, increment(p), wallEnds(this.ctx));
+    if (this.snapped) return this.snapped.point;
+    const free = alignOrRound(p.model, outlines, radius, increment(p));
+    this.guides = free.guides;
+    return free.point;
   }
 
   private commit(p: PointerInfo): void {

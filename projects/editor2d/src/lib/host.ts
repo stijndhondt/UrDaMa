@@ -49,6 +49,8 @@ export interface EditorHost {
   readonly editLength?: (wall: WallId, at: Vec, faceLength: number) => void;
   /** The colours to draw with (the app's theme); the light defaults when absent. */
   readonly colors?: () => PlanColors;
+  /** Whether snapping is on (ticket 26: the snap toggle); on when absent. Alt inverts it. */
+  readonly snapping?: () => boolean;
   /** The plan's zoom changed (screen px per mm), e.g. for a drawing scale in a status bar. */
   readonly zoomChanged?: (scale: number) => void;
   /** A command was refused: show its reason near the cursor and in the message bar. */

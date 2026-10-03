@@ -21,6 +21,7 @@ import { ProjectService } from '../project/project.service';
 import { SelectionService } from './selection.service';
 import { ThemeService } from '../shell/theme.service';
 import { PlanColorsService } from './plan-colors.service';
+import { SnapService } from './snap.service';
 import { ContextMenuService } from './context-menu.service';
 import { LengthEditService } from './length-edit.service';
 import { LevelVisibilityService } from './level-visibility.service';
@@ -61,6 +62,7 @@ export class PlanEditorComponent {
   private readonly visibility = inject(LevelVisibilityService);
   private readonly theme = inject(ThemeService);
   private readonly planColors = inject(PlanColorsService);
+  private readonly snap = inject(SnapService);
   private editor: PlanEditor | null = null;
 
   constructor() {
@@ -81,6 +83,7 @@ export class PlanEditorComponent {
         refused: (reason, at) => this.messages.refused(reason, at),
         contextMenu: (at, target) => this.contextMenus.open(at, target),
         zoomChanged: (scale) => this.scale.set(scale),
+        snapping: () => this.snap.on(),
         editLength: (wall, at, faceLength) => this.lengthEdits.open.set({ wall, at, faceLength }),
         colors: () => this.planColors.colors(),
       };
@@ -115,6 +118,7 @@ export class PlanEditorComponent {
       this.project.store.model();
       this.project.level();
       this.visibility.hidden();
+      this.snap.on();
       this.language.current();
       this.editor?.invalidate();
     });

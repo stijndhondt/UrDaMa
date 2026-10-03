@@ -37,6 +37,11 @@ export interface Tool {
   drawOverlay(ctx: CanvasRenderingContext2D): void;
 }
 
+/** Whether this pointer snaps: the snap toggle (ticket 26), inverted while Alt is held. */
+export function snapping(ctx: ToolContext, p: { readonly alt: boolean }): boolean {
+  return (ctx.host.snapping?.() ?? true) !== p.alt;
+}
+
 /** The Wall ends on the current Level (committed): along faces, snapping aligns with them. */
 export function wallEnds(ctx: ToolContext): Vec[] {
   const level = ctx.host.level();

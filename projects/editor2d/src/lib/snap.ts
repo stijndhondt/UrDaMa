@@ -95,3 +95,90 @@ export function drawSnap(ctx: CanvasRenderingContext2D, screen: Vec, kind: WallS
   }
   ctx.restore();
 }
+
+/** A dashed alignment guide: from the Wall corner a point lines up with, to that point. */
+export interface AlignGuide {
+  readonly from: Vec;
+  readonly to: Vec;
+}
+
+/**
+ * Alignment guides (ticket 26): a point within `radius` mm of the vertical or horizontal line
+ * through a Wall outline corner moves onto that line, each axis on its own, so a corner drawn far
+ * away still lines up with another Wall's outside. The nearest line wins on each axis.
+ */
+export function alignToCorners(
+  p: Vec,
+  outlines: Iterable<WallOutline>,
+  radius: number,
+): {
+  readonly point: Vec;
+  readonly guides: readonly AlignGuide[];
+  /** Whether x and y were moved onto a line */
+  readonly x: boolean;
+  readonly y: boolean;
+} {
+  let bestX: Vec | null = null;
+  let bestY: Vec | null = null;
+  const closer = (best: Vec | null, c: Vec, axis: 'x' | 'y') => {
+    const d = Math.abs(c[axis] - p[axis]);
+    if (d > radius) return best;
+    if (!best) return c;
+    const db = Math.abs(best[axis] - p[axis]);
+    if (d !== db) return d < db ? c : best;
+    // On one line: the corner nearest the point draws the guide.
+    return Math.hypot(c.x - p.x, c.y - p.y) < Math.hypot(best.x - p.x, best.y - p.y) ? c : best;
+  };
+  for (const outline of outlines) {
+    for (const c of outline) {
+      bestX = closer(bestX, c, 'x');
+      bestY = closer(bestY, c, 'y');
+    }
+  }
+  const point = { x: bestX?.x ?? p.x, y: bestY?.y ?? p.y };
+  const guides = [bestX, bestY].flatMap((c) => (c ? [{ from: c, to: point }] : []));
+  return { point, guides, x: bestX !== null, y: bestY !== null };
+}
+
+/**
+ * A free point (no Wall corner or face under it): on alignment guides where they reach, the drag
+ * increment on the other axis.
+ */
+export function alignOrRound(
+  p: Vec,
+  outlines: Iterable<WallOutline>,
+  radius: number,
+  step: number,
+): { readonly point: Vec; readonly guides: readonly AlignGuide[] } {
+  const aligned = alignToCorners(p, outlines, radius);
+  const rounded = snapToIncrement(p, step);
+  return {
+    point: {
+      x: aligned.x ? aligned.point.x : rounded.x,
+      y: aligned.y ? aligned.point.y : rounded.y,
+    },
+    guides: aligned.guides,
+  };
+}
+
+/** Draws alignment guides: thin dashed lines from the Wall corners to the point. */
+export function drawGuides(
+  ctx: CanvasRenderingContext2D,
+  toScreen: (p: Vec) => Vec,
+  guides: readonly AlignGuide[],
+): void {
+  if (!guides.length) return;
+  ctx.save();
+  ctx.strokeStyle = planColors().accent;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  for (const g of guides) {
+    const a = toScreen(g.from);
+    const b = toScreen(g.to);
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}

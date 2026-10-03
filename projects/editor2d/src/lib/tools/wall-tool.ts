@@ -12,9 +12,19 @@ import {
   type Vec,
   type WallSide,
 } from '@lakudemis/core';
-import { drawSnap, increment, snapToWalls, SNAP_RADIUS_PX, type WallSnap } from '../snap';
+import {
+  alignOrRound,
+  alignToCorners,
+  drawGuides,
+  drawSnap,
+  increment,
+  snapToWalls,
+  SNAP_RADIUS_PX,
+  type AlignGuide,
+  type WallSnap,
+} from '../snap';
 import { parseAngle, parseLength } from '../units';
-import type { PointerInfo, Tool, ToolContext } from './tool';
+import { snapping, type PointerInfo, type Tool, type ToolContext } from './tool';
 import { planColors } from '../draw-plan';
 
 type State =
@@ -40,6 +50,7 @@ export class WallTool implements Tool {
   private side: WallSide = 'right';
   private typed: { length: number | null; angle: number | null } = { length: null, angle: null };
   private snapped: WallSnap | null = null;
+  private guides: readonly AlignGuide[] = [];
   private pressedAt: Vec | null = null;
 
   constructor(private readonly ctx: ToolContext) {}
@@ -50,7 +61,7 @@ export class WallTool implements Tool {
       this.commit();
       return;
     }
-    const start = this.snapPoint(p) ?? this.roundPoint(p);
+    const start = this.startFor(p);
     this.pressedAt = p.screen;
     this.state = { kind: 'dragging', start, end: start };
     this.ctx.invalidate();
@@ -58,7 +69,7 @@ export class WallTool implements Tool {
 
   pointerMove(p: PointerInfo): void {
     if (this.state.kind === 'idle') {
-      this.snapPoint(p);
+      this.startFor(p); // shows where a click would start
       this.ctx.invalidate();
       return;
     }
@@ -130,6 +141,7 @@ export class WallTool implements Tool {
 
   drawOverlay(ctx: CanvasRenderingContext2D): void {
     if (this.snapped) drawSnap(ctx, this.ctx.view.toScreen(this.snapped.point), this.snapped.kind);
+    drawGuides(ctx, (v) => this.ctx.view.toScreen(v), this.guides);
     if (this.state.kind === 'idle') return;
     const a = this.ctx.view.toScreen(this.state.start);
     const b = this.ctx.view.toScreen(this.state.end);
@@ -183,15 +195,41 @@ export class WallTool implements Tool {
     return this.snapped?.point ?? null;
   }
 
-  private roundPoint(p: PointerInfo): Vec {
-    const step = increment(p);
-    return { x: Math.round(p.model.x / step) * step, y: Math.round(p.model.y / step) * step };
+  /**
+   * The start point: a Wall end, corner or face; else alignment guides and increments; with
+   * snapping off (or Alt inverting it), where the pointer is (ticket 26).
+   */
+  private startFor(p: PointerInfo): Vec {
+    this.guides = [];
+    if (!snapping(this.ctx, p)) {
+      this.snapped = null;
+      return p.model;
+    }
+    const snapped = this.snapPoint(p);
+    if (snapped) return snapped;
+    const free = alignOrRound(p.model, this.outlines(), this.radius(), increment(p));
+    this.guides = free.guides;
+    return free.point;
+  }
+
+  private outlines() {
+    const model = this.ctx.host.store.committedModel();
+    return [...levelWallOutlines(model, this.ctx.host.level()).values()];
+  }
+
+  private radius(): number {
+    return SNAP_RADIUS_PX / this.ctx.view.scale;
   }
 
   /** The end point: typed length wins; else a snapped point; else angle and length increments. */
   private endFor(p: PointerInfo): Vec {
     if (this.state.kind === 'idle') return p.model;
     const start = this.state.start;
+    this.guides = [];
+    if (!snapping(this.ctx, p) && this.typed.length === null && this.typed.angle === null) {
+      this.snapped = null;
+      return p.model;
+    }
     const v = { x: p.model.x - start.x, y: p.model.y - start.y };
     let angle = this.typed.angle ?? snapAngle(angleOf(v), p);
     if (this.typed.length !== null) {
@@ -205,7 +243,19 @@ export class WallTool implements Tool {
     const step = increment(p);
     const length = Math.round(Math.hypot(v.x, v.y) / step) * step;
     const d = direction(angle);
-    return { x: start.x + d.x * length, y: start.y + d.y * length };
+    const end = { x: start.x + d.x * length, y: start.y + d.y * length };
+    // A level or plumb Wall's end lines up with other Walls along its own direction only, so a
+    // guide never bends it (ticket 26).
+    const aligned = alignToCorners(end, this.outlines(), this.radius());
+    if (Math.abs(d.y) < 1e-9 && aligned.x) {
+      this.guides = aligned.guides.filter((g) => g.from.x === aligned.point.x);
+      return { x: aligned.point.x, y: end.y };
+    }
+    if (Math.abs(d.x) < 1e-9 && aligned.y) {
+      this.guides = aligned.guides.filter((g) => g.from.y === aligned.point.y);
+      return { x: end.x, y: aligned.point.y };
+    }
+    return end;
   }
 
   private args(): DrawWallArgs {

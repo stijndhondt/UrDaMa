@@ -506,7 +506,9 @@
       "dark": "Dark"
     },
     "divider": "Drag to resize the plan and 3D",
-    "openingTypes": "Opening types"
+    "openingTypes": "Opening types",
+    "snap": "Snapping (G)",
+    "snapHint": "Snaps to Wall corners and faces, alignment guides and steps while you draw. Hold Alt to do the opposite for one point."
   },
   "building": {
     "rooms": "Rooms",

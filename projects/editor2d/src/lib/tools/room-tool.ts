@@ -9,27 +9,31 @@ import {
   addRoom,
   drawRoom,
   insideArea,
+  insideRing,
   levelWallOutlines,
   type DrawRoomArgs,
   type Vec,
+  type WallOutline,
 } from '@lakudemis/core';
 import {
+  alignOrRound,
+  drawGuides,
   drawSnap,
   increment,
-  snapToIncrement,
   snapToWalls,
   SNAP_RADIUS_PX,
+  type AlignGuide,
   type WallSnap,
 } from '../snap';
 import { parseLength } from '../units';
-import { wallEnds, type PointerInfo, type Tool, type ToolContext } from './tool';
+import { snapping, wallEnds, type PointerInfo, type Tool, type ToolContext } from './tool';
 import { planColors } from '../draw-plan';
 
 type State =
   | { readonly kind: 'idle' }
-  | { readonly kind: 'dragging'; readonly start: Vec; current: Vec }
+  | { readonly kind: 'dragging'; readonly start: Vec; readonly onCorner: boolean; current: Vec }
   /** A click set the start corner; waiting for typed sizes or a second click. */
-  | { readonly kind: 'placed'; readonly start: Vec; current: Vec };
+  | { readonly kind: 'placed'; readonly start: Vec; readonly onCorner: boolean; current: Vec };
 
 export class RoomTool implements Tool {
   readonly name = 'room' as const;
@@ -37,6 +41,7 @@ export class RoomTool implements Tool {
   private size: 'inside' | 'outside' = 'inside';
   private typed: { w: number | null; d: number | null } = { w: null, d: null };
   private snapped: WallSnap | null = null;
+  private guides: readonly AlignGuide[] = [];
 
   constructor(private readonly ctx: ToolContext) {}
 
@@ -47,7 +52,8 @@ export class RoomTool implements Tool {
       return;
     }
     const start = this.snap(p);
-    this.state = { kind: 'dragging', start, current: start };
+    const onCorner = this.snapped?.kind === 'corner';
+    this.state = { kind: 'dragging', start, onCorner, current: start };
     this.ctx.invalidate();
   }
 
@@ -70,7 +76,7 @@ export class RoomTool implements Tool {
     if (!dragged) {
       if (this.createRoomInEmptyArea(p)) return;
       // A click: the start corner is placed; type the sizes or click the opposite corner.
-      this.state = { kind: 'placed', start, current };
+      this.state = { kind: 'placed', start, onCorner: this.state.onCorner, current };
       this.ctx.invalidate();
       return;
     }
@@ -123,6 +129,7 @@ export class RoomTool implements Tool {
 
   drawOverlay(ctx: CanvasRenderingContext2D): void {
     if (this.snapped) drawSnap(ctx, this.ctx.view.toScreen(this.snapped.point), this.snapped.kind);
+    drawGuides(ctx, (v) => this.ctx.view.toScreen(v), this.guides);
     if (this.state.kind === 'idle') return;
     const { from, to } = this.rectangle();
     const a = this.ctx.view.toScreen(from);
@@ -138,7 +145,7 @@ export class RoomTool implements Tool {
       Math.abs(b.y - a.y),
     );
     ctx.setLineDash([]);
-    const s = this.ctx.view.toScreen(this.state.start);
+    const s = this.ctx.view.toScreen(from);
     ctx.fillStyle = planColors().accent;
     ctx.beginPath();
     ctx.arc(s.x, s.y, 4, 0, Math.PI * 2);
@@ -155,21 +162,30 @@ export class RoomTool implements Tool {
     ctx.restore();
   }
 
-  /** Wall corners and faces win over drag increments. */
+  /**
+   * Wall corners and faces first, then alignment guides, then drag increments (ticket 26); with
+   * snapping off (or Alt inverting it) the point is where the pointer is.
+   */
   private snap(p: PointerInfo): Vec {
+    this.guides = [];
+    if (!snapping(this.ctx, p)) {
+      this.snapped = null;
+      return p.model;
+    }
     // Snap to committed Walls only: never to the Room being drawn.
-    const outlines = levelWallOutlines(
-      this.ctx.host.store.committedModel(),
-      this.ctx.host.level(),
-    ).values();
-    this.snapped = snapToWalls(
-      p.model,
-      outlines,
-      SNAP_RADIUS_PX / this.ctx.view.scale,
-      increment(p),
-      wallEnds(this.ctx),
-    );
-    return this.snapped?.point ?? snapToIncrement(p.model, increment(p));
+    const outlines = this.outlines();
+    const radius = SNAP_RADIUS_PX / this.ctx.view.scale;
+    this.snapped = snapToWalls(p.model, outlines, radius, increment(p), wallEnds(this.ctx));
+    if (this.snapped) return this.snapped.point;
+    const free = alignOrRound(p.model, outlines, radius, increment(p));
+    this.guides = free.guides;
+    return free.point;
+  }
+
+  private outlines() {
+    return [
+      ...levelWallOutlines(this.ctx.host.store.committedModel(), this.ctx.host.level()).values(),
+    ];
   }
 
   /** A click inside an enclosed area without a Room makes it a Room. */
@@ -191,17 +207,29 @@ export class RoomTool implements Tool {
     return true;
   }
 
-  /** The rectangle to draw: from the start corner, typed sizes win over the pointer. */
+  /**
+   * The rectangle to draw: from the start corner, typed sizes win over the pointer. Started on an
+   * outer Wall corner at inside size, the outer-corner rule may move the start in (ticket 26).
+   */
   private rectangle(): { from: Vec; to: Vec } {
     if (this.state.kind === 'idle') return { from: { x: 0, y: 0 }, to: { x: 0, y: 0 } };
-    const { start, current } = this.state;
+    const { start, current, onCorner } = this.state;
     const sx = Math.sign(current.x - start.x) || 1;
     const sy = Math.sign(current.y - start.y) || 1;
+    const from =
+      onCorner && this.size === 'inside'
+        ? outerCornerStart(
+            start,
+            { x: start.x + sx, y: start.y + sy },
+            this.outlines(),
+            this.ctx.host.store.committedModel().project.presets.wallThickness,
+          )
+        : start;
     return {
-      from: start,
+      from,
       to: {
-        x: this.typed.w !== null ? start.x + sx * this.typed.w : current.x,
-        y: this.typed.d !== null ? start.y + sy * this.typed.d : current.y,
+        x: this.typed.w !== null ? from.x + sx * this.typed.w : current.x,
+        y: this.typed.d !== null ? from.y + sy * this.typed.d : current.y,
       },
     };
   }
@@ -237,3 +265,32 @@ export class RoomTool implements Tool {
     this.ctx.invalidate();
   }
 }
+
+/**
+ * The outer-corner rule (ticket 26): a Room drawn at inside size from the outer corner of an
+ * existing Wall, along that Wall, shares it and starts one Wall `thickness` in, so its outer faces
+ * run flush with the existing ones. Small probes around the corner tell which Wall the drag runs
+ * along and that the corner is an outer one; drawn diagonally away, or from an inside corner, the
+ * point is taken as it is.
+ */
+export function outerCornerStart(
+  start: Vec,
+  to: Vec,
+  outlines: readonly WallOutline[],
+  thickness: number,
+): Vec {
+  const sx = Math.sign(to.x - start.x) || 1;
+  const sy = Math.sign(to.y - start.y) || 1;
+  const solid = (dx: number, dy: number) =>
+    outlines.some((o) => insideRing({ x: start.x + dx * PROBE, y: start.y + dy * PROBE }, o));
+  // Past the corner (behind the drag) and in the new Room's way, there must be no Wall.
+  if (solid(-sx, -sy) || solid(sx, sy)) return start;
+  return {
+    // A Wall runs along the drag's x direction, on the far side of the drag's y direction.
+    x: solid(sx, -sy) ? start.x + sx * thickness : start.x,
+    y: solid(-sx, sy) ? start.y + sy * thickness : start.y,
+  };
+}
+
+/** mm: how far from a corner the rule looks for Walls. */
+const PROBE = 1;

@@ -31,6 +31,7 @@ const ICONS = [
   'languages',
   'layers',
   'layout-panel-left',
+  'magnet',
   'library-big',
   'maximize-2',
   'merge',
