@@ -34,6 +34,8 @@ export class PlanEditor {
   private readonly tools: Partial<Record<ToolName, Tool>>;
   private tool: Tool | null = null;
   private last: PointerInfo | null = null;
+  /** A drag from the Library panel over the plan: the tool to return to when it ends */
+  private drag: { readonly tool: ToolName | null } | null = null;
   private pan: { x: number; y: number } | null = null;
   private spaceHeld = false;
   private frame = 0;
@@ -106,6 +108,35 @@ export class PlanEditor {
     this.setTool(kind);
     const tool = this.tools[kind];
     if (tool instanceof OpeningTool) tool.setType(type);
+  }
+
+  /**
+   * An Opening type dragged over the plan from the Library panel (ticket 21): the Opening tool of
+   * its kind follows the pointer along the Wall, and the drop places it as a click would.
+   */
+  dragOpeningType(kind: OpeningKind, type: OpeningTypeId, e: MouseEvent, drop: boolean): void {
+    if (!this.drag) {
+      this.drag = { tool: this.tool?.name ?? null };
+      this.placeOpeningType(kind, type);
+    }
+    this.last = this.info(e);
+    if (drop) {
+      this.tool?.pointerDown(this.last);
+      this.endDrag();
+    } else {
+      this.tool?.pointerMove(this.last);
+    }
+    this.invalidate();
+  }
+
+  /** A drag from the Library panel ended (dropped, or left the plan): the tool before it again. */
+  endDrag(): void {
+    if (!this.drag) return;
+    const before = this.drag.tool;
+    this.drag = null;
+    this.tool?.cancel();
+    if (before) this.chooseTool(before);
+    this.invalidate();
   }
 
   setTool(name: ToolName): void {

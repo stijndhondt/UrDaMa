@@ -30,6 +30,7 @@ import { EditorActionsService } from './editor/editor-actions.service';
 import { LengthEditService } from './editor/length-edit.service';
 import { LengthEditorComponent } from './editor/length-editor.component';
 import { BuildingPanelComponent } from './editor/building-panel.component';
+import { LibraryPanelComponent } from './editor/library-panel.component';
 import { PlanEditorComponent } from './editor/plan-editor.component';
 import { PropertiesPanelComponent } from './editor/properties-panel.component';
 import { SelectionService } from './editor/selection.service';
@@ -97,6 +98,7 @@ const PX_PER_MM = 96 / 25.4;
     SelectModule,
     LengthEditorComponent,
     BuildingPanelComponent,
+    LibraryPanelComponent,
     NewProjectDialogComponent,
     PlanEditorComponent,
     PlanToolbarComponent,
@@ -191,13 +193,22 @@ const PX_PER_MM = 96 / 25.4;
 
       <nav class="icons" [attr.aria-label]="'shell.panels' | translate">
         <p-togglebutton
-          [ngModel]="sideOpen()"
-          (onChange)="sideOpen.set($event.checked)"
+          [ngModel]="side() === 'building'"
+          (onChange)="toggleSide('building')"
           [ariaLabel]="'shell.building' | translate"
           [pTooltip]="'shell.building' | translate"
           tooltipPosition="right"
         >
           <ng-template #content><lk-icon name="building-2" /></ng-template>
+        </p-togglebutton>
+        <p-togglebutton
+          [ngModel]="side() === 'library'"
+          (onChange)="toggleSide('library')"
+          [ariaLabel]="'library.title' | translate"
+          [pTooltip]="'library.title' | translate"
+          tooltipPosition="right"
+        >
+          <ng-template #content><lk-icon name="library-big" /></ng-template>
         </p-togglebutton>
         <span class="spacer"></span>
         <p-togglebutton
@@ -229,10 +240,15 @@ const PX_PER_MM = 96 / 25.4;
         </p-togglebutton>
       </nav>
 
-      @if (sideOpen()) {
+      @if (side() === 'building') {
         <aside class="side" [attr.aria-label]="'shell.building' | translate">
           <h2>{{ 'shell.building' | translate }}</h2>
           <lk-building-panel />
+        </aside>
+      } @else if (side() === 'library') {
+        <aside class="side" [attr.aria-label]="'library.title' | translate">
+          <h2>{{ 'library.title' | translate }}</h2>
+          <lk-library-panel />
         </aside>
       }
 
@@ -712,7 +728,12 @@ export class App {
     return edit && wall ? { edit, wall } : null;
   });
 
-  protected readonly sideOpen = signal(true);
+  /** The left panel shown, if any: the Building panel or the Library panel (ticket 21). */
+  protected readonly side = signal<'building' | 'library' | null>('building');
+
+  protected toggleSide(panel: 'building' | 'library'): void {
+    this.side.set(this.side() === panel ? null : panel);
+  }
   protected readonly layout = inject(LayoutService);
   protected readonly familyEdit = inject(FamilyEditService);
   protected readonly elevationPanels = computed(() =>

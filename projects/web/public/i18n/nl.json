@@ -206,6 +206,10 @@
       "update": "Openingsfamilie wijzigen",
       "badDesign": "Geweigerd: dat ontwerp kan niet voor deze familie."
     },
+    "openingLibrary": {
+      "import": "Openingsfamilie importeren",
+      "badFamily": "Geweigerd: deze bibliotheekfamilie is beschadigd of heeft geen types."
+    },
     "level": {
       "add": "Bouwlaag {name} toevoegen",
       "update": "Bouwlaag {name} wijzigen",
@@ -612,5 +616,18 @@
     },
     "sections": "Panelen",
     "thickness": "Dikte"
+  },
+  "library": {
+    "title": "Bibliotheek",
+    "project": "In dit project",
+    "mine": "Mijn bibliotheek",
+    "dragHint": "Sleep een type op een muur om het te plaatsen.",
+    "dragType": "Sleep op een muur:",
+    "save": "Bewaren in bibliotheek",
+    "saveHint": "Bewaar een kopie van deze familie en haar types in deze browser, voor elk project.",
+    "import": "Importeren",
+    "importHint": "Kopieer deze familie en haar types naar het project.",
+    "remove": "Uit bibliotheek verwijderen",
+    "empty": "Nog niets bewaard. Bewaar een familie uit het project om ze in je andere projecten te gebruiken."
   }
 }

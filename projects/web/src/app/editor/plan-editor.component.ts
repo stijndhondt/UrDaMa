@@ -25,11 +25,20 @@ import { SnapService } from './snap.service';
 import { ContextMenuService } from './context-menu.service';
 import { LengthEditService } from './length-edit.service';
 import { LevelVisibilityService } from './level-visibility.service';
+import { LibraryService } from './library.service';
 
 /** Hosts the Canvas2D plan editor for the current Level. */
 @Component({
   selector: 'lk-plan-editor',
-  template: `<canvas #canvas class="plan" tabindex="0" [attr.aria-label]="label()"></canvas>`,
+  template: `<canvas
+    #canvas
+    class="plan"
+    tabindex="0"
+    [attr.aria-label]="label()"
+    (dragover)="dragType($event, false)"
+    (drop)="dragType($event, true)"
+    (dragleave)="dragLeft()"
+  ></canvas>`,
   styles: `
     :host {
       position: absolute;
@@ -63,6 +72,7 @@ export class PlanEditorComponent {
   private readonly theme = inject(ThemeService);
   private readonly planColors = inject(PlanColorsService);
   private readonly snap = inject(SnapService);
+  private readonly library = inject(LibraryService);
   private editor: PlanEditor | null = null;
 
   constructor() {
@@ -128,6 +138,24 @@ export class PlanEditorComponent {
   /** A tool chosen by its button or key (an Opening tool places its kind's default size). */
   setTool(name: ToolName): void {
     this.editor?.chooseTool(name);
+    this.tool.set(this.editor?.toolName ?? null);
+  }
+
+  /** An Opening type dragged from the Library panel (ticket 21): shown on the Wall, placed on drop. */
+  protected dragType(e: DragEvent, drop: boolean): void {
+    const dragged = this.library.dragging();
+    if (!dragged || !this.editor) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    this.editor.dragOpeningType(dragged.kind, dragged.type, e, drop);
+    this.tool.set(this.editor.toolName);
+    if (drop) this.library.endDrag();
+  }
+
+  /** The drag left the plan without a drop: nothing is placed, the tool is as it was. */
+  protected dragLeft(): void {
+    if (!this.library.dragging()) return;
+    this.editor?.endDrag();
     this.tool.set(this.editor?.toolName ?? null);
   }
 

@@ -123,6 +123,10 @@ export function designIsValid(d: OpeningDesign): boolean {
   return infill.count === 1 || infill.count === 2;
 }
 
+/** Whether a design fits a family of this kind: its kind's infill, and possible sizes. */
+export const designFits = (kind: OpeningKind, d: OpeningDesign): boolean =>
+  d.infill.kind === DEFAULT_DESIGNS[kind].infill.kind && designIsValid(d);
+
 /** mm above the finished floor where the plan cuts through Openings. */
 export const PLAN_CUT = 1000;
 /** mm: how far a garage door's overhead track runs into the Room, at most. */

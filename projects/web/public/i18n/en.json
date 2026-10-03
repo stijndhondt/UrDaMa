@@ -206,6 +206,10 @@
       "update": "Change Opening family",
       "badDesign": "Refused: that design is not possible for this family."
     },
+    "openingLibrary": {
+      "import": "Import Opening family",
+      "badFamily": "Refused: this library family is damaged or has no types."
+    },
     "level": {
       "add": "Add Level {name}",
       "update": "Change Level {name}",
@@ -612,5 +616,18 @@
     },
     "sections": "Sections",
     "thickness": "Thickness"
+  },
+  "library": {
+    "title": "Library",
+    "project": "In this project",
+    "mine": "My library",
+    "dragHint": "Drag a type onto a Wall to place it.",
+    "dragType": "Drag onto a Wall:",
+    "save": "Save to library",
+    "saveHint": "Keep a copy of this family and its types in this browser, for every project.",
+    "import": "Import",
+    "importHint": "Copy this family and its types into the project.",
+    "remove": "Remove from library",
+    "empty": "Nothing saved yet. Save a family from the project to use it in your other projects."
   }
 }

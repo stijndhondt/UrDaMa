@@ -4,7 +4,7 @@
  */
 import { put } from '../model/edit';
 import { message } from '../model/message';
-import { DEFAULT_DESIGNS, designIsValid, type OpeningDesign } from '../model/opening-parts';
+import { DEFAULT_DESIGNS, designFits, type OpeningDesign } from '../model/opening-parts';
 import type { OpeningFamily, OpeningFamilyId } from '../model/types';
 import { refuse, type Command } from './command';
 
@@ -23,10 +23,7 @@ export const updateOpeningFamily: Command<UpdateOpeningFamilyArgs> = (model, arg
     );
   const design = args.design;
   // A family keeps its kind's infill: a window glazed, a door with leaves, and so on.
-  if (
-    design &&
-    (design.infill.kind !== DEFAULT_DESIGNS[family.kind].infill.kind || !designIsValid(design))
-  )
+  if (design && !designFits(family.kind, design))
     return refuse(message('commands.openingFamily.badDesign'));
   const { name: _name, design: _design, ...plain } = family;
   const name = args.name === undefined ? family.name : args.name.trim() || undefined;

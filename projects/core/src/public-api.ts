@@ -41,6 +41,7 @@ export * from './lib/commands/add-opening';
 export * from './lib/commands/update-opening';
 export * from './lib/commands/opening-type-commands';
 export * from './lib/commands/opening-family-commands';
+export * from './lib/commands/opening-library';
 export * from './lib/values/surfaces';
 export * from './lib/report/quantities';
 export * from './lib/report/quantity-tree';

@@ -29,6 +29,11 @@ export function readJson(key: string): unknown {
   }
 }
 
+/** Remembers a JSON value; without storage it lasts for the session only. */
+export function writeJson(key: string, value: unknown): void {
+  writeSetting(key, JSON.stringify(value));
+}
+
 /** A remembered list of strings (e.g. IDs), empty when there is none. */
 export function readList(key: string): string[] {
   const v = readJson(key);
