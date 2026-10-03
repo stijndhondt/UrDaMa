@@ -404,10 +404,10 @@ export class BuildingPanelComponent {
     })),
   );
 
-  /** The tree's selected element nodes: what is selected everywhere. */
   /** Rows tracked by element, so an edit updates the rows it changed and keeps the others. */
   protected readonly trackByKey = (_index: number, node: TreeNode): string | undefined => node.key;
 
+  /** The tree's selected element nodes: what is selected everywhere. */
   protected readonly selectedNodes = computed(() => {
     const chosen = new Set(this.selection.current().map((s) => s.id as string));
     return this.nodes()

@@ -83,6 +83,7 @@ export class FamilyEditService {
 
   leave(): void {
     this.project.store.cancelPreview();
+    this.project.store.endDrag();
     this.editing.set(null);
   }
 
@@ -96,13 +97,18 @@ export class FamilyEditService {
     const family = this.editing()?.family;
     if (!family) return;
     const store = this.project.store;
+    if (!done) store.beginDrag();
     const outcome = store.preview(updateOpeningFamily, { family, design });
     if (!outcome.ok) {
       store.cancelPreview();
+      store.endDrag();
       this.messages.refused(outcome.reason);
       return;
     }
-    if (done) store.commitPreview();
+    if (done) {
+      store.commitPreview();
+      store.endDrag();
+    }
   }
 
   rename(name: string): void {
@@ -114,5 +120,6 @@ export class FamilyEditService {
 
   cancel(): void {
     this.project.store.cancelPreview();
+    this.project.store.endDrag();
   }
 }

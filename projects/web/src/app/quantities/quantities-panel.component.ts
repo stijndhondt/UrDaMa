@@ -206,8 +206,10 @@ export class QuantitiesPanelComponent {
   /** Rows the user opened or closed; Levels start open. */
   private readonly open = signal<ReadonlyMap<string, boolean>>(new Map());
 
-  // The tables hold still during a drag and follow when it ends (ticket 33): rebuilding them on
-  // every pointer move of a 200-Wall plan took 190 ms a move.
+  /**
+   * The Rooms' and Façades' figures, holding still during a drag and following when it ends
+   * (ticket 33): rebuilding them on every pointer move of a 200-Wall plan took 190 ms a move.
+   */
   private readonly tree = settled(this.project.store, () =>
     quantityTree(this.project.store.model(), this.project.store.values, this.measurement.rule()),
   );
@@ -219,7 +221,7 @@ export class QuantitiesPanelComponent {
   private readonly t = (key: string, params?: object) => this.language.text(key, params);
 
   /** The tree as rows, with its names in the user's language. */
-  private readonly rows = settled(this.project.store, (): Branch[] => {
+  private readonly rows = computed((): Branch[] => {
     const t = this.t;
     const levels = this.tree().map((level): Branch => ({
       row: this.levelRow(level),
@@ -343,7 +345,7 @@ export class QuantitiesPanelComponent {
   }
 
   private facadeFaceRow(f: QuantityFacadeFace, at: string, facade: string): Row {
-    const level = this.project.store.model().levels[f.level]?.name ?? '';
+    const level = this.project.store.committedModel().levels[f.level]?.name ?? '';
     return {
       key: `${at}/${f.level}/${f.wall}/${f.face}`,
       kind: 'face',

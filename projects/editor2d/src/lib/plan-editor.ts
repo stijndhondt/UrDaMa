@@ -76,6 +76,8 @@ export class PlanEditor {
     this.listen(canvas, 'pointerdown', (e) => this.onPointerDown(e as PointerEvent));
     this.listen(canvas, 'pointermove', (e) => this.onPointerMove(e as PointerEvent));
     this.listen(canvas, 'pointerup', (e) => this.onPointerUp(e as PointerEvent));
+    // A pointer held down on the plan is a drag: costly views hold still until it ends (ticket 33).
+    this.listen(canvas, 'pointercancel', () => this.host.store.endDrag());
     this.listen(canvas, 'wheel', (e) => this.onWheel(e as WheelEvent), { passive: false });
     this.listen(canvas, 'dblclick', (e) => this.onDoubleClick(e as MouseEvent));
     this.listen(canvas, 'contextmenu', (e) => e.preventDefault());
@@ -272,6 +274,7 @@ export class PlanEditor {
     if (e.button !== 0) return;
     this.last = this.info(e);
     if (this.addRoomAt(this.last.screen)) return;
+    this.host.store.beginDrag();
     this.tool?.pointerDown(this.last);
   }
 
@@ -349,6 +352,7 @@ export class PlanEditor {
     if (e.button !== 0) return;
     this.last = this.info(e);
     this.tool?.pointerUp(this.last);
+    this.host.store.endDrag();
   }
 
   private onWheel(e: WheelEvent): void {

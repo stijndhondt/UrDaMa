@@ -148,25 +148,16 @@ describe('ProjectStore: drawing a Room (ticket 03)', () => {
   });
 });
 
-describe('ProjectStore: a drag back where it started (ticket 33)', () => {
-  it('keeps previewing with nothing changed, and commits nothing', () => {
-    const { store, level } = newStore();
-    store.run(drawRoom, {
-      level,
-      from: { x: 0, y: 0 },
-      to: { x: 3000, y: 3000 },
-      size: 'inside',
-      name: 'Hall',
-    });
-    const committed = store.committedModel();
-    store.holdPreview();
-    expect(store.isPreviewing()).toBe(true);
-    expect(store.model()).toBe(committed);
-    const undoBefore = store.undoLabel();
-    const result = store.commitPreview();
-    expect(result?.ok && result.patch.ops).toEqual([]);
-    expect(store.model()).toBe(committed);
-    // Nothing was added to the undo history.
-    expect(store.undoLabel()).toBe(undoBefore);
+describe('ProjectStore: a drag (ticket 33)', () => {
+  it('says whether a drag is under way, however often it is begun or ended', () => {
+    const { store } = newStore();
+    expect(store.isDragging()).toBe(false);
+    store.beginDrag();
+    store.beginDrag();
+    expect(store.isDragging()).toBe(true);
+    store.endDrag();
+    expect(store.isDragging()).toBe(false);
+    store.endDrag();
+    expect(store.isDragging()).toBe(false);
   });
 });

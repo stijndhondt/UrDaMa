@@ -11,40 +11,76 @@ import {
 import { settled } from './settled';
 
 describe('settled values (ticket 33)', () => {
-  function store() {
+  function setup() {
     const ids = counterIds();
-    const s = new ProjectStore(createProject({ name: 'T', levelName: 'Ground floor' }, ids), ids);
-    const level = Object.keys(s.model().levels)[0] as LevelId;
-    s.run(drawRoom, {
+    const store = new ProjectStore(
+      createProject({ name: 'T', levelName: 'Ground floor' }, ids),
+      ids,
+    );
+    const level = Object.keys(store.model().levels)[0] as LevelId;
+    store.run(drawRoom, {
       level,
       from: { x: 0, y: 0 },
       to: { x: 4000, y: 3000 },
       size: 'inside',
       name: 'Hall',
     });
-    const wall = Object.values(s.model().walls).find((w: Wall) => w.start.x === w.end.x)!;
-    return { s, wall };
-  }
-
-  it('holds still while a drag is previewed, and follows when it is committed or cancelled', () => {
-    const { s, wall } = store();
+    const wall = Object.values(store.model().walls).find((w: Wall) => w.start.x === w.end.x)!;
     let runs = 0;
     const area = TestBed.runInInjectionContext(() =>
-      settled(s, () => {
+      settled(store, () => {
         runs++;
-        return Object.values(s.model().rooms).map((r) => s.values.room(r.id).netFloorArea());
+        return Object.values(store.model().rooms).map((r) =>
+          store.values.room(r.id).netFloorArea(),
+        );
       }),
     );
+    return { store, wall, area, runs: () => runs };
+  }
+
+  it('holds still while a drag is under way, and follows when it ends', () => {
+    const { store, wall, area, runs } = setup();
     const before = area();
-    for (const offset of [50, 100, 150]) s.preview(moveWall, { wall: wall.id, offset });
+    store.beginDrag();
+    for (const offset of [50, 100, 150]) {
+      store.preview(moveWall, { wall: wall.id, offset });
+      expect(area()).toBe(before);
+    }
+    store.commitPreview();
     expect(area()).toBe(before);
-    s.cancelPreview();
-    expect(area()).toEqual(before);
-    s.preview(moveWall, { wall: wall.id, offset: 100 });
-    area();
-    s.commitPreview();
+    store.endDrag();
     expect(area()).not.toEqual(before);
-    // Computed when shown, after the cancel and after the commit; never for a preview.
-    expect(runs).toBe(3);
+    // Worked out before the drag and once after it; never for a move of the drag.
+    expect(runs()).toBe(2);
+  });
+
+  it('follows a preview outside a drag (an Opening hovering along a Wall)', () => {
+    const { store, wall, area } = setup();
+    const before = area();
+    store.preview(moveWall, { wall: wall.id, offset: 100 });
+    expect(area()).not.toEqual(before);
+    store.cancelPreview();
+    expect(area()).toEqual(before);
+  });
+
+  it('rebuilds nothing for a click that changes nothing', () => {
+    const { store, area, runs } = setup();
+    area();
+    store.beginDrag();
+    area();
+    store.endDrag();
+    area();
+    expect(runs()).toBe(1);
+  });
+
+  it('follows the drag when it is first read during one', () => {
+    const { store, wall, area } = setup();
+    store.beginDrag();
+    store.preview(moveWall, { wall: wall.id, offset: 100 });
+    const first = area();
+    store.preview(moveWall, { wall: wall.id, offset: 200 });
+    expect(area()).not.toEqual(first);
+    store.cancelPreview();
+    store.endDrag();
   });
 });

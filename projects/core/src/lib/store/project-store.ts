@@ -8,7 +8,7 @@
 import type { Command, CommandOutcome } from '../commands/command';
 import type { IdGenerator } from '../model/ids';
 import { checkInvariants } from '../model/invariants';
-import { message, type Message } from '../model/message';
+import type { Message } from '../model/message';
 import { applyPatch, diffModels, type Patch } from '../model/patch';
 import type { Model, RoomId } from '../model/types';
 import { derived, source, type Derived } from '../reactive';
@@ -73,6 +73,8 @@ export class ProjectStore {
     () => this.redoStack().at(-1)?.label ?? null,
   );
   readonly isPreviewing = derived('Project · is previewing', () => this.previewModel() !== null);
+  private readonly drag = source<boolean>('Project · dragging', false);
+  readonly isDragging = derived('Project · is dragging', () => this.drag());
   private readonly change = source<ChangeSummary | null>('Project · last change', null);
   /** What the last command, undo or redo changed (null after opening a project). */
   readonly lastChange = derived('Project · last change', () => this.change());
@@ -105,12 +107,16 @@ export class ProjectStore {
   }
 
   /**
-   * A drag goes on, showing nothing changed (back where it started, or at a refused position):
-   * still previewing, the committed model shown (ticket 33). Views that hold still during a drag
-   * then don't rebuild on the way, and committing it changes nothing.
+   * A drag is under way (a pointer held down on the plan, a handle dragged): views too costly to
+   * rebuild on every move hold still until it ends (ticket 33). Previews outside a drag, such as
+   * an Opening following the pointer along a Wall, don't hold them.
    */
-  holdPreview(): void {
-    this.previewModel.set({ model: this.committed(), label: message('commands.moveWall.nothing') });
+  beginDrag(): void {
+    if (!this.drag()) this.drag.set(true);
+  }
+
+  endDrag(): void {
+    if (this.drag()) this.drag.set(false);
   }
 
   cancelPreview(): void {
