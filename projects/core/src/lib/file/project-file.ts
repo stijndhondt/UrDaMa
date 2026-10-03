@@ -119,7 +119,7 @@ const KEY_ORDER: Readonly<
   openingFamilies: ['id', 'kind', 'name', 'design'],
   design: ['frame', 'bottomRail', 'infill'],
   frame: ['width', 'depth'],
-  infill: ['kind', 'count', 'panes', 'thickness'],
+  infill: ['kind', 'count', 'panes', 'thickness', 'operation', 'glazed', 'style'],
   openingTypes: ['id', 'family', 'name', 'width', 'height'],
   openings: ['id', 'wall', 'type', 'offset', 'sill', 'hinge', 'swing'],
   rooms: ['id', 'level', 'name', 'seed', 'height', 'floorBuildUp', 'floorFinish'],

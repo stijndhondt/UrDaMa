@@ -202,6 +202,10 @@
       "otherFamily": "Geweigerd: een opening kan alleen een type van haar eigen familie krijgen.",
       "nameTaken": "Geweigerd: een ander type van deze familie heet al \"{name}\"."
     },
+    "openingFamily": {
+      "update": "Openingsfamilie wijzigen",
+      "badDesign": "Geweigerd: dat ontwerp kan niet voor deze familie."
+    },
     "level": {
       "add": "Bouwlaag {name} toevoegen",
       "update": "Bouwlaag {name} wijzigen",
@@ -563,5 +567,50 @@
     "newName": "Nieuw type (naam optioneel)",
     "add": "Toevoegen",
     "note": "Een maat hier wijzigen wijzigt elke opening van dat type. Een type zonder naam wordt getoond met zijn maten."
+  },
+  "family": {
+    "edit": "Familie bewerken",
+    "title": "Openingsfamilie",
+    "editing": "Familie bewerken",
+    "done": "Klaar",
+    "shownAt": "Getoond op",
+    "name": "Naam familie",
+    "hint": "Sleep de ronde handgrepen om kader en vulling te wijzigen; alle aanzichten en de 3D volgen.",
+    "reach": "Wijzigingen gelden voor elk type van deze familie en elke geplaatste opening. Ongedaan maken neemt één wijziging per keer terug.",
+    "sides": {
+      "top": "Boven",
+      "bottom": "Onder",
+      "front": "Voor",
+      "back": "Achter",
+      "left": "Links",
+      "right": "Rechts"
+    },
+    "frame": "Kader",
+    "frameWidth": "Kaderbreedte",
+    "frameDepth": "Kaderdiepte",
+    "bottomRail": "Onderdorpel",
+    "infill": {
+      "leaves": "Vleugels",
+      "glazing": "Beglazing",
+      "panels": "Garagepoort"
+    },
+    "leafCount": "Vleugels",
+    "operation": "Opent",
+    "operations": {
+      "hinged": "Draaiend",
+      "sliding": "Schuivend"
+    },
+    "glazed": "Glas in de vleugel",
+    "panes": "Ruiten",
+    "panesHint": "1 tot 6 ruiten naast elkaar; laat leeg voor auto (twee vanaf 1 m breed)",
+    "auto": "Auto",
+    "style": "Type",
+    "styles": {
+      "sectional": "Sectionaal",
+      "upAndOver": "Kantel",
+      "roller": "Rol"
+    },
+    "sections": "Panelen",
+    "thickness": "Dikte"
   }
 }

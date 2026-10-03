@@ -4,7 +4,7 @@
  * Turning them into meshes (and cutting the Openings) is the 3D renderer's job; nothing is
  * calculated from it (ADR 0003).
  */
-import type { OpeningPartKind } from '../model/opening-parts';
+import type { OpeningPart, OpeningPartKind } from '../model/opening-parts';
 import type { LevelId, Model, OpeningId, RoomId, SlabId, Vec, WallId } from '../model/types';
 import { levelsInOrder } from '../model/levels';
 import type { BuildingValues } from '../values/building-values';
@@ -164,4 +164,22 @@ export function buildingSolids(model: Model, values: BuildingValues): BuildingSo
     }
   }
   return { levels: levels.map((l) => ({ id: l.id, name: l.name })), solids };
+}
+
+/**
+ * One Opening family's parts on their own (ticket 20, the family editor's 3D view): u along x,
+ * v along y, standing on z = 0, as one Level.
+ */
+export function openingFamilySolids(parts: readonly OpeningPart[]): BuildingSolids {
+  const level = 'family' as LevelId;
+  return {
+    levels: [{ id: level, name: '' }],
+    solids: parts.map((part) => ({
+      kind: 'openingPart',
+      id: 'family' as OpeningId,
+      level,
+      part: part.kind,
+      body: { rings: [partRing((u, v) => ({ x: u, y: v }), part)], bottom: part.z0, top: part.z1 },
+    })),
+  };
 }

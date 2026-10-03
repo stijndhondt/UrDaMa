@@ -12,3 +12,4 @@ export * from './lib/plan-editor';
 export * from './lib/elevation-view';
 export * from './lib/wall-length';
 export * from './lib/hit-test';
+export * from './lib/family-view';

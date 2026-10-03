@@ -202,6 +202,10 @@
       "otherFamily": "Refused: an Opening can only take a type of its own family.",
       "nameTaken": "Refused: another type of this family is already called \"{name}\"."
     },
+    "openingFamily": {
+      "update": "Change Opening family",
+      "badDesign": "Refused: that design is not possible for this family."
+    },
     "level": {
       "add": "Add Level {name}",
       "update": "Change Level {name}",
@@ -563,5 +567,50 @@
     "newName": "New type (name optional)",
     "add": "Add",
     "note": "Changing a size here changes every Opening of that type. A type without a name is shown by its sizes."
+  },
+  "family": {
+    "edit": "Edit family",
+    "title": "Opening family",
+    "editing": "Editing family",
+    "done": "Done",
+    "shownAt": "Shown at",
+    "name": "Family name",
+    "hint": "Drag the round handles to change the frame and the infill; every view and the 3D follow.",
+    "reach": "Changes reach every type of this family and every placed Opening. Undo takes back one change at a time.",
+    "sides": {
+      "top": "Top",
+      "bottom": "Bottom",
+      "front": "Front",
+      "back": "Back",
+      "left": "Left",
+      "right": "Right"
+    },
+    "frame": "Frame",
+    "frameWidth": "Frame width",
+    "frameDepth": "Frame depth",
+    "bottomRail": "Sill rail",
+    "infill": {
+      "leaves": "Leaves",
+      "glazing": "Glazing",
+      "panels": "Garage door"
+    },
+    "leafCount": "Leaves",
+    "operation": "Opens",
+    "operations": {
+      "hinged": "Hinged",
+      "sliding": "Sliding"
+    },
+    "glazed": "Glass in the leaf",
+    "panes": "Panes",
+    "panesHint": "1 to 6 panes side by side; leave empty for auto (two from 1 m wide)",
+    "auto": "Auto",
+    "style": "Style",
+    "styles": {
+      "sectional": "Sectional",
+      "upAndOver": "Up-and-over",
+      "roller": "Roller"
+    },
+    "sections": "Sections",
+    "thickness": "Thickness"
   }
 }

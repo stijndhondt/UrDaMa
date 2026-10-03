@@ -42,6 +42,8 @@ import { NewProjectDialogComponent } from './project/new-project-dialog.componen
 import { ProjectService } from './project/project.service';
 import { QuantitiesPanelComponent } from './quantities/quantities-panel.component';
 import { ElevationComponent } from './editor/elevation.component';
+import { FamilyEditorComponent } from './editor/family-editor.component';
+import { FamilyEditService } from './editor/family-edit.service';
 import { IconComponent } from './shell/icon.component';
 import type { IconName } from './shell/icons.generated';
 import {
@@ -87,6 +89,7 @@ const PX_PER_MM = 96 / 25.4;
     ChangeSummaryComponent,
     ContextMenuComponent,
     ElevationComponent,
+    FamilyEditorComponent,
     FormsModule,
     IconComponent,
     PanelHeaderComponent,
@@ -326,6 +329,10 @@ const PX_PER_MM = 96 / 25.4;
             (pointerdown)="startDivider($event, d.axis)"
           ></div>
         }
+        <!-- The family editor lies over the panels: leaving it finds them as they were. -->
+        @if (familyEdit.editing()) {
+          <lk-family-editor class="family-editor" />
+        }
       </main>
 
       <aside class="props" [attr.aria-label]="'panel.label' | translate">
@@ -528,11 +535,17 @@ const PX_PER_MM = 96 / 25.4;
       color: var(--muted);
     }
     .centre {
+      position: relative;
       grid-area: centre;
       display: grid;
       padding: 4px;
       min-width: 0;
       min-height: 0;
+    }
+    .family-editor {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
     }
     .divider {
       cursor: col-resize;
@@ -701,6 +714,7 @@ export class App {
 
   protected readonly sideOpen = signal(true);
   protected readonly layout = inject(LayoutService);
+  protected readonly familyEdit = inject(FamilyEditService);
   protected readonly elevationPanels = computed(() =>
     this.layout
       .grid()

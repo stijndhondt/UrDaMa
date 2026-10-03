@@ -45,6 +45,8 @@ import { ProjectService } from '../project/project.service';
 import { IconComponent } from '../shell/icon.component';
 import { OPENING_ICONS } from '../shell/opening-icons';
 import { EditorActionsService } from './editor-actions.service';
+import { FamilyEditService } from './family-edit.service';
+import { FamilyPropertiesComponent } from './family-properties.component';
 import { LengthEditorComponent } from './length-editor.component';
 import { OpeningTypesDialogComponent } from './opening-types-dialog.component';
 import { PropRowComponent, type PropChoice } from './prop-row.component';
@@ -88,9 +90,12 @@ interface Figure {
     LengthEditorComponent,
     OpeningTypesDialogComponent,
     PropRowComponent,
+    FamilyPropertiesComponent,
   ],
   template: `
-    @if (selection.room(); as room) {
+    @if (familyEdit.editing()) {
+      <lk-family-properties />
+    } @else if (selection.room(); as room) {
       <header>
         <span class="badge"><lk-icon name="square" /></span>
         <div>
@@ -263,6 +268,15 @@ interface Figure {
             [text]="true"
             [label]="'panel.opening.manageTypes' | translate"
             (onClick)="openTypes(opening.type)"
+          />
+        </div>
+        <div class="actions">
+          <p-button
+            size="small"
+            severity="secondary"
+            [outlined]="true"
+            [label]="'family.edit' | translate"
+            (onClick)="editFamily(opening.type)"
           />
         </div>
         <lk-prop
@@ -622,6 +636,7 @@ export class PropertiesPanelComponent {
   protected readonly project = inject(ProjectService);
   protected readonly measurement = inject(MeasurementService);
   protected readonly actions = inject(EditorActionsService);
+  protected readonly familyEdit = inject(FamilyEditService);
   private readonly format = inject(FormatService);
   private readonly messages = inject(MessagesService);
   private readonly translate = inject(TranslateService);
@@ -744,6 +759,12 @@ export class PropertiesPanelComponent {
   protected openTypes(type: OpeningTypeId): void {
     const family = this.project.store.model().openingTypes[type]?.family;
     if (family) this.typesDialog().open(family);
+  }
+
+  /** The Opening family editor (ticket 20), shown at this type's size. */
+  protected editFamily(type: OpeningTypeId): void {
+    const family = this.project.store.model().openingTypes[type]?.family;
+    if (family) this.familyEdit.enter(family, type);
   }
 
   protected resizeOpeningText(opening: OpeningId, field: 'width' | 'height', text: string): void {
