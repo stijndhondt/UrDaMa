@@ -496,6 +496,17 @@ const PX_PER_MM = 96 / 25.4;
       border-right: 1px solid var(--line);
       background: var(--panel);
     }
+    /* Square icon toggles that fit the 44 px bar: Optimus's toggle with no padding, and no
+       background until it is on (its checked look stays Optimus's). */
+    .icons p-togglebutton {
+      width: 34px;
+      height: 34px;
+      --p-togglebutton-padding: 0;
+      --p-togglebutton-content-padding: 0;
+      --p-togglebutton-background: transparent;
+      --p-togglebutton-border-color: transparent;
+      --p-togglebutton-hover-background: var(--hover);
+    }
     .icons lk-icon {
       font-size: 18px;
     }
