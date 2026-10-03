@@ -19,6 +19,7 @@ import {
   type Wall,
   type WallId,
   type WallOutline,
+  type WallRun,
 } from '@lakudemis/core';
 import type { EditorHost, Selection } from './host';
 import type { View } from './view';
@@ -170,6 +171,7 @@ export function drawPlan(
   ctx.restore();
 
   drawWallDetails(ctx, view, host, slice, outlines, box);
+  drawWallRuns(ctx, view, host, level.wallRuns());
   drawEmptyAreaLabels(ctx, view, host, fp.areas);
 
   // Room labels at their Seed points: the name, and the Net floor area or why there is none.
@@ -337,6 +339,74 @@ export function drawWallDetails(
         ctx.fill();
       }
     }
+  }
+  ctx.restore();
+}
+
+/** px outside the outside faces where a Wall run's dimension line sits (past the face labels). */
+const RUN_OFFSET = 28;
+
+/**
+ * The overall outside length of each Wall run (ticket 27): a dimension line further out than
+ * the per-Wall lengths, with ticks at its ends. It only shows; it can't be edited.
+ */
+export function drawWallRuns(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  host: EditorHost,
+  runs: readonly WallRun[],
+): void {
+  const c = planColors();
+  ctx.save();
+  ctx.font = '600 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const run of runs) {
+    const a = view.toScreen(run.start);
+    const b = view.toScreen(run.end);
+    if (Math.hypot(b.x - a.x, b.y - a.y) < 60) continue;
+    // The plan's y runs down on screen too, so the outward normal keeps its direction.
+    const o = { x: run.normal.x * RUN_OFFSET, y: run.normal.y * RUN_OFFSET };
+    const [p, q] = [
+      { x: a.x + o.x, y: a.y + o.y },
+      { x: b.x + o.x, y: b.y + o.y },
+    ];
+    ctx.strokeStyle = c.muted;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    // Extension lines from the face to just past the dimension line, and the line itself.
+    for (const [from, to] of [
+      [a, p],
+      [b, q],
+    ] as const) {
+      ctx.moveTo(from.x + run.normal.x * 4, from.y + run.normal.y * 4);
+      ctx.lineTo(to.x + run.normal.x * 4, to.y + run.normal.y * 4);
+    }
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(q.x, q.y);
+    // 45° ticks where it meets the extension lines.
+    const d = {
+      x: (q.x - p.x) / Math.hypot(q.x - p.x, q.y - p.y),
+      y: (q.y - p.y) / Math.hypot(q.x - p.x, q.y - p.y),
+    };
+    for (const m of [p, q]) {
+      ctx.moveTo(m.x - (d.x + run.normal.x) * 4, m.y - (d.y + run.normal.y) * 4);
+      ctx.lineTo(m.x + (d.x + run.normal.x) * 4, m.y + (d.y + run.normal.y) * 4);
+    }
+    ctx.stroke();
+    const mid = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+    let angle = Math.atan2(q.y - p.y, q.x - p.x);
+    if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
+    const text = host.format.length(run.length);
+    ctx.save();
+    ctx.translate(mid.x, mid.y);
+    ctx.rotate(angle);
+    const w = ctx.measureText(text).width + 8;
+    ctx.fillStyle = c.paper;
+    ctx.fillRect(-w / 2, -7, w, 14);
+    ctx.fillStyle = c.label;
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
   }
   ctx.restore();
 }

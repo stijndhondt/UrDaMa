@@ -48,5 +48,6 @@ export * from './lib/commands/levels';
 export * from './lib/geometry/solids';
 export * from './lib/geometry/opening-geometry';
 export * from './lib/geometry/outside';
+export * from './lib/geometry/wall-runs';
 export * from './lib/geometry/elevation';
 export * from './lib/commands/set-wall-length';

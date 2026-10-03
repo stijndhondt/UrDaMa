@@ -7,6 +7,7 @@
  * on another Level yields an equal slice and nothing downstream is recalculated.
  */
 import { openingShapeOf, type PlacedOpeningShape } from '../geometry/opening-geometry';
+import { wallRuns, type WallRun } from '../geometry/wall-runs';
 import { resolveOpenings, type ResolvedOpening } from '../model/opening-types';
 import { derived, type Derived } from '../reactive';
 import { levelsInOrder } from '../model/levels';
@@ -118,6 +119,8 @@ export interface LevelValues {
    * Levels' faces stack without gaps.
    */
   readonly outsideFaces: Derived<readonly RoomWallFace[]>;
+  /** Straight runs of two or more Walls along the outside, with their overall lengths (ticket 27) */
+  readonly wallRuns: Derived<readonly WallRun[]>;
   /** Things to fix: Rooms not enclosed or sharing one area, Wall ends connected to nothing. */
   readonly warnings: Derived<readonly Message[]>;
 }
@@ -393,6 +396,10 @@ export class BuildingValues {
         );
       },
     );
+    const runs = derived(
+      () => `${name()} · Wall runs`,
+      () => wallRuns(outsideFaces()),
+    );
     const warnings = derived(
       () => `${name()} · warnings`,
       (): readonly Message[] => {
@@ -445,6 +452,7 @@ export class BuildingValues {
       netFloorArea,
       roomSurfaces,
       outsideFaces,
+      wallRuns: runs,
       warnings,
     };
   }
