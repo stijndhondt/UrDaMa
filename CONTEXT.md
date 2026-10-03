@@ -58,6 +58,10 @@ _Avoid_: Block, variant, template
 One side of a Wall: the surface that is painted, plastered or tiled. It faces a Room or the outside.
 _Avoid_: Wall side, surface (unqualified)
 
+**Wall run**:
+Two or more Walls whose faces continue one another in a straight line, such as the whole left side of a house made of the left Walls of the Rooms one behind the other. Its overall length is measured along its outside.
+_Avoid_: Wall chain, wall line, total wall
+
 **Façade**:
 All outside Wall faces of the building on one side (front, back, left side or right side, as seen standing in front of the house), counted relative to the building's own front, not to compass directions. A Façade that is not flat, such as the front of an L- or T-shaped house, splits into Façade parts that each lie in one plane.
 _Avoid_: Exterior wall (for the surface), gevel (in code; the Dutch UI says Gevel), elevation (for the surface)
