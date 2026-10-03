@@ -1,4 +1,5 @@
 import { addOpening } from '../commands/add-opening';
+import { parseProject, serializeProject } from '../file/project-file';
 import { drawRoom } from '../commands/draw-room';
 import { counterIds } from '../model/ids';
 import { createProject } from '../model/new-project';
@@ -6,7 +7,6 @@ import { PLAN_CUT } from '../model/opening-parts';
 import type { LevelId, OpeningId, Vec, Wall } from '../model/types';
 import { ProjectStore } from '../store/project-store';
 import { elevation, type ElevationShape } from './elevation';
-import { openingShapeOf } from './opening-geometry';
 import { buildingSolids, type Solid } from './solids';
 
 /** A 4 × 3 m Room: a window in its bottom (front) Wall, a door in its top (back) Wall. */
@@ -47,7 +47,7 @@ const partsOf = (solids: readonly Solid[], id: OpeningId, part: string) =>
 describe("an Opening's parts in every view (ticket 19)", () => {
   it('draws the same window parts in the plan, the Elevation and 3D', () => {
     const { store, window } = house();
-    const placed = openingShapeOf(store.model(), store.values, window.id)!;
+    const placed = store.values.opening(window.id).shape()!;
     const solids = buildingSolids(store.model(), store.values).solids;
     const glass3d = partsOf(solids, window.id, 'glass');
     expect(glass3d).toHaveLength(2);
@@ -97,7 +97,7 @@ describe("an Opening's parts in every view (ticket 19)", () => {
 
   it("draws a door's leaf as wide in the plan as in the Elevation and 3D", () => {
     const { store, door } = house();
-    const placed = openingShapeOf(store.model(), store.values, door.id)!;
+    const placed = store.values.opening(door.id).shape()!;
     const leaf3d = partsOf(buildingSolids(store.model(), store.values).solids, door.id, 'leaf');
     expect(leaf3d).toHaveLength(1);
     const [x0, x1] = extent(leaf3d[0]!.body.rings[0]!);
@@ -128,9 +128,86 @@ describe("an Opening's parts in every view (ticket 19)", () => {
     const { store, window, door } = house();
     const p = store.model().project.presets;
     // Two panes beside a 60 mm middle post, inside a 60 mm frame.
-    expect(openingShapeOf(store.model(), store.values, window.id)!.shape.glassArea).toBe(
+    expect(store.values.opening(window.id).glassArea()).toBe(
       (p.windowWidth - 3 * 60) * (p.windowHeight - 2 * 60),
     );
-    expect(openingShapeOf(store.model(), store.values, door.id)!.shape.glassArea).toBe(0);
+    expect(store.values.opening(door.id).glassArea()).toBe(0);
+  });
+
+  it('draws a garage door and a wall opening alike in every view', () => {
+    const { store } = house();
+    const wall = Object.values(store.model().walls).find(
+      (w: Wall) => w.start.x === w.end.x && w.start.x > 2000,
+    )!;
+    store.run(addOpening, { wall: wall.id, kind: 'wallOpening', offset: 300 });
+    const back = Object.values(store.model().walls).find(
+      (w: Wall) => w.start.y === 0 && w.end.y === 0,
+    )!;
+    store.run(addOpening, { wall: back.id, kind: 'garageDoor', offset: 1700, width: 2000 });
+    const kindOf = (id: OpeningId) =>
+      store.model().openingFamilies[
+        store.model().openingTypes[store.model().openings[id]!.type]!.family
+      ]!.kind;
+    const ids = Object.keys(store.model().openings) as OpeningId[];
+    const garage = ids.find((id) => kindOf(id) === 'garageDoor')!;
+    const hole = ids.find((id) => kindOf(id) === 'wallOpening')!;
+    const solids = buildingSolids(store.model(), store.values).solids;
+    const shapes = [...(['front', 'back', 'left', 'right'] as const)].flatMap(
+      (side) => elevation(store.model(), store.values, side).shapes,
+    );
+    const elevationParts = (id: OpeningId) =>
+      shapes.find(
+        (x): x is Extract<ElevationShape, { kind: 'opening' }> =>
+          x.kind === 'opening' && x.opening === id,
+      )!.parts;
+    // The garage door: four panels and its frame, in the Elevation as in 3D.
+    expect(partsOf(solids, garage, 'panel')).toHaveLength(4);
+    expect(elevationParts(garage).filter((p) => p.kind === 'panel')).toHaveLength(4);
+    expect(store.values.opening(garage).shape()!.shape.plan.dashed).toHaveLength(3);
+    // The wall opening: a plain hole, nothing in it anywhere.
+    expect(solids.filter((x) => x.kind === 'openingPart' && x.id === hole)).toEqual([]);
+    expect(elevationParts(hole)).toEqual([]);
+    expect(store.values.opening(hole).shape()!.shape.plan.dashed).toHaveLength(2);
+  });
+
+  it('cuts the parts of an Opening taller than its Wall off at the Wall top, as the Elevation does', () => {
+    const { store } = house();
+    const wall = Object.values(store.model().walls).find(
+      (w: Wall) => w.start.x === w.end.x && w.start.x < 100,
+    )!;
+    store.run(addOpening, { wall: wall.id, kind: 'door', offset: 800, height: 4000 });
+    const tall = Object.values(store.model().openings).find((o) => o.wall === wall.id)!;
+    const solids = buildingSolids(store.model(), store.values).solids;
+    const wallTop = solids.find((x) => x.kind === 'wall' && x.id === wall.id)!.body.top;
+    const parts = solids.filter((x) => x.kind === 'openingPart' && x.id === tall.id);
+    expect(parts.length).toBeGreaterThan(0);
+    for (const p of parts) expect(p.body.top).toBeLessThanOrEqual(wallTop);
+  });
+
+  it("draws a family's own design, kept in the project file", () => {
+    const { store, door } = house();
+    const doc = JSON.parse(serializeProject(store.model())) as {
+      openingFamilies: { id: string; kind: string; design?: unknown }[];
+    };
+    const family = doc.openingFamilies.find((f) => f.kind === 'door')!;
+    family.design = {
+      frame: { width: 50, depth: 90 },
+      bottomRail: false,
+      infill: { kind: 'leaves', count: 2, thickness: 40 },
+    };
+    const text = JSON.stringify(doc, null, 2);
+    const opened = parseProject(text);
+    expect(opened.ok).toBe(true);
+    if (!opened.ok) return;
+    const ids = counterIds();
+    const reopened = new ProjectStore(opened.model, ids);
+    const leaves = buildingSolids(reopened.model(), reopened.values).solids.filter(
+      (x) => x.kind === 'openingPart' && x.id === door.id && x.part === 'leaf',
+    );
+    expect(leaves).toHaveLength(2);
+    // Saved again, the design comes back unchanged.
+    const again = parseProject(serializeProject(opened.model));
+    expect(again.ok && serializeProject(again.model)).toBe(serializeProject(opened.model));
+    expect(serializeProject(opened.model)).toContain('"design"');
   });
 });

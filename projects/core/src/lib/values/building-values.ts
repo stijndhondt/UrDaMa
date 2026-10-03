@@ -6,6 +6,7 @@
  * for simple values. A Level's Source-data slice compares its elements by reference, so an edit
  * on another Level yields an equal slice and nothing downstream is recalculated.
  */
+import { openingShapeOf, type PlacedOpeningShape } from '../geometry/opening-geometry';
 import { resolveOpenings, type ResolvedOpening } from '../model/opening-types';
 import { derived, type Derived } from '../reactive';
 import { levelsInOrder } from '../model/levels';
@@ -24,6 +25,7 @@ import type {
   Level,
   LevelId,
   Model,
+  OpeningId,
   Presets,
   Room,
   RoomId,
@@ -138,6 +140,13 @@ export interface WallValues {
   readonly faces: Derived<{ readonly drawn: FaceValues; readonly other: FaceValues } | undefined>;
 }
 
+export interface OpeningValues {
+  /** Its parts from its family's design, placed in its Wall; null when it is gone */
+  readonly shape: Derived<PlacedOpeningShape | null>;
+  /** mm² of glass, a quantity of its parts */
+  readonly glassArea: Derived<number>;
+}
+
 export interface RoomValues {
   readonly room: Derived<Room | undefined>;
   readonly detection: Derived<RoomDetection | undefined>;
@@ -167,6 +176,7 @@ export class BuildingValues {
   private readonly levels = new Map<LevelId, LevelValues>();
   private readonly rooms = new Map<RoomId, RoomValues>();
   private readonly walls = new Map<WallId, WallValues>();
+  private readonly openings = new Map<OpeningId, OpeningValues>();
   private readonly slabs = new Map<LevelId, SlabValues>();
 
   /** Every Level's place in its Building's stack; unchanged unless Levels, Slabs or Presets change. */
@@ -230,6 +240,22 @@ export class BuildingValues {
     if (!values) {
       values = this.createWall(id);
       this.walls.set(id, values);
+    }
+    return values;
+  }
+
+  /** An Opening's parts and quantities (ticket 19). */
+  opening(id: OpeningId): OpeningValues {
+    let values = this.openings.get(id);
+    if (!values) {
+      const shape = derived(`${id} · parts`, () =>
+        openingShapeOf(this.model(), (w) => this.level(w.level).outlines().get(w.id), id),
+      );
+      values = {
+        shape,
+        glassArea: derived(`${id} · glass area`, () => shape()?.shape.glassArea ?? 0),
+      };
+      this.openings.set(id, values);
     }
     return values;
   }

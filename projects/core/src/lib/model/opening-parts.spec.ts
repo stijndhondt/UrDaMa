@@ -94,16 +94,70 @@ describe('Opening family parts (ticket 19)', () => {
     ]);
   });
 
-  it('builds a garage door from sections that fill its frame', () => {
+  it('builds a garage door from panels that fill its frame', () => {
     const s = openingShape(
       DEFAULT_DESIGNS.garageDoor,
       { width: 2400, height: 2125, sill: 0, hinge: 'start', swing: 'right' },
       140,
     );
-    const sections = span(s.parts, 'section');
-    expect(sections).toHaveLength(4);
-    expect(sections[0]!.z0).toBe(0);
-    expect(sections[3]!.z1).toBe(2125 - 60);
+    const panels = span(s.parts, 'panel');
+    expect(panels).toHaveLength(4);
+    expect(panels[0]!.z0).toBe(0);
+    expect(panels[3]!.z1).toBe(2125 - 60);
     expect(s.plan.dashed).toHaveLength(3);
+  });
+
+  it('still shows a window wholly above the plan cut, cut through its middle', () => {
+    const s = openingShape(
+      DEFAULT_DESIGNS.window,
+      { width: 1200, height: 600, sill: 1600, hinge: 'start', swing: 'right' },
+      140,
+    );
+    expect(s.plan.rects.filter((r) => r.kind === 'glass')).toHaveLength(2);
+    expect(s.plan.rects.filter((r) => r.kind === 'frame').length).toBeGreaterThan(0);
+  });
+
+  it('keeps every part inside a Wall thinner than its leaf', () => {
+    const s = openingShape(
+      DEFAULT_DESIGNS.door,
+      { width: 930, height: 2115, sill: 0, hinge: 'start', swing: 'right' },
+      30,
+    );
+    for (const p of s.parts) {
+      expect(p.v0).toBeGreaterThanOrEqual(0);
+      expect(p.v1).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it('hangs a double door at both jambs, each leaf with its own swing', () => {
+    const design = {
+      ...DEFAULT_DESIGNS.door,
+      infill: { kind: 'leaves', count: 2, thickness: 40 },
+    } as const;
+    const s = openingShape(
+      design,
+      { width: 1600, height: 2115, sill: 0, hinge: 'start', swing: 'right' },
+      140,
+    );
+    expect(span(s.parts, 'leaf').map((p) => [p.u0, p.u1])).toEqual([
+      [60, 800],
+      [800, 1540],
+    ]);
+    expect(s.plan.arcs.map((a) => a.center.u)).toEqual([60, 1540]);
+  });
+
+  it('never gives a tiny Opening a part of negative size', () => {
+    for (const kind of ['door', 'window', 'garageDoor'] as const) {
+      const s = openingShape(
+        DEFAULT_DESIGNS[kind],
+        { width: 100, height: 100, sill: 0, hinge: 'start', swing: 'left' },
+        140,
+      );
+      for (const p of s.parts) {
+        expect(p.u1).toBeGreaterThanOrEqual(p.u0);
+        expect(p.v1).toBeGreaterThanOrEqual(p.v0);
+        expect(p.z1).toBeGreaterThanOrEqual(p.z0);
+      }
+    }
   });
 });

@@ -6,7 +6,9 @@ import {
   boxesOverlap,
   interiorPoint,
   openingRect,
+  partRing,
   placedOpeningShape,
+  type OpeningPartKind,
   type Box,
   type LevelId,
   type LevelSlice,
@@ -470,6 +472,11 @@ export function openingOutline(
     : null;
 }
 
+/** The fill of an Opening part, the same in the plan and the Elevations (ticket 19). */
+export function partFill(kind: OpeningPartKind, c: PlanColors): string {
+  return kind === 'glass' ? c.levelBelow : kind === 'frame' ? c.wallFill : c.area;
+}
+
 /**
  * Openings in the plan (ticket 19): the hole through the Wall, then the plan symbol derived from
  * the family's parts: what the plan cuts (frame, glass, sections), each door leaf standing open
@@ -506,11 +513,11 @@ export function drawOpenings(
     const { shape, point } = placedOpeningShape(wall, outline, o);
     const at = (u: number, v: number) => view.toScreen(point(u, v));
     for (const r of shape.plan.rects) {
-      const q = [at(r.u0, r.v0), at(r.u1, r.v0), at(r.u1, r.v1), at(r.u0, r.v1)];
+      const q = partRing(point, r).map((p) => view.toScreen(p));
       ctx.beginPath();
       q.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
       ctx.closePath();
-      ctx.fillStyle = r.kind === 'glass' ? c.levelBelow : r.kind === 'frame' ? c.wallFill : c.area;
+      ctx.fillStyle = partFill(r.kind, c);
       ctx.fill();
       ctx.strokeStyle = c.wallStroke;
       ctx.lineWidth = r.kind === 'glass' ? 0.75 : 1;

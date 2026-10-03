@@ -15,7 +15,6 @@ import {
   familyTypes,
   hasSill,
   netWallArea,
-  openingShapeOf,
   openingsOfType,
   presetSize,
   setOpeningType,
@@ -782,9 +781,7 @@ export class PropertiesPanelComponent {
   protected readonly openingSummary = computed<Figure[]>(() => {
     const o = this.selection.opening();
     if (!o) return [];
-    const glass =
-      openingShapeOf(this.project.store.model(), this.project.store.values, o.id)?.shape
-        .glassArea ?? 0;
+    const glass = this.project.store.values.opening(o.id).glassArea();
     return [
       { value: this.format.decimal(o.width / 1000), label: 'panel.summary.width' },
       { value: this.format.decimal(o.height / 1000), label: 'panel.summary.height' },

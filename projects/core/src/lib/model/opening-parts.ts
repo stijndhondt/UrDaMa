@@ -1,6 +1,6 @@
 /**
  * Opening family parts (ticket 19; ADR 0007): a family is one parametric design (frame, leaves,
- * glass, garage-door sections). One derivation turns a design, a type's sizes and a placement into
+ * glass, panels such as a garage door's). One derivation turns a design, a type's sizes and a placement into
  * boxes in the Opening's own coordinates; the plan symbol, the Elevation drawing, the 3D solids and
  * the quantities (glass area) all come from those boxes, so they can never disagree.
  *
@@ -8,9 +8,9 @@
  * `v` across the Wall from its face on the Baseline normal's low side (0..Wall thickness, towards
  * the normal, so a swing to the 'right' is towards higher v), `z` up from the Opening's bottom.
  */
-import type { Opening, OpeningKind } from './types';
+import type { Opening, OpeningFamily, OpeningKind } from './types';
 
-export type OpeningPartKind = 'frame' | 'leaf' | 'glass' | 'section';
+export type OpeningPartKind = 'frame' | 'leaf' | 'glass' | 'panel';
 
 /** A part: a box in Opening coordinates. */
 export interface OpeningPart {
@@ -33,7 +33,8 @@ export type OpeningInfill =
       readonly panes: 1 | 2 | 'auto';
       readonly thickness: number;
     }
-  | { readonly kind: 'sections'; readonly count: number; readonly thickness: number };
+  /** Panels stacked bottom to top, such as a sectional garage door's */
+  | { readonly kind: 'panels'; readonly count: number; readonly thickness: number };
 
 /** An Opening family's design (mm). */
 export interface OpeningDesign {
@@ -60,9 +61,13 @@ export const DEFAULT_DESIGNS: Readonly<Record<OpeningKind, OpeningDesign>> = {
   garageDoor: {
     frame: { width: 60, depth: 80 },
     bottomRail: false,
-    infill: { kind: 'sections', count: 4, thickness: 40 },
+    infill: { kind: 'panels', count: 4, thickness: 40 },
   },
 };
+
+/** A family's design: its own, or its kind's default. */
+export const designOf = (family: OpeningFamily): OpeningDesign =>
+  family.design ?? DEFAULT_DESIGNS[family.kind];
 
 /** mm above the finished floor where the plan cuts through Openings. */
 export const PLAN_CUT = 1000;
@@ -101,9 +106,27 @@ export type OpeningPlacement = Pick<Opening, 'sill' | 'hinge' | 'swing'> & {
   readonly height: number;
 };
 
+/** How many panes a glazing has: 'auto' is two from 1 m wide. */
+const paneCount = (infill: OpeningInfill, width: number): number =>
+  infill.kind !== 'glazing' ? 1 : infill.panes === 'auto' ? (width >= 1000 ? 2 : 1) : infill.panes;
+
+/** Where an Opening's frame sits, worked out once for its parts and its plan symbol. */
+interface FrameFit {
+  /** mm: the frame profile's face width (0 without a frame) */
+  readonly width: number;
+  /** mm across the Wall: the frame's two faces */
+  readonly back: number;
+  readonly front: number;
+  /** v of the frame face the Opening swings or slides towards */
+  readonly towards: number;
+  /** z where the infill starts and ends (above a sill rail, under the head) */
+  readonly bottom: number;
+  readonly top: number;
+}
+
 /**
  * The parts of an Opening of this design, size and placement in a Wall `depth` mm thick, and
- * from them its plan symbol and glass area.
+ * from them its plan symbol and glass area. Thicknesses never exceed the frame's depth.
  */
 export function openingShape(
   design: OpeningDesign,
@@ -112,78 +135,71 @@ export function openingShape(
 ): OpeningShape {
   const { width: w, height: h } = o;
   const parts: OpeningPart[] = [];
+  const add = (part: OpeningPart) => parts.push(part);
   const frame = design.frame;
-  const fw = frame ? Math.min(frame.width, w / 4, h / 4) : 0;
-  const fd = frame ? Math.min(frame.depth, depth) : depth;
+  const frameWidth = frame ? Math.min(frame.width, w / 4, h / 4) : 0;
+  const frameDepth = frame ? Math.min(frame.depth, depth) : depth;
   // The frame sits in the middle of the Wall's thickness.
-  const fv0 = (depth - fd) / 2;
-  const fv1 = fv0 + fd;
-  const box = (
-    kind: OpeningPartKind,
-    u0: number,
-    u1: number,
-    v0: number,
-    v1: number,
-    z0: number,
-    z1: number,
-  ) => parts.push({ kind, u0, u1, v0, v1, z0, z1 });
-  // The face of the frame the Opening swings or slides towards.
-  const towards = o.swing === 'right' ? fv1 : fv0;
-  /** v from and to of a part `t` mm thick against that face */
-  const onSwingFace = (t: number): readonly [number, number] =>
-    o.swing === 'right' ? [fv1 - t, fv1] : [fv0, fv0 + t];
-  const bottom = design.bottomRail ? fw : 0;
-  const top = h - fw;
+  const back = (depth - frameDepth) / 2;
+  const front = back + frameDepth;
+  const fit: FrameFit = {
+    width: frameWidth,
+    back,
+    front,
+    towards: o.swing === 'right' ? front : back,
+    bottom: design.bottomRail ? frameWidth : 0,
+    top: h - frameWidth,
+  };
+  const { bottom, top } = fit;
+  /** v from and to of a part `t` mm thick against the face it swings towards */
+  const onSwingFace = (t: number): readonly [number, number] => {
+    const thick = Math.min(t, frameDepth);
+    return o.swing === 'right' ? [front - thick, front] : [back, back + thick];
+  };
 
   const infill = design.infill;
+  const panes = paneCount(infill, w);
   if (infill.kind === 'leaves') {
-    const n = infill.count;
-    const leafWidth = (w - 2 * fw) / n;
-    for (let i = 0; i < n; i++) {
-      const [v0, v1] = onSwingFace(infill.thickness);
-      box('leaf', fw + i * leafWidth, fw + (i + 1) * leafWidth, v0, v1, bottom, top);
+    const leafWidth = (w - 2 * frameWidth) / infill.count;
+    const [v0, v1] = onSwingFace(infill.thickness);
+    for (let i = 0; i < infill.count; i++) {
+      const u0 = frameWidth + i * leafWidth;
+      add({ kind: 'leaf', u0, u1: u0 + leafWidth, v0, v1, z0: bottom, z1: top });
     }
   } else if (infill.kind === 'glazing') {
-    const panes = infill.panes === 'auto' ? (w >= 1000 ? 2 : 1) : infill.panes;
-    const mid = (fv0 + fv1) / 2;
-    const [g0, g1] = [mid - infill.thickness / 2, mid + infill.thickness / 2];
+    const mid = (back + front) / 2;
+    const half = Math.min(infill.thickness, frameDepth) / 2;
+    const glass = { kind: 'glass', v0: mid - half, v1: mid + half, z0: bottom, z1: top } as const;
     if (panes === 2 && frame) {
-      box('glass', fw, w / 2 - fw / 2, g0, g1, bottom, top);
-      box('glass', w / 2 + fw / 2, w - fw, g0, g1, bottom, top);
+      add({ ...glass, u0: frameWidth, u1: w / 2 - frameWidth / 2 });
+      add({ ...glass, u0: w / 2 + frameWidth / 2, u1: w - frameWidth });
     } else {
-      box('glass', fw, w - fw, g0, g1, bottom, top);
+      add({ ...glass, u0: frameWidth, u1: w - frameWidth });
     }
-  } else if (infill.kind === 'sections') {
+  } else if (infill.kind === 'panels') {
     const [v0, v1] = onSwingFace(infill.thickness);
     const each = (top - bottom) / infill.count;
-    for (let i = 0; i < infill.count; i++)
-      box('section', fw, w - fw, v0, v1, bottom + i * each, bottom + (i + 1) * each);
+    for (let i = 0; i < infill.count; i++) {
+      const z0 = bottom + i * each;
+      add({ kind: 'panel', u0: frameWidth, u1: w - frameWidth, v0, v1, z0, z1: z0 + each });
+    }
   }
 
   if (frame) {
-    box('frame', 0, fw, fv0, fv1, 0, h);
-    box('frame', w - fw, w, fv0, fv1, 0, h);
-    box('frame', fw, w - fw, fv0, fv1, top, h);
-    if (design.bottomRail) box('frame', fw, w - fw, fv0, fv1, 0, fw);
-    const panes =
-      infill.kind === 'glazing'
-        ? infill.panes === 'auto'
-          ? w >= 1000
-            ? 2
-            : 1
-          : infill.panes
-        : 1;
-    if (panes === 2) box('frame', w / 2 - fw / 2, w / 2 + fw / 2, fv0, fv1, bottom, top);
+    const bar = { kind: 'frame', v0: back, v1: front } as const;
+    add({ ...bar, u0: 0, u1: frameWidth, z0: 0, z1: h });
+    add({ ...bar, u0: w - frameWidth, u1: w, z0: 0, z1: h });
+    add({ ...bar, u0: frameWidth, u1: w - frameWidth, z0: top, z1: h });
+    if (design.bottomRail) add({ ...bar, u0: frameWidth, u1: w - frameWidth, z0: 0, z1: bottom });
+    if (panes === 2) {
+      add({ ...bar, u0: w / 2 - frameWidth / 2, u1: w / 2 + frameWidth / 2, z0: bottom, z1: top });
+    }
   }
 
-  return {
-    parts,
-    plan: planSymbol(design, o, parts, { fw, towards, depth }),
-    glassArea: glass(parts),
-  };
+  return { parts, plan: planSymbol(design, o, parts, fit, depth), glassArea: glassAreaOf(parts) };
 }
 
-const glass = (parts: readonly OpeningPart[]) =>
+const glassAreaOf = (parts: readonly OpeningPart[]) =>
   parts.reduce((a, p) => (p.kind === 'glass' ? a + (p.u1 - p.u0) * (p.z1 - p.z0) : a), 0);
 
 /** The parts cut by the plan, hinged leaves swung open with their arcs, and what is above. */
@@ -191,11 +207,14 @@ function planSymbol(
   design: OpeningDesign,
   o: OpeningPlacement,
   parts: readonly OpeningPart[],
-  { fw, towards, depth }: { fw: number; towards: number; depth: number },
+  fit: FrameFit,
+  depth: number,
 ): OpeningPlanSymbol {
   const w = o.width;
-  // The cut always passes through the Opening, however high its sill.
-  const cut = Math.min(Math.max(PLAN_CUT - o.sill, 1), o.height - 1);
+  // The plan cuts 1 m above the floor; an Opening wholly above or below that (a high window) is
+  // cut through the middle of its infill, so the plan still shows what it is.
+  const atCut = PLAN_CUT - o.sill;
+  const cut = atCut > fit.bottom && atCut < fit.top ? atCut : (fit.bottom + fit.top) / 2;
   const out: Pick<OpeningPart, 'kind' | 'u0' | 'u1' | 'v0' | 'v1'>[] = [];
   const arcs: { center: UV; from: UV; to: UV }[] = [];
   const dashed: (readonly [UV, UV])[] = [];
@@ -206,52 +225,44 @@ function planSymbol(
       out.push({ kind: p.kind, u0: p.u0, u1: p.u1, v0: p.v0, v1: p.v1 });
       continue;
     }
-    // A hinged leaf stands open at 90° on its swing side, hinged at its jamb: one leaf on the
-    // hinge side, two leaves on both.
+    // A hinged leaf stands open at 90 degrees on its swing side, hinged at its jamb: one leaf on
+    // the Opening's hinge side, two leaves each at their own jamb.
     const single = design.infill.kind === 'leaves' && design.infill.count === 1;
-    const atStart = single ? o.hinge === 'start' : p.u0 <= fw + 0.5;
+    const atStart = single ? o.hinge === 'start' : p.u0 <= fit.width + 0.5;
     const hingeU = atStart ? p.u0 : p.u1;
     const freeU = atStart ? p.u1 : p.u0;
     const length = p.u1 - p.u0;
     const t = p.v1 - p.v0;
-    const reach = towards + away * length;
+    const reach = fit.towards + away * length;
     out.push({
       kind: 'leaf',
       u0: atStart ? hingeU : hingeU - t,
       u1: atStart ? hingeU + t : hingeU,
-      v0: Math.min(towards, reach),
-      v1: Math.max(towards, reach),
+      v0: Math.min(fit.towards, reach),
+      v1: Math.max(fit.towards, reach),
     });
     arcs.push({
-      center: { u: hingeU, v: towards },
+      center: { u: hingeU, v: fit.towards },
       from: { u: hingeU, v: reach },
-      to: { u: freeU, v: towards },
+      to: { u: freeU, v: fit.towards },
     });
   }
+  const line = (u0: number, v0: number, u1: number, v1: number) =>
+    dashed.push([
+      { u: u0, v: v0 },
+      { u: u1, v: v1 },
+    ]);
   if (design.infill.kind === 'none') {
     // A wall opening: its head above, dashed along both faces.
-    for (const v of [0, depth])
-      dashed.push([
-        { u: 0, v },
-        { u: w, v },
-      ]);
-  } else if (design.infill.kind === 'sections') {
+    for (const v of [0, depth]) line(0, v, w, v);
+  } else if (design.infill.kind === 'panels') {
     // A garage door: its overhead track, dashed into the Room it opens into.
     const face = o.swing === 'right' ? depth : 0;
     const end = face + away * Math.min(o.height, TRACK);
-    const [a, b] = [fw, w - fw];
-    dashed.push([
-      { u: a, v: face },
-      { u: a, v: end },
-    ]);
-    dashed.push([
-      { u: b, v: face },
-      { u: b, v: end },
-    ]);
-    dashed.push([
-      { u: a, v: end },
-      { u: b, v: end },
-    ]);
+    const [a, b] = [fit.width, w - fit.width];
+    line(a, face, a, end);
+    line(b, face, b, end);
+    line(a, end, b, end);
   }
   return { rects: out, arcs, dashed };
 }

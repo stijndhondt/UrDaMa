@@ -8,7 +8,7 @@ import type { OpeningPartKind } from '../model/opening-parts';
 import type { LevelId, Model, OpeningId, RoomId, SlabId, Vec, WallId } from '../model/types';
 import { levelsInOrder } from '../model/levels';
 import type { BuildingValues } from '../values/building-values';
-import { placedOpeningShape } from './opening-geometry';
+import { partRing } from './opening-geometry';
 import { openingRect } from './wall-outlines';
 
 /** A vertical prism: plan rings (the first is the outline, the rest are holes), bottom to top. */
@@ -108,28 +108,25 @@ export function buildingSolids(model: Model, values: BuildingValues): BuildingSo
         body: { rings: [outline], bottom, top },
         cuts,
       });
-      // The Openings' parts: frames, leaves, glass, sections, from their family's design.
+      // The Openings' parts: frames, leaves, glass, panels, from their family's design, cut off
+      // at the top of the Wall as the Elevation clips them.
       for (const o of slice.openings) {
         if (o.wall !== wall.id) continue;
-        const { shape, point } = placedOpeningShape(wall, outline, o);
+        const placed = values.opening(o.id).shape();
+        if (!placed) continue;
         const base = h.elevation + o.sill;
-        for (const part of shape.parts) {
+        for (const part of placed.shape.parts) {
+          const partTop = Math.min(base + part.z1, top);
+          if (partTop - (base + part.z0) <= 0) continue;
           solids.push({
             kind: 'openingPart',
             id: o.id,
             level: level.id,
             part: part.kind,
             body: {
-              rings: [
-                [
-                  point(part.u0, part.v0),
-                  point(part.u1, part.v0),
-                  point(part.u1, part.v1),
-                  point(part.u0, part.v1),
-                ],
-              ],
+              rings: [partRing(placed.point, part)],
               bottom: base + part.z0,
-              top: base + part.z1,
+              top: partTop,
             },
           });
         }

@@ -68,12 +68,12 @@ const COLORS: Record<Exclude<SolidRef['kind'], 'openingPart'>, number> = {
   slab: 0xa9adb5,
   floorBuildUp: 0xd9c7a7,
 };
-/** Opening parts (ticket 19): a white frame, wooden leaves, light glass, grey sections. */
+/** Opening parts (ticket 19): a white frame, wooden leaves, light glass, grey panels. */
 const PART_COLORS: Record<OpeningPartKind, number> = {
   frame: 0xf7f7f5,
   leaf: 0xb98a5a,
   glass: 0x9fc9e8,
-  section: 0x8f959e,
+  panel: 0x8f959e,
 };
 
 /** An element's own colour. */

@@ -93,7 +93,10 @@ function openingTypesFromSizes(doc: Doc): Doc {
 
 /** The fixed key order of every element kind; keys not listed never appear in a file. */
 const KEY_ORDER: Readonly<
-  Record<CollectionName | 'project' | 'presets' | 'vec', readonly string[]>
+  Record<
+    CollectionName | 'project' | 'presets' | 'vec' | 'design' | 'frame' | 'infill',
+    readonly string[]
+  >
 > = {
   project: ['id', 'name', 'presets'],
   presets: [
@@ -113,7 +116,10 @@ const KEY_ORDER: Readonly<
   levels: ['id', 'building', 'name', 'order', 'storeyHeight'],
   walls: ['id', 'level', 'start', 'end', 'side', 'thickness', 'height', 'roomBounding'],
   wallConnections: ['id', 'wall', 'end', 'kind', 'to', 'toEnd', 'at'],
-  openingFamilies: ['id', 'kind', 'name'],
+  openingFamilies: ['id', 'kind', 'name', 'design'],
+  design: ['frame', 'bottomRail', 'infill'],
+  frame: ['width', 'depth'],
+  infill: ['kind', 'count', 'panes', 'thickness'],
   openingTypes: ['id', 'family', 'name', 'width', 'height'],
   openings: ['id', 'wall', 'type', 'offset', 'sill', 'hinge', 'swing'],
   rooms: ['id', 'level', 'name', 'seed', 'height', 'floorBuildUp', 'floorFinish'],
@@ -128,6 +134,9 @@ const NESTED: Readonly<Record<string, keyof typeof KEY_ORDER>> = {
   start: 'vec',
   end: 'vec',
   seed: 'vec',
+  design: 'design',
+  frame: 'frame',
+  infill: 'infill',
 };
 
 const round = (n: number) => {

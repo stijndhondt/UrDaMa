@@ -7,6 +7,8 @@
 
 declare const kind: unique symbol;
 /** A stable identifier, typed per element kind (a WallId is never a RoomId). */
+import type { OpeningDesign } from './opening-parts';
+
 export type Id<K extends string> = string & { readonly [kind]: K };
 
 export type ProjectId = Id<'project'>;
@@ -144,6 +146,8 @@ export interface OpeningFamily {
   readonly id: OpeningFamilyId;
   readonly kind: OpeningKind;
   readonly name?: string;
+  /** Its parametric design (ticket 19); absent = its kind's default design */
+  readonly design?: OpeningDesign;
 }
 
 /**

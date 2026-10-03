@@ -14,7 +14,13 @@ import {
   type WallFaceName,
   type WallId,
 } from '@lakudemis/core';
-import { DEFAULT_PLAN_COLORS, planColors, usePlanColors, type PlanColors } from './draw-plan';
+import {
+  DEFAULT_PLAN_COLORS,
+  partFill,
+  planColors,
+  usePlanColors,
+  type PlanColors,
+} from './draw-plan';
 
 export interface ElevationHost {
   /** The theme's colours, read before each draw */
@@ -293,8 +299,7 @@ export class ElevationView {
           const py = this.y(p.rect.z1);
           const pw = (p.rect.u1 - p.rect.u0) * this.k;
           const ph = (p.rect.z1 - p.rect.z0) * this.k;
-          ctx.fillStyle =
-            p.kind === 'glass' ? c.levelBelow : p.kind === 'frame' ? c.area : c.wallFill;
+          ctx.fillStyle = partFill(p.kind, c);
           ctx.fillRect(px, py, pw, ph);
           ctx.strokeStyle = c.wallStroke;
           ctx.lineWidth = p.kind === 'glass' ? 0.5 : 0.75;

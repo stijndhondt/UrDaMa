@@ -3,6 +3,7 @@
  * Opening resolved with its type's kind and sizes, and finding or making the type for a size.
  */
 import { put } from './edit';
+import { designOf, type OpeningDesign } from './opening-parts';
 import type { IdGenerator } from './ids';
 import type {
   Model,
@@ -73,6 +74,8 @@ export function builtInOpenings(
 /** An Opening with the kind and sizes of its type, as geometry and quantities need it. */
 export interface ResolvedOpening extends Opening {
   readonly kind: OpeningKind;
+  /** Its family's design (ticket 19) */
+  readonly design: OpeningDesign;
   /** mm, from the Opening type */
   readonly width: number;
   /** mm, from the Opening type */
@@ -98,6 +101,7 @@ export function resolveOpening(model: Model, opening: Opening): ResolvedOpening 
   const resolved: ResolvedOpening = {
     ...opening,
     kind: family.kind,
+    design: designOf(family),
     width: type.width,
     height: type.height,
   };
