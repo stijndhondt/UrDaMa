@@ -7,8 +7,7 @@ import {
   type LevelId,
   type Vec,
 } from '@lakudemis/core';
-import { alignToCorners } from './snap';
-import { outerCornerStart } from './tools/room-tool';
+import { alignToCorners, outerCornerStart } from './snap';
 
 /** Room 1: 5.00 × 4.00 m inside at the origin, 140 mm Walls (outside -140..5140, -140..4140). */
 function room1() {
@@ -77,19 +76,18 @@ describe('alignment guides (ticket 26)', () => {
     const { outlines } = room1();
     // Near the line x = 5140 (Room 1's right outside), far below it.
     const a = alignToCorners({ x: 5146, y: 6433 }, outlines, 12);
-    expect(a.point.x).toBe(5140);
-    expect(a.point.y).toBe(6433);
+    expect(a.x).toBe(5140);
+    expect(a.y).toBeUndefined();
     expect(a.guides).toHaveLength(1);
-    expect(a.guides[0]!.to).toEqual(a.point);
     expect(a.guides[0]!.from.x).toBe(5140);
   });
 
   it('lines up both axes at once, and leaves a point with nothing in line alone', () => {
     const { outlines } = room1();
     const both = alignToCorners({ x: 5136, y: -137 }, outlines, 12);
-    expect(both.point).toEqual({ x: 5140, y: -140 });
+    expect([both.x, both.y]).toEqual([5140, -140]);
     const free = alignToCorners({ x: 2500, y: 9000 }, outlines, 12);
-    expect(free.point).toEqual({ x: 2500, y: 9000 });
+    expect([free.x, free.y]).toEqual([undefined, undefined]);
     expect(free.guides).toEqual([]);
   });
 });

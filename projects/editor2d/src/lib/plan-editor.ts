@@ -77,6 +77,18 @@ export class PlanEditor {
     this.listen(canvas, 'wheel', (e) => this.onWheel(e as WheelEvent), { passive: false });
     this.listen(canvas, 'dblclick', (e) => this.onDoubleClick(e as MouseEvent));
     this.listen(canvas, 'contextmenu', (e) => e.preventDefault());
+    // Alt inverts snapping while held (ticket 26): show it at once, without waiting for a move,
+    // and keep the key from opening the browser's menu.
+    for (const type of ['keydown', 'keyup'] as const) {
+      this.listen(window, type, (e) => {
+        const key = e as KeyboardEvent;
+        if (key.key !== 'Alt' || !this.last) return;
+        key.preventDefault();
+        this.last = { ...this.last, alt: type === 'keydown' };
+        this.tool?.pointerMove(this.last);
+        this.invalidate();
+      });
+    }
     this.resize = new ResizeObserver(() => this.measure());
     this.resize.observe(canvas);
     this.measure();

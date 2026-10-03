@@ -8,8 +8,7 @@ import { moveWall, wallNormal, type Vec, type WallId } from '@lakudemis/core';
 import { drawSelected, planColors } from '../draw-plan';
 import { elementAt, lengthLabelAt } from '../hit-test';
 import type { Selection } from '../host';
-import { increment } from '../snap';
-import type { PointerInfo, Tool, ToolContext } from './tool';
+import { roundToStep, type PointerInfo, type Tool, type ToolContext } from './tool';
 
 interface Drag {
   readonly wall: WallId;
@@ -58,8 +57,7 @@ export class SelectTool implements Tool {
     if (!wall) return;
     const n = wallNormal(wall);
     const raw = (p.model.x - this.drag.from.x) * n.x + (p.model.y - this.drag.from.y) * n.y;
-    const step = increment(p);
-    const offset = Math.round(raw / step) * step;
+    const offset = roundToStep(this.ctx, p, raw);
     if (offset === this.drag.offset) return;
     this.drag.offset = offset;
     if (offset === 0) this.ctx.host.store.cancelPreview();

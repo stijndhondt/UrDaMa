@@ -21,9 +21,8 @@ import {
   type WallOutline,
 } from '@lakudemis/core';
 import { distanceToSegment, hasSill } from '@lakudemis/core';
-import { increment } from '../snap';
 import { parseLength } from '../units';
-import type { PointerInfo, Tool, ToolContext } from './tool';
+import { roundToStep, type PointerInfo, type Tool, type ToolContext } from './tool';
 import { planColors } from '../draw-plan';
 
 interface Hover {
@@ -266,7 +265,6 @@ export class OpeningTool implements Tool {
     const hiOffset = f.across(best.outline[3]);
     const face: 'lo' | 'hi' = Math.abs(side - loOffset) <= Math.abs(side - hiOffset) ? 'lo' : 'hi';
     const { width } = this.size();
-    const step = increment(p);
     // Snap the distance from the inside corner, and stay where the Wall is full thickness.
     const { first, last } = this.insideCorners(wall, best.outline, face, t);
     const span = fullThicknessSpan(wall, best.outline);
@@ -274,7 +272,7 @@ export class OpeningTool implements Tool {
     const max = Math.min(last, span.end) - width;
     const offset = Math.max(
       min,
-      Math.min(max, first + Math.round((t - width / 2 - first) / step) * step),
+      Math.min(max, first + roundToStep(this.ctx, p, t - width / 2 - first)),
     );
     this.hover = { wall: wall.id, offset, face, at: t };
     this.preview();

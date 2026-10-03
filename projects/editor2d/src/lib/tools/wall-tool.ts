@@ -19,12 +19,18 @@ import {
   drawSnap,
   increment,
   snapToWalls,
-  SNAP_RADIUS_PX,
   type AlignGuide,
   type WallSnap,
 } from '../snap';
 import { parseAngle, parseLength } from '../units';
-import { snapping, type PointerInfo, type Tool, type ToolContext } from './tool';
+import {
+  levelOutlines,
+  snapping,
+  snapRadius,
+  type PointerInfo,
+  type Tool,
+  type ToolContext,
+} from './tool';
 import { planColors } from '../draw-plan';
 
 type State =
@@ -177,7 +183,7 @@ export class WallTool implements Tool {
   private snapPoint(p: PointerInfo): Vec | null {
     const model = this.ctx.host.store.committedModel();
     const level = this.ctx.host.level();
-    const radius = SNAP_RADIUS_PX / this.ctx.view.scale;
+    const radius = snapRadius(this.ctx);
     let best: WallSnap | null = null;
     let bestDistance = radius;
     for (const w of Object.values(model.walls)) {
@@ -207,18 +213,9 @@ export class WallTool implements Tool {
     }
     const snapped = this.snapPoint(p);
     if (snapped) return snapped;
-    const free = alignOrRound(p.model, this.outlines(), this.radius(), increment(p));
+    const free = alignOrRound(p.model, levelOutlines(this.ctx), snapRadius(this.ctx), increment(p));
     this.guides = free.guides;
     return free.point;
-  }
-
-  private outlines() {
-    const model = this.ctx.host.store.committedModel();
-    return [...levelWallOutlines(model, this.ctx.host.level()).values()];
-  }
-
-  private radius(): number {
-    return SNAP_RADIUS_PX / this.ctx.view.scale;
   }
 
   /** The end point: typed length wins; else a snapped point; else angle and length increments. */
@@ -246,16 +243,15 @@ export class WallTool implements Tool {
     const end = { x: start.x + d.x * length, y: start.y + d.y * length };
     // A level or plumb Wall's end lines up with other Walls along its own direction only, so a
     // guide never bends it (ticket 26).
-    const aligned = alignToCorners(end, this.outlines(), this.radius());
-    if (Math.abs(d.y) < 1e-9 && aligned.x) {
-      this.guides = aligned.guides.filter((g) => g.from.x === aligned.point.x);
-      return { x: aligned.point.x, y: end.y };
-    }
-    if (Math.abs(d.x) < 1e-9 && aligned.y) {
-      this.guides = aligned.guides.filter((g) => g.from.y === aligned.point.y);
-      return { x: end.x, y: aligned.point.y };
-    }
-    return end;
+    const aligned = alignToCorners(end, levelOutlines(this.ctx), snapRadius(this.ctx));
+    const level = Math.abs(d.y) < 1e-9;
+    const line = level ? aligned.x : Math.abs(d.x) < 1e-9 ? aligned.y : undefined;
+    if (line === undefined) return end;
+    const point = level ? { x: line, y: end.y } : { x: end.x, y: line };
+    this.guides = aligned.guides
+      .filter((g) => (level ? g.from.x === line : g.from.y === line))
+      .map((g) => ({ from: g.from, to: point }));
+    return point;
   }
 
   private args(): DrawWallArgs {

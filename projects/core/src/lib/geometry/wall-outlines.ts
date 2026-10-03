@@ -117,12 +117,16 @@ interface Partner {
   readonly otherEnd?: WallEnd;
 }
 
-/** Joined outlines for a set of Walls (normally one Level), keyed by Wall ID. */
 /** mm: how close to its host's end a T-connected Wall counts as lying past it. */
-const PAST = 0.5;
-/** How many T connections deep a host's own ends are worked out. */
-const MAX_T_CHAIN = 3;
+const PAST_END = 0.5;
+/**
+ * How many T connections deep a host's own ends are worked out: one, so a T-connected Wall's
+ * outline depends only on its host's own partners (the cache key below), and moving one Wall
+ * recalculates only its near neighbours.
+ */
+const MAX_T_CHAIN = 1;
 
+/** Joined outlines for a set of Walls (normally one Level), keyed by Wall ID. */
 export function wallOutlines(
   walls: readonly Wall[],
   connections: readonly WallConnection[],
@@ -214,8 +218,8 @@ export function wallOutlines(
     // Wholly past it: a Wall that still overlaps the host's corner keeps butting its near face
     // (reaching through would run into the host's corner partner).
     const past =
-      Math.min(...along) > Math.max(...span) - PAST ||
-      Math.max(...along) < Math.min(...span) + PAST;
+      Math.min(...along) > Math.max(...span) - PAST_END ||
+      Math.max(...along) < Math.min(...span) + PAST_END;
     const face = nearIsHi !== past ? hiO : loO;
     const facePoint = add(other.start, scale(nO, face));
     const pLo = lineIntersection(add(wall.start, scale(n, lo)), d, facePoint, dO);
@@ -223,6 +227,20 @@ export function wallOutlines(
     if (!pLo || !pHi || distance(pLo, p) > reach * 3 || distance(pHi, p) > reach * 3) return square;
     return { lo: pLo, hi: pHi };
   };
+
+  /**
+   * What a T-connected Wall's outline depends on through its host: the host's partners and how
+   * they connect, as deep as the "past the end" check looks (MAX_T_CHAIN).
+   */
+  const hostChain = (host: WallId, depth: number): (Wall | string | undefined)[] =>
+    (['start', 'end'] as const).flatMap((e) => {
+      const partner = partners.get(`${host}:${e}`);
+      if (!partner) return ['free'];
+      const link = [byId.get(partner.other), `${partner.kind}:${partner.otherEnd ?? ''}`];
+      return partner.kind === 'tee' && depth < MAX_T_CHAIN
+        ? [...link, ...hostChain(partner.other, depth + 1)]
+        : link;
+    });
 
   const out = new Map<WallId, WallOutline>();
   for (const wall of walls) {
@@ -235,14 +253,7 @@ export function wallOutlines(
       startKind: ps ? `${ps.kind}:${ps.otherEnd ?? ''}` : '',
       end: pe && byId.get(pe.other),
       endKind: pe ? `${pe.kind}:${pe.otherEnd ?? ''}` : '',
-      hostPartners: [ps, pe].flatMap((q) =>
-        q?.kind === 'tee'
-          ? (['start', 'end'] as const).map((e) => {
-              const partner = partners.get(`${q.other}:${e}`);
-              return partner ? byId.get(partner.other) : undefined;
-            })
-          : [],
-      ),
+      hostPartners: [ps, pe].flatMap((q) => (q?.kind === 'tee' ? hostChain(q.other, 1) : [])),
     };
     const cached = memo.get(wall);
     if (cached && sameDeps(cached.deps, deps)) {
@@ -265,8 +276,8 @@ interface OutlineDeps {
   readonly startKind: string;
   readonly end: Wall | undefined;
   readonly endKind: string;
-  /** The partners of the Walls this one is T-connected to (they decide where those end) */
-  readonly hostPartners: readonly (Wall | undefined)[];
+  /** Down the chain of T connections: each host's partners and how they connect */
+  readonly hostPartners: readonly (Wall | string | undefined)[];
 }
 
 const sameDeps = (a: OutlineDeps, b: OutlineDeps) =>

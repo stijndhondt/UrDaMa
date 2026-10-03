@@ -20,19 +20,21 @@ export interface WallRun {
   readonly walls: readonly WallId[];
 }
 
-const SAME = 0.5; // mm
+/** mm: faces closer than this to one line, or to touching, count as such */
+const ON_LINE = 0.5;
 
 /** The Wall runs among a Level's outside Wall faces. */
 export function wallRuns(faces: readonly RoomWallFace[]): WallRun[] {
   // Every stretch of face, with the line it lies on.
-  const pieces = faces.flatMap((f) =>
-    f.segments.map(([a, b]) => ({ a, b, wall: f.wall, normal: f.normal })),
-  );
+  // The Walls' long faces only: a free Wall end is no part of a run.
+  const pieces = faces
+    .filter((f) => f.face !== 'end')
+    .flatMap((f) => f.segments.map(([a, b]) => ({ a, b, wall: f.wall, normal: f.normal })));
   const lines: { normal: Vec; offset: number; pieces: typeof pieces }[] = [];
   for (const p of pieces) {
     const offset = dot(p.a, p.normal);
     const line = lines.find(
-      (l) => dot(l.normal, p.normal) > 1 - 1e-9 && Math.abs(l.offset - offset) <= SAME,
+      (l) => dot(l.normal, p.normal) > 1 - 1e-9 && Math.abs(l.offset - offset) <= ON_LINE,
     );
     if (line) line.pieces.push(p);
     else lines.push({ normal: p.normal, offset, pieces: [p] });
@@ -48,7 +50,7 @@ export function wallRuns(faces: readonly RoomWallFace[]): WallRun[] {
       .sort((a, b) => a.from - b.from);
     // Pieces that touch or overlap join into one chain.
     let chain: typeof spans = [];
-    const close = () => {
+    const endChain = () => {
       const walls = [...new Set(chain.map((c) => c.wall))];
       if (walls.length >= 2) {
         const from = chain[0]!.from;
@@ -64,11 +66,11 @@ export function wallRuns(faces: readonly RoomWallFace[]): WallRun[] {
       chain = [];
     };
     for (const s of spans) {
-      const reach = chain.length ? Math.max(...chain.map((c) => c.to)) : -Infinity;
-      if (chain.length && s.from > reach + SAME) close();
+      const chainEnd = chain.length ? Math.max(...chain.map((c) => c.to)) : -Infinity;
+      if (chain.length && s.from > chainEnd + ON_LINE) endChain();
       chain.push(s);
     }
-    if (chain.length) close();
+    if (chain.length) endChain();
   }
   return runs;
 }

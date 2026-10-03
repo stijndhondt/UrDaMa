@@ -385,10 +385,8 @@ export function drawWallRuns(
     ctx.moveTo(p.x, p.y);
     ctx.lineTo(q.x, q.y);
     // 45° ticks where it meets the extension lines.
-    const d = {
-      x: (q.x - p.x) / Math.hypot(q.x - p.x, q.y - p.y),
-      y: (q.y - p.y) / Math.hypot(q.x - p.x, q.y - p.y),
-    };
+    const span = Math.hypot(q.x - p.x, q.y - p.y);
+    const d = { x: (q.x - p.x) / span, y: (q.y - p.y) / span };
     for (const m of [p, q]) {
       ctx.moveTo(m.x - (d.x + run.normal.x) * 4, m.y - (d.y + run.normal.y) * 4);
       ctx.lineTo(m.x + (d.x + run.normal.x) * 4, m.y + (d.y + run.normal.y) * 4);

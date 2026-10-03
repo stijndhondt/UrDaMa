@@ -396,7 +396,7 @@ export class BuildingValues {
         );
       },
     );
-    const runs = derived(
+    const levelWallRuns = derived(
       () => `${name()} · Wall runs`,
       () => wallRuns(outsideFaces()),
     );
@@ -452,7 +452,7 @@ export class BuildingValues {
       netFloorArea,
       roomSurfaces,
       outsideFaces,
-      wallRuns: runs,
+      wallRuns: levelWallRuns,
       warnings,
     };
   }

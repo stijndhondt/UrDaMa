@@ -2,18 +2,9 @@
  * The Room separator tool (E): a line with no physical form between two Wall faces, e.g. between
  * Living and Eetkamer in one open space. Drag from one Wall face to another, or click both ends.
  */
-import { drawRoomSeparator, levelWallOutlines, type Vec } from '@lakudemis/core';
-import {
-  alignOrRound,
-  drawGuides,
-  drawSnap,
-  increment,
-  snapToWalls,
-  SNAP_RADIUS_PX,
-  type AlignGuide,
-  type WallSnap,
-} from '../snap';
-import { snapping, wallEnds, type PointerInfo, type Tool, type ToolContext } from './tool';
+import { drawRoomSeparator, type Vec } from '@lakudemis/core';
+import { drawGuides, drawSnap, type AlignGuide, type WallSnap } from '../snap';
+import { snapFreePoint, type PointerInfo, type Tool, type ToolContext } from './tool';
 import { planColors } from '../draw-plan';
 
 const CLICK_PX = 4;
@@ -96,20 +87,10 @@ export class SeparatorTool implements Tool {
    * drag increments; with snapping off the point is where the pointer is (ticket 26).
    */
   private point(p: PointerInfo): Vec {
-    this.guides = [];
-    if (!snapping(this.ctx, p)) {
-      this.snapped = null;
-      return p.model;
-    }
-    const outlines = [
-      ...levelWallOutlines(this.ctx.host.store.committedModel(), this.ctx.host.level()).values(),
-    ];
-    const radius = SNAP_RADIUS_PX / this.ctx.view.scale;
-    this.snapped = snapToWalls(p.model, outlines, radius, increment(p), wallEnds(this.ctx));
-    if (this.snapped) return this.snapped.point;
-    const free = alignOrRound(p.model, outlines, radius, increment(p));
-    this.guides = free.guides;
-    return free.point;
+    const snap = snapFreePoint(this.ctx, p);
+    this.snapped = snap.wall;
+    this.guides = snap.guides;
+    return snap.point;
   }
 
   private commit(p: PointerInfo): void {

@@ -1,4 +1,4 @@
-import type { Vec, WallOutline } from '@lakudemis/core';
+import { insideRing, type Vec, type WallOutline } from '@lakudemis/core';
 import { planColors } from './draw-plan';
 
 /** Drag increments (Slice 1 spec): 10 mm; Shift = coarse (100 mm); Ctrl = fine (1 mm). */
@@ -112,11 +112,10 @@ export function alignToCorners(
   outlines: Iterable<WallOutline>,
   radius: number,
 ): {
-  readonly point: Vec;
+  /** The vertical and the horizontal line the point lines up with, where one is in reach */
+  readonly x?: number;
+  readonly y?: number;
   readonly guides: readonly AlignGuide[];
-  /** Whether x and y were moved onto a line */
-  readonly x: boolean;
-  readonly y: boolean;
 } {
   let bestX: Vec | null = null;
   let bestY: Vec | null = null;
@@ -137,7 +136,7 @@ export function alignToCorners(
   }
   const point = { x: bestX?.x ?? p.x, y: bestY?.y ?? p.y };
   const guides = [bestX, bestY].flatMap((c) => (c ? [{ from: c, to: point }] : []));
-  return { point, guides, x: bestX !== null, y: bestY !== null };
+  return { x: bestX?.x, y: bestY?.y, guides };
 }
 
 /**
@@ -152,13 +151,9 @@ export function alignOrRound(
 ): { readonly point: Vec; readonly guides: readonly AlignGuide[] } {
   const aligned = alignToCorners(p, outlines, radius);
   const rounded = snapToIncrement(p, step);
-  return {
-    point: {
-      x: aligned.x ? aligned.point.x : rounded.x,
-      y: aligned.y ? aligned.point.y : rounded.y,
-    },
-    guides: aligned.guides,
-  };
+  const point = { x: aligned.x ?? rounded.x, y: aligned.y ?? rounded.y };
+  // The guides end where the point lands, its rounded axis included.
+  return { point, guides: aligned.guides.map((g) => ({ from: g.from, to: point })) };
 }
 
 /** Draws alignment guides: thin dashed lines from the Wall corners to the point. */
@@ -182,3 +177,32 @@ export function drawGuides(
   ctx.stroke();
   ctx.restore();
 }
+
+/**
+ * The outer-corner rule (ticket 26): a Room drawn at inside size from the outer corner of an
+ * existing Wall, along that Wall, shares it and starts one Wall `thickness` in, so its outer faces
+ * run flush with the existing ones. Small probes around the corner tell which Wall the drag runs
+ * along and that the corner is an outer one; drawn diagonally away, or from an inside corner, the
+ * point is taken as it is.
+ */
+export function outerCornerStart(
+  start: Vec,
+  to: Vec,
+  outlines: readonly WallOutline[],
+  thickness: number,
+): Vec {
+  const sx = Math.sign(to.x - start.x) || 1;
+  const sy = Math.sign(to.y - start.y) || 1;
+  const wallAt = (dx: number, dy: number) =>
+    outlines.some((o) => insideRing({ x: start.x + dx * PROBE, y: start.y + dy * PROBE }, o));
+  // Past the corner (behind the drag) and in the new Room's way, there must be no Wall.
+  if (wallAt(-sx, -sy) || wallAt(sx, sy)) return start;
+  return {
+    // A Wall runs along the drag's x direction, on the far side of the drag's y direction.
+    x: wallAt(sx, -sy) ? start.x + sx * thickness : start.x,
+    y: wallAt(-sx, sy) ? start.y + sy * thickness : start.y,
+  };
+}
+
+/** mm: how far from a corner the rule looks for Walls. */
+const PROBE = 1;
