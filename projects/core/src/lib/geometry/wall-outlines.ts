@@ -118,6 +118,11 @@ interface Partner {
 }
 
 /** Joined outlines for a set of Walls (normally one Level), keyed by Wall ID. */
+/** mm: how close to its host's end a T-connected Wall counts as lying past it. */
+const PAST = 0.5;
+/** How many T connections deep a host's own ends are worked out. */
+const MAX_T_CHAIN = 3;
+
 export function wallOutlines(
   walls: readonly Wall[],
   connections: readonly WallConnection[],
@@ -136,7 +141,8 @@ export function wallOutlines(
       partners.set(`${c.to}:${c.toEnd}`, { kind: 'corner', other: c.wall, otherEnd: c.end });
   }
 
-  const cap = (wall: Wall, end: WallEnd): EndCap => {
+  /** `depth` stops a chain of T connections from looping back on itself. */
+  const cap = (wall: Wall, end: WallEnd, depth = 0): EndCap => {
     const d = wallDirection(wall);
     const n = perp(d);
     const [lo, hi] = faceOffsets(wall, presetThickness);
@@ -190,9 +196,27 @@ export function wallOutlines(
       return innerW === lo ? { lo: qIn, hi: qOut } : { lo: qOut, hi: qIn };
     }
 
-    // T: butt against the host face on the side this Wall comes from.
+    // T: butt against the host face on the side this Wall comes from. A Wall that lies wholly past
+    // the host's end (beside its corner) reaches on to the host's far face instead, so the corner
+    // between them is solid rather than two Walls touching at a point (ticket 25).
     const far = end === 'start' ? wall.end : wall.start;
-    const face = dot(sub(far, other.start), nO) > 0 ? hiO : loO;
+    const nearIsHi = dot(sub(far, other.start), nO) > 0;
+    const along = [lo, hi].map((o) => dot(sub(add(p, scale(n, o)), other.start), dO));
+    // How far the host's own outline runs along it: its end caps, as its partners shape them.
+    const hostEnds =
+      depth < MAX_T_CHAIN
+        ? [cap(other, 'start', depth + 1), cap(other, 'end', depth + 1)].flatMap((c) => [
+            c.lo,
+            c.hi,
+          ])
+        : [other.start, other.end];
+    const span = hostEnds.map((q) => dot(sub(q, other.start), dO));
+    // Wholly past it: a Wall that still overlaps the host's corner keeps butting its near face
+    // (reaching through would run into the host's corner partner).
+    const past =
+      Math.min(...along) > Math.max(...span) - PAST ||
+      Math.max(...along) < Math.min(...span) + PAST;
+    const face = nearIsHi !== past ? hiO : loO;
     const facePoint = add(other.start, scale(nO, face));
     const pLo = lineIntersection(add(wall.start, scale(n, lo)), d, facePoint, dO);
     const pHi = lineIntersection(add(wall.start, scale(n, hi)), d, facePoint, dO);
@@ -211,6 +235,14 @@ export function wallOutlines(
       startKind: ps ? `${ps.kind}:${ps.otherEnd ?? ''}` : '',
       end: pe && byId.get(pe.other),
       endKind: pe ? `${pe.kind}:${pe.otherEnd ?? ''}` : '',
+      hostPartners: [ps, pe].flatMap((q) =>
+        q?.kind === 'tee'
+          ? (['start', 'end'] as const).map((e) => {
+              const partner = partners.get(`${q.other}:${e}`);
+              return partner ? byId.get(partner.other) : undefined;
+            })
+          : [],
+      ),
     };
     const cached = memo.get(wall);
     if (cached && sameDeps(cached.deps, deps)) {
@@ -233,6 +265,8 @@ interface OutlineDeps {
   readonly startKind: string;
   readonly end: Wall | undefined;
   readonly endKind: string;
+  /** The partners of the Walls this one is T-connected to (they decide where those end) */
+  readonly hostPartners: readonly (Wall | undefined)[];
 }
 
 const sameDeps = (a: OutlineDeps, b: OutlineDeps) =>
@@ -240,7 +274,9 @@ const sameDeps = (a: OutlineDeps, b: OutlineDeps) =>
   a.start === b.start &&
   a.startKind === b.startKind &&
   a.end === b.end &&
-  a.endKind === b.endKind;
+  a.endKind === b.endKind &&
+  a.hostPartners.length === b.hostPartners.length &&
+  a.hostPartners.every((w, i) => w === b.hostPartners[i]);
 
 /**
  * Outlines per Wall object (models are immutable, so an unchanged Wall with unchanged partners

@@ -6,8 +6,12 @@ Found while drawing (2026-10-03): Room 1 drawn 5.00 × 4.00 m inside, then a Roo
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The reproduction (Room 1 at 0,0–5000,4000; a Room from its outer corner −140,4140 to 5010,6430) gives an enclosed Room, and the merged footprint has no notch at that corner (store test).
-- [ ] The filled corner holds for the other three orientations (store test).
-- [ ] Existing drawing tests still pass (Rooms side by side, shared Walls, T connections).
+- [x] The reproduction (Room 1 at 0,0–5000,4000; a Room from its outer corner −140,4140 to 5010,6430) gives an enclosed Room, and the merged footprint has no notch at that corner (store test).
+- [x] The filled corner holds for the other three orientations (store test).
+- [x] Existing drawing tests still pass (Rooms side by side, shared Walls, T connections).
+
+## Comments
+
+**2026-10-03, built:** a geometry rule in the Wall outlines: a T-connected Wall that lies wholly past its host's end (beside the host's corner) reaches on to the host's far face instead of stopping at its near face, so the corner square between them is solid. The host's own outline ends (as its partners shape them) decide "past"; a Wall that still overlaps the host's corner keeps butting the near face, as reaching through would run into the host's corner partner. The outline cache now also keys on the host's partners. Store tests: the reproduction and its mirrored, rotated and upside-down versions are enclosed with a solid corner; an ordinary shared Wall is unchanged. Checked in the browser on the user's own plan: its "not enclosed" Room 3 is now enclosed.
