@@ -5,12 +5,15 @@
  */
 const PATTERN = /^\s*(\d+(?:[.,]\d+)?)\s*(mm|cm|m)?\s*$/i;
 
-/** Millimetres, or null when the text isn't a positive length. */
-export function parseLength(text: string): number | null {
+/**
+ * Millimetres, or null when the text isn't a positive length. `orZero`: 0 is a length too, for a
+ * height above the floor such as a sill.
+ */
+export function parseLength(text: string, options: { orZero?: boolean } = {}): number | null {
   const match = PATTERN.exec(text);
   if (!match) return null;
   const value = Number(match[1]!.replace(',', '.'));
-  if (!(value > 0)) return null;
+  if (!(value > 0) && !(options.orZero && value === 0)) return null;
   const unit = match[2]?.toLowerCase() ?? (value > 50 ? 'mm' : 'm');
   const mm = unit === 'm' ? value * 1000 : unit === 'cm' ? value * 10 : value;
   return Math.round(mm * 1000) / 1000;

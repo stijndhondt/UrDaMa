@@ -112,7 +112,7 @@ export class OpeningTool implements Tool {
           distance: parseLength(values[0] ?? ''),
           width: parseLength(values[1] ?? ''),
           height: parseLength(values[2] ?? ''),
-          sill: this.hasSill ? parseLength(values[3] ?? '') : 0,
+          sill: this.hasSill ? parseLength(values[3] ?? '', { orZero: true }) : 0,
         };
       };
       this.ctx.typed.open(

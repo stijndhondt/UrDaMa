@@ -83,6 +83,15 @@ interface Figure {
  * command and one undo step. Values that follow a Preset are grey; own values have a reset
  * button. With nothing selected it shows the Level, the Presets and the Measurement rule.
  */
+/** Fields whose typed length may be 0 (the command still refuses what it can't take). */
+const ZERO_ALLOWED: ReadonlySet<string> = new Set([
+  'sill',
+  'offset',
+  'floorBuildUp',
+  'elevation',
+  'windowSill',
+]);
+
 @Component({
   selector: 'lk-properties-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -1028,10 +1037,11 @@ export class PropertiesPanelComponent {
 
   /**
    * A typed length (mm) as one field of a command's arguments; text that isn't a length is
-   * ignored and the row shows the value again.
+   * ignored and the row shows the value again. A position or a height above the floor (a sill, a
+   * Floor build-up, an elevation) may be 0.
    */
   protected commitMm<A>(text: string, command: Command<A>, base: object, field: string): void {
-    const value = parseLength(text);
+    const value = parseLength(text, { orZero: ZERO_ALLOWED.has(field) });
     if (value !== null) this.run(command, { ...base, [field]: value } as A);
   }
 
