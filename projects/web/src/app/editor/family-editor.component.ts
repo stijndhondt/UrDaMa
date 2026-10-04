@@ -13,15 +13,14 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { openingFamilySolids, openingShape } from '@urdama/core';
 import { FAMILY_SIDES, FamilyView, type FamilySide } from '@urdama/editor2d';
-import { ManifoldKernel, View3D } from '@urdama/render3d';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { ThemeService } from '../shell/theme.service';
 import { FamilyEditService } from './family-edit.service';
+import { Family3dComponent } from './family-3d.component';
 import { PlanColorsService } from './plan-colors.service';
 
 /** One side's view of the family (ticket 20): its parts projected, with handles to drag. */
@@ -79,68 +78,6 @@ export class FamilySideComponent {
   }
 }
 
-/** The family in 3D (ticket 20), built from the same parts as the six views. */
-@Component({
-  selector: 'lk-family-3d',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<div #view class="view" role="img" [attr.aria-label]="label()"></div>`,
-  styles: `
-    :host,
-    .view {
-      display: block;
-      height: 100%;
-      overflow: hidden;
-    }
-  `,
-})
-export class Family3dComponent {
-  readonly label = input('');
-
-  private readonly edit = inject(FamilyEditService);
-  private readonly container = viewChild.required<ElementRef<HTMLElement>>('view');
-  private view: View3D | null = null;
-  private kernel: ManifoldKernel | null = null;
-  private timer: ReturnType<typeof setTimeout> | null = null;
-
-  constructor() {
-    afterNextRender(() => {
-      this.view = new View3D(this.container().nativeElement, () => undefined);
-      this.kernel = new ManifoldKernel(
-        new Worker(new URL('./manifold.worker', import.meta.url), { type: 'module' }),
-      );
-      this.schedule();
-    });
-    // Follows every change, a drag included: the 3D view always shows what the others do.
-    effect(() => {
-      this.edit.preview();
-      untracked(() => this.schedule());
-    });
-    inject(DestroyRef).onDestroy(() => {
-      if (this.timer) clearTimeout(this.timer);
-      this.kernel?.dispose();
-      this.view?.dispose();
-    });
-  }
-
-  private schedule(): void {
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => void this.build(), 40);
-  }
-
-  private async build(): Promise<void> {
-    this.timer = null;
-    const preview = this.edit.preview();
-    if (!this.kernel || !this.view || !preview) return;
-    const parts = openingShape(preview.design, preview.placement, preview.depth).parts;
-    try {
-      const meshes = await this.kernel.build(openingFamilySolids(parts));
-      if (meshes !== 'superseded') this.view.setMeshes(meshes);
-    } catch (error) {
-      console.error('Family 3D view:', error);
-    }
-  }
-}
-
 /**
  * The Opening family editor (ticket 20): over the panels while a family is edited, the family
  * from the top, front, left, bottom, back and right, and in 3D. The project's own panels stay
@@ -187,7 +124,7 @@ export class Family3dComponent {
       }
       <section class="view v3d">
         <h4>3D</h4>
-        @defer {
+        @defer (on immediate) {
           <lk-family-3d [label]="('family.editing' | translate) + ' · 3D'" />
         }
       </section>

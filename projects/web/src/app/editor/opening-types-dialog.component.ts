@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  model,
+  signal,
+  untracked,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
@@ -197,7 +206,8 @@ export class OpeningTypesDialogComponent {
   private readonly format = inject(FormatService);
   private readonly language = inject(LanguageService);
 
-  protected readonly family = signal<OpeningFamilyId | null>(null);
+  /** The family whose types are shown; null closes the dialog (two-way, from the panel). */
+  readonly family = model<OpeningFamilyId | null>(null);
   protected readonly renameOpeningType = renameOpeningType;
   protected readonly deleteOpeningType = deleteOpeningType;
   protected readonly newName = signal('');
@@ -222,12 +232,17 @@ export class OpeningTypesDialogComponent {
     }));
   });
 
-  open(family: OpeningFamilyId): void {
-    this.family.set(family);
-    const first = this.types()[0];
-    this.newName.set('');
-    this.newWidth.set(first ? String(first.width) : '');
-    this.newHeight.set(first ? String(first.height) : '');
+  constructor() {
+    // Opened for a family: the new-type fields start from its first type's sizes.
+    effect(() => {
+      if (!this.family()) return;
+      untracked(() => {
+        const first = this.types()[0];
+        this.newName.set('');
+        this.newWidth.set(first ? String(first.width) : '');
+        this.newHeight.set(first ? String(first.height) : '');
+      });
+    });
   }
 
   protected resize(type: OpeningTypeId, field: 'width' | 'height', text: string): void {

@@ -328,7 +328,7 @@ const PX_PER_MM = 96 / 25.4;
             <lk-panel-header panel="view3d" title="3D" />
             <div class="body">
               <!-- three.js loads only when the 3D view is first shown. -->
-              @defer {
+              @defer (on immediate) {
                 <lk-view3d />
               }
             </div>
@@ -384,7 +384,11 @@ const PX_PER_MM = 96 / 25.4;
           </div>
           <div class="bottom-body">
             @if (bottomTab() === 'quantities') {
-              <lk-quantities-panel />
+              <!-- Loaded on first use: its tree table is a large part of the UI library (ADR 0008
+                   budget). "on immediate": a plain @defer waits for idle, which a background tab never is. -->
+              @defer (on immediate) {
+                <lk-quantities-panel />
+              }
             } @else {
               <ul class="warnings">
                 @for (w of warnings(); track $index) {

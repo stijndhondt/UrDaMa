@@ -6,7 +6,6 @@ import {
   inject,
   signal,
   untracked,
-  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -30,6 +29,7 @@ import {
   wallLength,
   wallThickness,
   type Command,
+  type OpeningFamilyId,
   type OpeningId,
   type OpeningTypeId,
   type Presets,
@@ -331,7 +331,10 @@ interface Figure {
           </div>
         }
       </section>
-      <lk-opening-types-dialog />
+      <!-- Loaded on first use: its table is a large part of the UI library (ADR 0008 budget). -->
+      @defer (when typesFor() !== null) {
+        <lk-opening-types-dialog [(family)]="typesFor" />
+      }
     } @else if (selection.wall(); as wall) {
       <header>
         <span class="badge"><lk-icon name="brick-wall" /></span>
@@ -647,7 +650,8 @@ export class PropertiesPanelComponent {
   protected readonly updateWall = updateWall;
   protected readonly updateOpening = updateOpening;
   protected readonly setOpeningType = setOpeningType;
-  protected readonly typesDialog = viewChild.required(OpeningTypesDialogComponent);
+  /** The family whose types the Types dialog shows, if it is open. */
+  protected readonly typesFor = signal<OpeningFamilyId | null>(null);
   /** A type size typed while other Openings share the type: waits for "all" or "only this one" */
   protected readonly pendingSize = signal<{
     readonly opening: OpeningId;
@@ -669,12 +673,14 @@ export class PropertiesPanelComponent {
   protected readonly depthSide = signal<'min' | 'max'>('max');
 
   constructor() {
-    // Another selection closes the length editor and drops an unanswered size question.
+    // Another selection closes the length editor and the Types dialog, and drops an unanswered
+    // size question.
     effect(() => {
       this.selection.current();
       untracked(() => {
         this.editingLength.set(false);
         this.pendingSize.set(null);
+        this.typesFor.set(null);
       });
     });
   }
@@ -758,7 +764,7 @@ export class PropertiesPanelComponent {
 
   protected openTypes(type: OpeningTypeId): void {
     const family = this.project.store.model().openingTypes[type]?.family;
-    if (family) this.typesDialog().open(family);
+    if (family) this.typesFor.set(family);
   }
 
   /** The Opening family editor (ticket 20), shown at this type's size. */
