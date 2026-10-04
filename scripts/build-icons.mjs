@@ -6,10 +6,12 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const ICONS = [
   'app-window',
+  'arrow-down',
   'arrow-down-left',
   'arrow-down-to-line',
   'arrow-left-to-line',
   'arrow-right-to-line',
+  'arrow-up',
   'arrow-up-right',
   'arrow-up-to-line',
   'check',
@@ -20,6 +22,7 @@ const ICONS = [
   'chevron-right',
   'columns-2',
   'door-open',
+  'door-stairwell',
   'ellipsis',
   'eye',
   'eye-off',

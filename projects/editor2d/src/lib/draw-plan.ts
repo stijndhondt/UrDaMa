@@ -3,6 +3,7 @@
  */
 import {
   boundingBox,
+  neighbourLevels,
   boxesOverlap,
   interiorPoint,
   openingRect,
@@ -156,6 +157,7 @@ export function drawPlan(
   ctx.fill('nonzero');
 
   drawOpenings(ctx, view, slice, outlines);
+  drawFloorOpenings(ctx, view, host, box);
 
   // Room separators: dashed lines with no physical form.
   ctx.save();
@@ -291,7 +293,8 @@ export function emptyAreaButtonAt(
 
 /**
  * Always visible (Slice 1 spec): the length of every Wall face, and a marker at every Wall end:
- * green = corner Wall connection, blue = T, red square = connected to nothing.
+ * green = corner Wall connection, blue = T, red square = connected to nothing, grey ring = a Free
+ * end (connected to nothing on purpose).
  */
 export function drawWallDetails(
   ctx: CanvasRenderingContext2D,
@@ -330,7 +333,13 @@ export function drawWallDetails(
     for (const end of ['start', 'end'] as const) {
       const s = view.toScreen(wall[end]);
       const kind = ends.get(`${wall.id}:${end}`);
-      if (!kind) {
+      if (!kind && wall.freeEnds) {
+        ctx.strokeStyle = planColors().muted;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 3.5, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (!kind) {
         ctx.strokeStyle = planColors().bad;
         ctx.lineWidth = 1.5;
         ctx.strokeRect(s.x - 4, s.y - 4, 8, 8);
@@ -516,6 +525,8 @@ export function drawSelected(
       ring = o ? openingOutline(model, values.outlines(), o) : null;
     } else if (item.kind === 'wall') {
       ring = values.outlines().get(item.id) ?? null;
+    } else if (item.kind === 'floorOpening') {
+      ring = model.floorOpenings[item.id]?.outline ?? null;
     } else {
       const d = host.store.values.room(item.id).detection();
       ring = d && d.status !== 'notEnclosed' ? d.area.outline : null;
@@ -523,6 +534,50 @@ export function drawSelected(
     if (ring) tracePolygon(ctx, view, ring);
   }
   ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * Floor openings (for stairs and lifts): through this Level's floor drawn solid and crossed,
+ * the conventional void symbol; through the floor of the Level above dashed, as seen in the Ceiling.
+ */
+function drawFloorOpenings(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  host: EditorHost,
+  box: Box,
+): void {
+  const level = host.level();
+  const above = neighbourLevels(host.store.model(), level).above;
+  const here = host.store.values.level(level).slice().floorOpenings;
+  const overhead = above ? host.store.values.level(above).slice().floorOpenings : [];
+  ctx.save();
+  for (const [openings, dashed] of [
+    [here, false],
+    [overhead, true],
+  ] as const) {
+    ctx.setLineDash(dashed ? [6, 4] : []);
+    for (const f of openings) {
+      if (!overlaps(f.outline, box)) continue;
+      const points = f.outline.map((p) => view.toScreen(p));
+      ctx.beginPath();
+      tracePolygon(ctx, view, f.outline);
+      if (!dashed) {
+        ctx.fillStyle = planColors().paper;
+        ctx.fill();
+      }
+      // Diagonals across its outline: a cross for a four-sided opening.
+      for (let i = 0; i < points.length / 2; i++) {
+        const a = points[i]!;
+        const b = points[(i + Math.floor(points.length / 2)) % points.length]!;
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+      }
+      ctx.strokeStyle = planColors().wallStroke;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
   ctx.restore();
 }
 

@@ -119,6 +119,10 @@ export class ContextMenuItemsService {
         headingKey = 'contextMenu.separator';
         items = [{ ...del, separated: false }];
         break;
+      case 'floorOpening':
+        headingKey = 'contextMenu.floorOpening';
+        items = [{ ...del, separated: false }];
+        break;
     }
     return { at: menu.at, name, headingKey, items };
   });

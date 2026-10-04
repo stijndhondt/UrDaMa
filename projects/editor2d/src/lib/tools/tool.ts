@@ -12,7 +12,7 @@ import type { EditorHost } from '../host';
 import type { TypedInput } from '../typed-input';
 import type { View } from '../view';
 
-export type ToolName = 'select' | 'room' | 'wall' | 'separator' | OpeningKind;
+export type ToolName = 'select' | 'room' | 'wall' | 'separator' | OpeningKind | 'floorOpening';
 
 export interface PointerInfo {
   /** Plan position in mm */

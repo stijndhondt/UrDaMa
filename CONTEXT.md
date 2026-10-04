@@ -42,9 +42,17 @@ _Avoid_: Axis, centreline (unless the Wall is centred), location line
 A stored attachment of one Wall's end to another Wall: either to its end (a corner) or to its face at a given distance (a T). Connected Walls move together; unconnected Walls never join, however close they are. A T stays where it is in the plan: when a move leaves its host no longer reaching it, it is carried by the Wall that now does (the same connection, another host). When no Wall does, it stays on its host while it still meets the host's end (within the host's thickness, as a T at a Wall's end always could); beyond that the move is refused.
 _Avoid_: Snap, join (for the stored relationship; "join" is the computed geometry)
 
+**Free end**:
+A Wall end that is connected to nothing on purpose, such as the end of a garden wall or a short return. A Wall states that its unconnected ends are Free ends; other unconnected ends are flagged as possible mistakes.
+_Avoid_: Open end, loose end, dangling end
+
 **Opening**:
 A hole in a Wall, placed as an instance of an Opening type: a door, a window, a wall opening or a garage door. It is positioned along the Wall's Baseline, has its own sill height and opening direction, and takes its other sizes from its type. It cannot exist without its host Wall.
 _Avoid_: Hole, cut-out, aperture, block
+
+**Floor opening**:
+A hole through the Slab between two Levels, for a stair or a lift. It is drawn on either Level and goes up or down to a Level that already exists; it belongs to the upper Level, whose floor it goes through. It is left out of the Floor finish of the Level above and the Ceiling of the Level below; the Rooms keep their Net floor area.
+_Avoid_: Void, stairwell (for the element; a stairwell is one use of it), trapgat (in code; the Dutch UI says Vloeropening)
 
 **Opening family**:
 A design of an Opening, made once as one object from parametric parts (frame, leaves, glass, panels) and seen in every view, such as "interior door, single leaf". A change to the family changes all its Opening types and every Opening of them.

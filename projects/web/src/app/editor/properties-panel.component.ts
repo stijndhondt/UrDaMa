@@ -10,10 +10,13 @@ import {
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import {
+  boundingBox,
   deleteLevel,
   familyTypes,
   hasSill,
+  neighbourLevels,
   netWallArea,
+  ringArea,
   openingsOfType,
   presetSize,
   setOpeningType,
@@ -409,6 +412,14 @@ interface Figure {
           [choice]="wall.roomBounding ? 'yes' : 'no'"
           (commit)="run(updateWall, { wall: wall.id, roomBounding: $event === 'yes' })"
         />
+        <lk-prop
+          [label]="'panel.wall.freeEnds' | translate"
+          [value]="(wall.freeEnds ? 'common.yes' : 'common.no') | translate"
+          [hint]="'panel.wall.freeEndsHint' | translate"
+          [choices]="yesNo()"
+          [choice]="wall.freeEnds ? 'yes' : 'no'"
+          (commit)="run(updateWall, { wall: wall.id, freeEnds: $event === 'yes' })"
+        />
       </section>
       @if (wallFaces(); as faces) {
         <section>
@@ -423,6 +434,38 @@ interface Figure {
           }
         </section>
       }
+    } @else if (floorOpeningFigures(); as f) {
+      <header>
+        <span class="badge"><lk-icon name="door-stairwell" /></span>
+        <div>
+          <h2>{{ 'panel.floorOpening.title' | translate }}</h2>
+          <span class="kind">{{
+            'panel.floorOpening.between' | translate: { below: f.below, above: f.above }
+          }}</span>
+        </div>
+      </header>
+      <section>
+        <h3>{{ 'panel.sizes' | translate }}</h3>
+        <lk-prop
+          [label]="'panel.floorOpening.width' | translate"
+          [value]="f.width"
+          unit="m"
+          [editable]="false"
+        />
+        <lk-prop
+          [label]="'panel.floorOpening.depth' | translate"
+          [value]="f.depth"
+          unit="m"
+          [editable]="false"
+        />
+        <lk-prop
+          [label]="'panel.floorOpening.area' | translate"
+          [value]="f.area"
+          unit="m²"
+          [hint]="'panel.floorOpening.areaHint' | translate"
+          [editable]="false"
+        />
+      </section>
     } @else if (selection.rooms().length === 2) {
       <header>
         <span class="badge"><lk-icon name="merge" /></span>
@@ -951,6 +994,22 @@ export class PropertiesPanelComponent {
       slabOwn: Object.values(model.slabs).some((s) => s.level === id && s.thickness !== undefined),
       gross: this.format.decimal(values.grossArea() / 1e6),
       net: this.format.decimal(values.netFloorArea() / 1e6),
+    };
+  });
+
+  /** The selected Floor opening: the Levels it connects, its size and area. */
+  protected readonly floorOpeningFigures = computed(() => {
+    const f = this.selection.floorOpening();
+    if (!f) return null;
+    const model = this.project.store.model();
+    const { min, max } = boundingBox(f.outline);
+    const below = neighbourLevels(model, f.level).below;
+    return {
+      above: model.levels[f.level]?.name ?? '',
+      below: (below && model.levels[below]?.name) ?? '',
+      width: this.format.metres((max.x - min.x) / 1000),
+      depth: this.format.metres((max.y - min.y) / 1000),
+      area: this.format.decimal(Math.abs(ringArea(f.outline)) / 1e6),
     };
   });
 

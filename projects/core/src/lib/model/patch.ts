@@ -17,6 +17,7 @@ export const COLLECTIONS: readonly CollectionName[] = [
   'roomSeparators',
   'slabs',
   'ceilings',
+  'floorOpenings',
 ];
 
 export type PatchOp =

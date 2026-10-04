@@ -16,7 +16,8 @@
       "door": "Beweeg langs een muur om een deur te plaatsen: je ziet de afstand tot beide binnenhoeken. Klik om te plaatsen, of typ de afstand, Tab, breedte, Tab, hoogte, Enter. F: scharnierkant, Shift+F: draairichting.",
       "window": "Beweeg langs een muur om een raam te plaatsen: je ziet de afstand tot beide binnenhoeken. Klik om te plaatsen, of typ de afstand, Tab, breedte, Tab, hoogte, Tab, borstwering, Enter.",
       "wallOpening": "Beweeg over een muur: de muuropening schuift mee met de afstanden tot beide hoeken. Klik om te plaatsen; of typ afstand, breedte, hoogte en borstwering, Enter.",
-      "garageDoor": "Beweeg over een muur: de garagepoort schuift mee met de afstanden tot beide hoeken. Klik om te plaatsen; of typ afstand, breedte en hoogte, Enter."
+      "garageDoor": "Beweeg over een muur: de garagepoort schuift mee met de afstanden tot beide hoeken. Klik om te plaatsen; of typ afstand, breedte en hoogte, Enter.",
+      "floorOpening": "Sleep een trapgat of liftschacht (of klik twee tegenoverliggende hoeken). Kies daarna of het naar boven of naar onder gaat: de bouwlaag waarmee het verbindt moet bestaan (voeg het eerst toe in het gebouwpaneel)."
     }
   },
   "tools": {
@@ -51,6 +52,10 @@
     "garageDoor": {
       "name": "Garagepoort",
       "hint": "Een kantelende of sectionale garagepoort."
+    },
+    "floorOpening": {
+      "name": "Vloeropening",
+      "hint": "Een trapgat of liftschacht door de vloer tussen twee bouwlagen"
     }
   },
   "editor": {
@@ -77,12 +82,17 @@
       "width": "Breedte",
       "height": "Hoogte",
       "sill": "Borstwering"
+    },
+    "floorOpening": {
+      "which": "Welke richting gaat het uit?",
+      "up": "Naar boven, naar {level}",
+      "down": "Naar onder, naar {level}"
     }
   },
   "warnings": {
     "notEnclosed": "{room} is niet afgesloten: dicht de opening of verbind de muuruiteinden.",
     "sharingArea": "{rooms} delen één ruimte: verwijder er één of voeg een scheiding toe.",
-    "unconnectedEnds": "{count, plural, one {# muuruiteinde is} other {# muuruiteinden zijn}} nergens mee verbonden (rode vierkantjes).",
+    "unconnectedEnds": "{count, plural, one {# muuruiteinde is} other {# muuruiteinden zijn}} nergens mee verbonden (rode vierkantjes). Is dat de bedoeling, zet dan Vrije uiteinden aan bij die muur.",
     "ceilingIntoSlab": "Het plafond van {room} steekt {mm} mm in de vloerplaat erboven.",
     "short": {
       "notEnclosed": "niet afgesloten",
@@ -236,6 +246,12 @@
       "same": "De muur staat al onder die hoek.",
       "tooShort": "Geweigerd: muur {wall} zou korter worden dan {min} mm of omklappen.",
       "parallel": "Geweigerd: het uiteinde kan niet langs muur {wall} schuiven, ze zouden evenwijdig lopen. Kies 'Buren kantelen'."
+    },
+    "floorOpening": {
+      "label": "Vloeropening tekenen",
+      "tooSmall": "Geweigerd: een vloeropening is minstens {min} mm in elke richting.",
+      "noLevelAbove": "Geweigerd: er is geen bouwlaag boven deze bouwlaag. Voeg het eerst toe (gebouwpaneel: Bouwlaag erboven).",
+      "noLevelBelow": "Geweigerd: er is geen bouwlaag onder deze bouwlaag. Voeg het eerst toe (gebouwpaneel: Bouwlaag eronder)."
     }
   },
   "invariants": {
@@ -244,7 +260,9 @@
     "twoCorners": "Geweigerd: muur {wall} zou twee hoekverbindingen aan één uiteinde krijgen.",
     "overlap": "Geweigerd: muren {a} en {b} zouden overlappen.",
     "openingOutsideWall": "Geweigerd: de deur of het raam zou voorbij het einde van de muur uitsteken.",
-    "openingsOverlap": "Geweigerd: twee deuren of ramen zouden overlappen in dezelfde muur."
+    "openingsOverlap": "Geweigerd: twee deuren of ramen zouden overlappen in dezelfde muur.",
+    "floorOpeningNoLevelBelow": "Geweigerd: vloeropening {id} zou geen bouwlaag eronder hebben.",
+    "floorOpeningOutline": "Geweigerd: vloeropening {id} heeft minstens drie hoeken nodig."
   },
   "areas": {
     "noRoom": "geen ruimte",
@@ -322,6 +340,8 @@
       "side": "Kant van de dikte",
       "height": "Muurhoogte",
       "roomBounding": "Begrenst ruimtes",
+      "freeEnds": "Vrije uiteinden",
+      "freeEndsHint": "Ja: uiteinden die nergens mee verbonden zijn, zijn zo bedoeld (geen waarschuwing, grijs rondje in plaats van een rood vierkantje)",
       "faces": "Zijden",
       "drawnFace": "Getekende zijde",
       "otherFace": "Andere zijde",
@@ -419,6 +439,14 @@
       "height": "m hoog",
       "openingArea": "m² opening",
       "glassArea": "m² glas"
+    },
+    "floorOpening": {
+      "title": "Vloeropening",
+      "between": "Tussen {below} en {above}",
+      "width": "Breedte",
+      "depth": "Diepte",
+      "area": "Oppervlakte",
+      "areaHint": "Niet meegeteld in de vloerafwerking erboven en het plafond eronder"
     }
   },
   "presets": {
@@ -515,7 +543,8 @@
     "resetThickness": "Dikte terug naar standaard",
     "flipHinge": "Scharnier aan de andere kant",
     "flipSwing": "Naar de andere kant opendraaien",
-    "delete": "Verwijderen"
+    "delete": "Verwijderen",
+    "floorOpening": "Vloeropening"
   },
   "shell": {
     "panels": "Panelen",
@@ -538,7 +567,7 @@
       "dark": "Donker"
     },
     "divider": "Sleep om plattegrond en 3D te verdelen",
-    "openingTypes": "Openingtypes",
+    "openingTypes": "Maat van de opening die je plaatst",
     "snap": "Kleven (G)",
     "snapHint": "Kleeft tijdens het tekenen aan muurhoeken en -vlakken, uitlijnhulplijnen en stappen. Houd Alt ingedrukt om het voor één punt om te keren."
   },

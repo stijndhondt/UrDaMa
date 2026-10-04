@@ -16,7 +16,8 @@
       "door": "Move along a Wall to place a door: it shows the distance to both inside corners. Click to place, or type the distance, Tab, width, Tab, height, Enter. F: hinge side, Shift+F: swing.",
       "window": "Move along a Wall to place a window: it shows the distance to both inside corners. Click to place, or type the distance, Tab, width, Tab, height, Tab, sill, Enter.",
       "wallOpening": "Hover a Wall: the wall opening slides along it with its distances to both corners. Click places it; or type the distance, width, height and sill, Enter.",
-      "garageDoor": "Hover a Wall: the garage door slides along it with its distances to both corners. Click places it; or type the distance, width and height, Enter."
+      "garageDoor": "Hover a Wall: the garage door slides along it with its distances to both corners. Click places it; or type the distance, width and height, Enter.",
+      "floorOpening": "Drag a stairwell or lift shaft (or click two opposite corners). Then choose whether it goes up or down: the Level it connects to must exist (add it in the Building panel first)."
     }
   },
   "tools": {
@@ -51,6 +52,10 @@
     "garageDoor": {
       "name": "Garage door",
       "hint": "An overhead garage door."
+    },
+    "floorOpening": {
+      "name": "Floor opening",
+      "hint": "A stairwell or lift shaft through the floor between two Levels"
     }
   },
   "editor": {
@@ -77,12 +82,17 @@
       "width": "Width",
       "height": "Height",
       "sill": "Sill"
+    },
+    "floorOpening": {
+      "which": "Which way does it go?",
+      "up": "Up, to {level}",
+      "down": "Down, to {level}"
     }
   },
   "warnings": {
     "notEnclosed": "{room} is not enclosed: close the gap or connect the Wall ends.",
     "sharingArea": "{rooms} share one area: delete one or add a Room separator.",
-    "unconnectedEnds": "{count, plural, one {# Wall end is} other {# Wall ends are}} connected to nothing (red squares).",
+    "unconnectedEnds": "{count, plural, one {# Wall end is} other {# Wall ends are}} connected to nothing (red squares). If that is on purpose, set Free ends on the Wall.",
     "ceilingIntoSlab": "The Ceiling of {room} runs {mm} mm into the Slab above.",
     "short": {
       "notEnclosed": "not enclosed",
@@ -236,6 +246,12 @@
       "same": "The Wall already has that angle.",
       "tooShort": "Refused: wall {wall} would be shorter than {min} mm or turn back on itself.",
       "parallel": "Refused: the end cannot slide along wall {wall}, it would run parallel. Use Neighbours tilt instead."
+    },
+    "floorOpening": {
+      "label": "Draw a Floor opening",
+      "tooSmall": "Refused: a Floor opening is at least {min} mm each way.",
+      "noLevelAbove": "Refused: there is no Level above this one. Add it first (Building panel: Level above).",
+      "noLevelBelow": "Refused: there is no Level below this one. Add it first (Building panel: Level below)."
     }
   },
   "invariants": {
@@ -244,7 +260,9 @@
     "twoCorners": "Refused: wall {wall} would get two corner connections at one end.",
     "overlap": "Refused: walls {a} and {b} would overlap.",
     "openingOutsideWall": "Refused: the door or window would stick out past the end of its Wall.",
-    "openingsOverlap": "Refused: two doors or windows would overlap in the same Wall."
+    "openingsOverlap": "Refused: two doors or windows would overlap in the same Wall.",
+    "floorOpeningNoLevelBelow": "Refused: Floor opening {id} would have no Level below it.",
+    "floorOpeningOutline": "Refused: Floor opening {id} needs at least three corners."
   },
   "areas": {
     "noRoom": "no Room",
@@ -322,6 +340,8 @@
       "side": "Thickness side",
       "height": "Wall height",
       "roomBounding": "Bounds Rooms",
+      "freeEnds": "Free ends",
+      "freeEndsHint": "Yes: its ends that connect to nothing are meant that way (no warning, grey ring instead of a red square)",
       "faces": "Faces",
       "drawnFace": "Drawn face",
       "otherFace": "Other face",
@@ -419,6 +439,14 @@
       "height": "m high",
       "openingArea": "m² opening",
       "glassArea": "m² glass"
+    },
+    "floorOpening": {
+      "title": "Floor opening",
+      "between": "Between {below} and {above}",
+      "width": "Width",
+      "depth": "Depth",
+      "area": "Area",
+      "areaHint": "Left out of the floor finish above it and the ceiling below it"
     }
   },
   "presets": {
@@ -515,7 +543,8 @@
     "resetThickness": "Reset thickness to Preset",
     "flipHinge": "Hinge on the other side",
     "flipSwing": "Open to the other side",
-    "delete": "Delete"
+    "delete": "Delete",
+    "floorOpening": "Floor opening"
   },
   "shell": {
     "panels": "Panels",
@@ -538,7 +567,7 @@
       "dark": "Dark"
     },
     "divider": "Drag to resize the plan and 3D",
-    "openingTypes": "Opening types",
+    "openingTypes": "Size of the Opening to place",
     "snap": "Snapping (G)",
     "snapHint": "Snaps to Wall corners and faces, alignment guides and steps while you draw. Hold Alt to do the opposite for one point."
   },

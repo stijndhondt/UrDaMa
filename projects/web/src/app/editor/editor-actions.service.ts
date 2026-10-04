@@ -34,6 +34,7 @@ export class EditorActionsService {
       rooms: s.flatMap((x) => (x.kind === 'room' ? [x.id] : [])),
       separators: s.flatMap((x) => (x.kind === 'separator' ? [x.id] : [])),
       openings: s.flatMap((x) => (x.kind === 'opening' ? [x.id] : [])),
+      floorOpenings: s.flatMap((x) => (x.kind === 'floorOpening' ? [x.id] : [])),
     });
     if (ok) this.selection.clear();
   }

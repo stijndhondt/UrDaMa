@@ -1,4 +1,6 @@
 import type {
+  FloorOpeningDirection,
+  FloorOpeningId,
   LevelId,
   Message,
   OpeningId,
@@ -18,7 +20,8 @@ export type Selection =
   | { readonly kind: 'wall'; readonly id: WallId }
   | { readonly kind: 'room'; readonly id: RoomId }
   | { readonly kind: 'separator'; readonly id: RoomSeparatorId }
-  | { readonly kind: 'opening'; readonly id: OpeningId };
+  | { readonly kind: 'opening'; readonly id: OpeningId }
+  | { readonly kind: 'floorOpening'; readonly id: FloorOpeningId };
 
 /** What the editor needs from the app around it. */
 export interface EditorHost {
@@ -57,6 +60,11 @@ export interface EditorHost {
   readonly setWallAnchor?: (anchor: WallAnchor) => void;
   /** What follows when a Wall turns (see RotateWall); its ends slide when absent. */
   readonly turnMode?: () => RotateWallArgs['mode'];
+  /**
+   * A Floor opening was drawn on a Level with a Level above and below: the app asks which way it
+   * goes, near this point (canvas px). Null: the user cancelled. Without it, it goes up.
+   */
+  readonly chooseFloorOpeningDirection?: (at: Vec) => Promise<FloorOpeningDirection | null>;
   /** The colours to draw with (the app's theme); the light defaults when absent. */
   readonly colors?: () => PlanColors;
   /** Whether snapping is on (ticket 26: the snap toggle); on when absent. Alt inverts it. */

@@ -8,6 +8,18 @@ export function levelsInOrder(model: Model, building?: BuildingId): Level[] {
     .sort((a, b) => a.order - b.order);
 }
 
+/** The Levels just above and below a Level in its Building, if there are any. */
+export function neighbourLevels(
+  model: Model,
+  level: LevelId,
+): { readonly above: LevelId | null; readonly below: LevelId | null } {
+  const l = model.levels[level];
+  if (!l) return { above: null, below: null };
+  const stack = levelsInOrder(model, l.building);
+  const i = stack.findIndex((x) => x.id === level);
+  return { above: stack[i + 1]?.id ?? null, below: stack[i - 1]?.id ?? null };
+}
+
 /**
  * The Walls of a Level numbered 1, 2, 3… in ID order: the "Wall 3" the Building panel and the
  * Quantities tree both show.

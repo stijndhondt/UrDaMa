@@ -11,7 +11,7 @@ import { COLLECTIONS } from '../model/patch';
 import type { CollectionName, Model } from '../model/types';
 
 export const FILE_FORMAT = 'urdama';
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 export const FILE_EXTENSION = '.urdama.json';
 /** The app's earlier name: its files are read, never written. */
 export const LEGACY_FILE_FORMATS: readonly string[] = ['lakudemis'];
@@ -26,7 +26,13 @@ type Doc = Record<string, unknown>;
 export const MIGRATIONS: Readonly<Record<number, (doc: Doc) => Doc>> = {
   1: openingTypesFromSizes,
   2: wallOpeningAndGarageDoorFamilies,
+  3: noFloorOpenings,
 };
+
+/** Version 3 → 4: Floor openings (for stairs and lifts); a file from before has none. */
+function noFloorOpenings(doc: Doc): Doc {
+  return { ...doc, schemaVersion: 4, floorOpenings: [] };
+}
 
 /**
  * Version 2 → 3 (ticket 17): the built-in wall opening and garage door families, each with its
@@ -118,7 +124,7 @@ const KEY_ORDER: Readonly<
   vec: ['x', 'y'],
   buildings: ['id', 'name', 'baseElevation'],
   levels: ['id', 'building', 'name', 'order', 'storeyHeight'],
-  walls: ['id', 'level', 'start', 'end', 'side', 'thickness', 'height', 'roomBounding'],
+  walls: ['id', 'level', 'start', 'end', 'side', 'thickness', 'height', 'roomBounding', 'freeEnds'],
   wallConnections: ['id', 'wall', 'end', 'kind', 'to', 'toEnd', 'at'],
   openingFamilies: ['id', 'kind', 'name', 'design'],
   design: ['frame', 'bottomRail', 'infill'],
@@ -130,6 +136,7 @@ const KEY_ORDER: Readonly<
   roomSeparators: ['id', 'level', 'start', 'end', 'startWall', 'endWall'],
   slabs: ['id', 'level', 'thickness'],
   ceilings: ['id', 'room', 'thickness'],
+  floorOpenings: ['id', 'level', 'outline'],
 };
 
 /** Which nested objects use which key order. */
@@ -138,6 +145,7 @@ const NESTED: Readonly<Record<string, keyof typeof KEY_ORDER>> = {
   start: 'vec',
   end: 'vec',
   seed: 'vec',
+  outline: 'vec',
   design: 'design',
   frame: 'frame',
   infill: 'infill',
@@ -161,6 +169,7 @@ function ordered(value: unknown, keys: readonly string[]): Doc {
 
 function clean(value: unknown, kind?: keyof typeof KEY_ORDER): unknown {
   if (typeof value === 'number') return round(value);
+  if (Array.isArray(value) && kind) return value.map((v) => clean(v, kind));
   if (kind && value && typeof value === 'object') return ordered(value, KEY_ORDER[kind]);
   return value;
 }

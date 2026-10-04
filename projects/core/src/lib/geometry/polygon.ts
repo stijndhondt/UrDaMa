@@ -110,6 +110,16 @@ export function interiorPoint(
   return best ?? outline[0]!;
 }
 
+/** The parts of one ring inside another (each part a ring), e.g. a hole clipped to an outline. */
+export function intersectionRings(a: readonly Vec[], b: readonly Vec[]): Vec[][] {
+  const clipper = new Clipper64();
+  clipper.addSubject([toPath(a)]);
+  clipper.addClip([toPath(b)]);
+  const out: Path64[] = [];
+  clipper.execute(ClipType.Intersection, FillRule.NonZero, out);
+  return out.map((p) => p.map((v) => ({ x: v.x / UNITS, y: v.y / UNITS })));
+}
+
 /** Area (mm²) of the intersection of two areas, each an outline with optional islands. */
 export function intersectionArea(
   a: { outline: readonly Vec[]; islands?: readonly (readonly Vec[])[] },

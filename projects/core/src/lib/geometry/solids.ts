@@ -9,6 +9,7 @@ import type { LevelId, Model, OpeningId, RoomId, SlabId, Vec, WallId } from '../
 import { levelsInOrder } from '../model/levels';
 import type { BuildingValues } from '../values/building-values';
 import { partRing } from './opening-geometry';
+import { intersectionRings } from './polygon';
 import { openingRect } from './wall-outlines';
 
 /** A vertical prism: plan rings (the first is the outline, the rest are holes), bottom to top. */
@@ -135,13 +136,21 @@ export function buildingSolids(model: Model, values: BuildingValues): BuildingSo
 
     const slab = Object.values(model.slabs).find((s) => s.level === level.id);
     const outer = lv.footprint().outer;
+    // Floor openings through this Level's floor: holes in its Slab and Floor build-up, each
+    // clipped to the outline it cuts (one may lie against a Wall or span two Rooms).
+    const holesIn = (outline: readonly Vec[]) =>
+      slice.floorOpenings.flatMap((f) => intersectionRings(f.outline, outline));
     if (slab && outer.length) {
       for (const ring of outer) {
         solids.push({
           kind: 'slab',
           id: slab.id,
           level: level.id,
-          body: { rings: [ring], bottom: h.slabTop - h.slabThickness, top: h.slabTop },
+          body: {
+            rings: [ring, ...holesIn(ring)],
+            bottom: h.slabTop - h.slabThickness,
+            top: h.slabTop,
+          },
         });
       }
     }
@@ -156,7 +165,7 @@ export function buildingSolids(model: Model, values: BuildingValues): BuildingSo
         id: room.id,
         level: level.id,
         body: {
-          rings: [d.area.outline, ...d.area.islands],
+          rings: [d.area.outline, ...d.area.islands, ...holesIn(d.area.outline)],
           bottom: h.slabTop,
           top: h.slabTop + buildUp,
         },

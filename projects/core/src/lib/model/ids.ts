@@ -17,6 +17,7 @@ export const ID_PREFIX = {
   roomSeparators: 'rsp',
   slabs: 'slb',
   ceilings: 'cei',
+  floorOpenings: 'fop',
 } as const satisfies Record<CollectionName | 'project', string>;
 
 export type IdKind = keyof typeof ID_PREFIX;

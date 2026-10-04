@@ -17,6 +17,7 @@ import { WallTool } from './tools/wall-tool';
 import { SelectTool } from './tools/select-tool';
 import { SeparatorTool } from './tools/separator-tool';
 import { OpeningTool } from './tools/opening-tool';
+import { FloorOpeningTool } from './tools/floor-opening-tool';
 import type { PointerInfo, Tool, ToolContext, ToolName } from './tools/tool';
 import { TypedInput } from './typed-input';
 import { View } from './view';
@@ -28,8 +29,15 @@ export class PlanEditor {
   private readonly tools: Partial<Record<ToolName, Tool>>;
   private tool: Tool | null = null;
   private last: PointerInfo | null = null;
-  /** A drag from the Library panel over the plan: the tool to return to when it ends */
-  private drag: { readonly tool: ToolName | null } | null = null;
+  /**
+   * A drag from the Library panel over the plan: the tool to return to when it ends, and the type
+   * the dragged kind's tool placed before
+   */
+  private drag: {
+    readonly tool: ToolName | null;
+    readonly kind: OpeningKind;
+    readonly type: OpeningTypeId | null;
+  } | null = null;
   private pan: { x: number; y: number } | null = null;
   private spaceHeld = false;
   private frame = 0;
@@ -64,6 +72,7 @@ export class PlanEditor {
       window: new OpeningTool(toolContext, 'window'),
       wallOpening: new OpeningTool(toolContext, 'wallOpening'),
       garageDoor: new OpeningTool(toolContext, 'garageDoor'),
+      floorOpening: new FloorOpeningTool(toolContext),
     };
     this.setTool('room');
 
@@ -96,9 +105,15 @@ export class PlanEditor {
     return this.tool?.name ?? null;
   }
 
+  /** The Opening type an Opening tool places (null: its kind's default size). */
+  openingType(kind: OpeningKind): OpeningTypeId | null {
+    const tool = this.tools[kind];
+    return tool instanceof OpeningTool ? tool.chosenType : null;
+  }
+
   /**
-   * The tool bar's Opening type flyout (ticket 17): the tool of the type's kind, placing that
-   * type. Choosing a tool by its button or key places the kind's default size again.
+   * The tool bar's Opening type list (ticket 17): the tool of the type's kind, placing that type.
+   * The tool keeps placing it, also when it is chosen again by its button or key.
    */
   placeOpeningType(kind: OpeningKind, type: OpeningTypeId): void {
     this.setTool(kind);
@@ -112,7 +127,7 @@ export class PlanEditor {
    */
   dragOpeningType(kind: OpeningKind, type: OpeningTypeId, e: MouseEvent, drop: boolean): void {
     if (!this.drag) {
-      this.drag = { tool: this.tool?.name ?? null };
+      this.drag = { tool: this.tool?.name ?? null, kind, type: this.openingType(kind) };
       this.placeOpeningType(kind, type);
     }
     this.last = this.info(e);
@@ -128,9 +143,11 @@ export class PlanEditor {
   /** A drag from the Library panel ended (dropped, or left the plan): the tool before it again. */
   endDrag(): void {
     if (!this.drag) return;
-    const before = this.drag.tool;
+    const { tool: before, kind, type } = this.drag;
     this.drag = null;
     this.tool?.cancel();
+    const dragged = this.tools[kind];
+    if (dragged instanceof OpeningTool) dragged.setType(type);
     if (before) this.chooseTool(before);
     this.invalidate();
   }
@@ -143,11 +160,9 @@ export class PlanEditor {
     this.invalidate();
   }
 
-  /** A tool chosen by its button or key: an Opening tool places its kind's default size again. */
+  /** A tool chosen by its button or key: an Opening tool places the type last chosen for it. */
   chooseTool(name: ToolName): void {
     this.setTool(name);
-    const tool = this.tools[name];
-    if (tool instanceof OpeningTool) tool.setType(null);
   }
 
   /** Changed Rooms to highlight (old → new feedback). */

@@ -8,7 +8,7 @@
  */
 import { remove } from '../model/edit';
 import { message } from '../model/message';
-import type { OpeningId, RoomId, RoomSeparatorId, WallId } from '../model/types';
+import type { FloorOpeningId, OpeningId, RoomId, RoomSeparatorId, WallId } from '../model/types';
 import { refuse, type Command } from './command';
 
 export interface DeleteElementsArgs {
@@ -16,6 +16,7 @@ export interface DeleteElementsArgs {
   readonly rooms: readonly RoomId[];
   readonly separators?: readonly RoomSeparatorId[];
   readonly openings?: readonly OpeningId[];
+  readonly floorOpenings?: readonly FloorOpeningId[];
 }
 
 export const deleteElements: Command<DeleteElementsArgs> = (model, args) => {
@@ -25,7 +26,14 @@ export const deleteElements: Command<DeleteElementsArgs> = (model, args) => {
     (args.separators ?? []).filter((id) => model.roomSeparators[id]),
   );
   const chosenOpenings = new Set<string>((args.openings ?? []).filter((id) => model.openings[id]));
-  if (!walls.size && !rooms.size && !separators.size && !chosenOpenings.size)
+  const floorOpenings = (args.floorOpenings ?? []).filter((id) => model.floorOpenings[id]);
+  if (
+    !walls.size &&
+    !rooms.size &&
+    !separators.size &&
+    !chosenOpenings.size &&
+    !floorOpenings.length
+  )
     return refuse(message('commands.delete.nothing'));
 
   for (const s of Object.values(model.roomSeparators)) {
@@ -47,6 +55,8 @@ export const deleteElements: Command<DeleteElementsArgs> = (model, args) => {
   next = remove(next, 'roomSeparators', [...separators]);
   next = remove(next, 'rooms', [...rooms]);
   next = remove(next, 'ceilings', ceilings);
-  const count = walls.size + rooms.size + separators.size + chosenOpenings.size;
+  next = remove(next, 'floorOpenings', floorOpenings);
+  const count =
+    walls.size + rooms.size + separators.size + chosenOpenings.size + floorOpenings.length;
   return { ok: true, model: next, label: message('commands.delete.label', { count }) };
 };

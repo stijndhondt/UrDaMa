@@ -72,5 +72,6 @@ export function createProject(options: NewProjectOptions, ids: IdGenerator): Mod
     roomSeparators: {},
     slabs: { [slab.id]: slab },
     ceilings: {},
+    floorOpenings: {},
   };
 }

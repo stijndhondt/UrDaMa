@@ -13,6 +13,7 @@ import { derived, type Derived } from '../reactive';
 import { levelsInOrder } from '../model/levels';
 import { message, type Message } from '../model/message';
 import { footprint, type Footprint, type RoomDetection } from '../geometry/footprint';
+import { intersectionArea } from '../geometry/polygon';
 import { wallOutlines, type WallOutline } from '../geometry/wall-outlines';
 import {
   heightOverlap,
@@ -23,6 +24,7 @@ import {
 } from './surfaces';
 import type {
   Ceiling,
+  FloorOpening,
   Level,
   LevelId,
   Model,
@@ -48,6 +50,8 @@ export interface LevelSlice {
   /** With each Opening's kind and sizes from its type */
   readonly openings: readonly ResolvedOpening[];
   readonly ceilings: readonly Ceiling[];
+  /** The Floor openings through this Level's floor */
+  readonly floorOpenings: readonly FloorOpening[];
 }
 
 const byId = (a: { id: string }, b: { id: string }) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -61,7 +65,8 @@ const sameSlice = (a: LevelSlice, b: LevelSlice) =>
   sameList(a.separators, b.separators) &&
   sameList(a.rooms, b.rooms) &&
   sameList(a.openings, b.openings) &&
-  sameList(a.ceilings, b.ceilings);
+  sameList(a.ceilings, b.ceilings) &&
+  sameList(a.floorOpenings, b.floorOpenings);
 
 /** Where a Level sits in the stack (all mm, absolute heights). */
 export interface LevelHeights {
@@ -99,7 +104,7 @@ export interface SlabValues {
   readonly thickness: Derived<number>;
   /** The outer faces of the Level's merged footprint */
   readonly outline: Derived<readonly (readonly Vec[])[]>;
-  /** mm² */
+  /** mm², without its Floor openings */
   readonly area: Derived<number>;
 }
 
@@ -167,9 +172,9 @@ export interface RoomValues {
   readonly ceilingVoid: Derived<number | null>;
   /** mm³: Net floor area × Room height */
   readonly volume: Derived<number | null>;
-  /** mm² (= Net floor area in Slice 1) */
+  /** mm²: the Net floor area without the Floor openings through it */
   readonly floorFinishArea: Derived<number | null>;
-  /** mm² (= Net floor area in Slice 1) */
+  /** mm²: the Net floor area without the Floor openings above it */
   readonly ceilingArea: Derived<number | null>;
   /** Wall perimeter, Openings and reveals; null when the Room is not enclosed */
   readonly surfaces: Derived<RoomSurfaces | null>;
@@ -220,7 +225,17 @@ export class BuildingValues {
           () => this.levelHeights().get(level)?.slabThickness ?? 0,
         ),
         outline: derived(`${level} · Slab outline`, () => lv.footprint().outer),
-        area: derived(`${level} · Slab area`, () => lv.grossArea()),
+        area: derived(`${level} · Slab area`, () => {
+          // The Floor openings inside the footprint are holes in the Slab.
+          const holes = lv.slice().floorOpenings;
+          if (!holes.length) return lv.grossArea();
+          const outer = lv.footprint().outer;
+          return holes.reduce(
+            (sum, f) =>
+              sum - outer.reduce((s, ring) => s + intersectionArea({ outline: ring }, f), 0),
+            lv.grossArea(),
+          );
+        }),
       };
       this.slabs.set(level, values);
     }
@@ -307,6 +322,9 @@ export class BuildingValues {
           ),
           ceilings: Object.values(m.ceilings)
             .filter((c) => m.rooms[c.room]?.level === id)
+            .sort(byId),
+          floorOpenings: Object.values(m.floorOpenings)
+            .filter((f) => f.level === id)
             .sort(byId),
         };
       },
@@ -427,9 +445,14 @@ export class BuildingValues {
           connected.add(`${c.wall}:${c.end}`);
           if (c.kind === 'corner') connected.add(`${c.to}:${c.toEnd}`);
         }
+        // Free ends (on purpose) are not counted.
         const open = s.walls.reduce(
           (n, w) =>
-            n + (connected.has(`${w.id}:start`) ? 0 : 1) + (connected.has(`${w.id}:end`) ? 0 : 1),
+            w.freeEnds
+              ? n
+              : n +
+                (connected.has(`${w.id}:start`) ? 0 : 1) +
+                (connected.has(`${w.id}:end`) ? 0 : 1),
           0,
         );
         if (open) out.push(message('warnings.unconnectedEnds', { count: open }));
@@ -557,6 +580,30 @@ export class BuildingValues {
         return area === null ? null : area * height();
       },
     );
+    /** mm² of a Level's Floor openings inside this Room's area */
+    const holes = (level: LevelId | null | undefined): number => {
+      const d = detection();
+      if (!d || d.status === 'notEnclosed' || !level) return 0;
+      return this.level(level)
+        .slice()
+        .floorOpenings.reduce((sum, f) => sum + intersectionArea(d.area, f), 0);
+    };
+    const floorFinishArea = derived(
+      () => `${name()} · Floor finish area`,
+      () => {
+        const area = netFloorArea();
+        return area === null ? null : area - holes(room()?.level);
+      },
+    );
+    const ceilingArea = derived(
+      () => `${name()} · Ceiling area`,
+      () => {
+        const area = netFloorArea();
+        const r = room();
+        if (area === null || !r) return area;
+        return area - holes(this.levelHeights().get(r.level)?.above);
+      },
+    );
     const surfaces = derived(
       () => `${name()} · surfaces`,
       () => {
@@ -574,8 +621,8 @@ export class BuildingValues {
       ceilingUnderside,
       ceilingVoid,
       volume,
-      floorFinishArea: netFloorArea,
-      ceilingArea: netFloorArea,
+      floorFinishArea,
+      ceilingArea,
       surfaces,
     };
   }

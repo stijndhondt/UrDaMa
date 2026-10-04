@@ -25,6 +25,8 @@ import { en } from 'primelocale/js/en.js';
 import { nl } from 'primelocale/js/nl.js';
 import { ChangeSummaryComponent } from './editor/change-summary.component';
 import { ContextMenuComponent } from './editor/context-menu.component';
+import { FloorOpeningChoiceComponent } from './editor/floor-opening-choice.component';
+import { FloorOpeningChoiceService } from './editor/floor-opening-choice.service';
 import { ContextMenuService } from './editor/context-menu.service';
 import { EditorActionsService } from './editor/editor-actions.service';
 import { LengthEditService } from './editor/length-edit.service';
@@ -89,6 +91,7 @@ const PX_PER_MM = 96 / 25.4;
     TooltipModule,
     ChangeSummaryComponent,
     ContextMenuComponent,
+    FloorOpeningChoiceComponent,
     ElevationComponent,
     FamilyEditorComponent,
     FormsModule,
@@ -275,6 +278,7 @@ const PX_PER_MM = 96 / 25.4;
               <lk-plan-toolbar
                 class="toolbar"
                 [tool]="editor()?.tool() ?? null"
+                [type]="editor()?.openingType() ?? null"
                 (choose)="selectTool($event)"
                 (placeType)="editor()?.placeOpeningType($event.kind, $event.type)"
               />
@@ -288,6 +292,14 @@ const PX_PER_MM = 96 / 25.4;
                   [at]="edit.edit.at"
                   (pointerdown)="$event.stopPropagation()"
                   (closed)="closeLengthEdit()"
+                />
+              }
+              @if (floorChoice.pending(); as asked) {
+                <lk-floor-opening-choice
+                  class="plan-choice"
+                  [style.left]="'min(' + (asked.at.x + 12) + 'px, calc(100% - 288px))'"
+                  [style.top]="'min(' + (asked.at.y + 12) + 'px, calc(100% - 120px))'"
+                  (pointerdown)="$event.stopPropagation()"
                 />
               }
               @if (messages.current(); as shown) {
@@ -617,7 +629,8 @@ const PX_PER_MM = 96 / 25.4;
       bottom: 14px;
       transform: translateX(-50%);
     }
-    .plan-length {
+    .plan-length,
+    .plan-choice {
       position: absolute;
       z-index: 6;
       width: 280px;
@@ -725,6 +738,7 @@ export class App {
   private readonly centre = viewChild<ElementRef<HTMLElement>>('centre');
   protected readonly store = this.project.store;
   protected readonly lengthEdits = inject(LengthEditService);
+  protected readonly floorChoice = inject(FloorOpeningChoiceService);
   /** The length editor on the plan, with its Wall (closed when the Wall is gone). */
   protected readonly planLengthEdit = computed(() => {
     const edit = this.lengthEdits.open();
@@ -991,6 +1005,12 @@ export class App {
 
   @HostListener('window:keydown', ['$event'])
   protected onKeyDown(e: KeyboardEvent): void {
+    // The up/down question of a Floor opening: Esc cancels it, wherever the focus is.
+    if (e.key === 'Escape' && this.floorChoice.pending()) {
+      e.preventDefault();
+      this.floorChoice.answer(null);
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       const key = e.key.toLowerCase();
       if (key === 's') {

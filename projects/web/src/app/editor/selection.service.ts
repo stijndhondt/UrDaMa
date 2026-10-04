@@ -2,6 +2,7 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import {
   resolveOpening,
   type FacadeSide,
+  type FloorOpening,
   type ResolvedOpening,
   type Room,
   type Wall,
@@ -61,6 +62,13 @@ export class SelectionService {
     const o = s?.kind === 'opening' ? model.openings[s.id] : undefined;
     return o ? resolveOpening(model, o) : null;
   });
+  /** The selected Floor opening, when exactly one is selected. */
+  readonly floorOpening = computed<FloorOpening | null>(() => {
+    const s = this.single();
+    return s?.kind === 'floorOpening'
+      ? (this.project.store.model().floorOpenings[s.id] ?? null)
+      : null;
+  });
   /** All selected Rooms (two of them can be merged). */
   readonly rooms = computed<readonly Room[]>(() =>
     this.current().flatMap((s) =>
@@ -83,6 +91,8 @@ export class SelectionService {
             return !!model.openings[x.id];
           case 'separator':
             return !!model.roomSeparators[x.id];
+          case 'floorOpening':
+            return !!model.floorOpenings[x.id];
         }
       };
       if (s.some((x) => !exists(x))) untracked(() => this.current.set(s.filter(exists)));

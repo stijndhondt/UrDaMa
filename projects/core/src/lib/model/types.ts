@@ -23,6 +23,7 @@ export type RoomId = Id<'room'>;
 export type RoomSeparatorId = Id<'roomSeparator'>;
 export type SlabId = Id<'slab'>;
 export type CeilingId = Id<'ceiling'>;
+export type FloorOpeningId = Id<'floorOpening'>;
 
 export interface Vec {
   readonly x: number;
@@ -89,6 +90,8 @@ export interface Wall {
   readonly height?: number;
   /** Whether this Wall bounds Rooms (false for bar walls, islands, low dividers). */
   readonly roomBounding: boolean;
+  /** Its ends connected to nothing are Free ends, on purpose: no warning; absent = not stated */
+  readonly freeEnds?: boolean;
 }
 
 /** A Wall end attached to another Wall's end (a corner) or to its face at a distance (a T). ADR 0001. */
@@ -195,6 +198,18 @@ export interface Ceiling {
   readonly thickness?: number;
 }
 
+/**
+ * A hole through the Slab between two Levels, for a stair or a lift. It belongs to the Level whose
+ * floor it goes through; it shows in the Ceilings of the Level below.
+ */
+export interface FloorOpening {
+  readonly id: FloorOpeningId;
+  /** The Level whose Slab it goes through; there is always a Level below it */
+  readonly level: LevelId;
+  /** Its outline in plan (mm), at least three points */
+  readonly outline: readonly Vec[];
+}
+
 /** The whole Source data of a project: flat collections keyed by ID (ADR 0004). */
 export interface Model {
   readonly project: Project;
@@ -209,6 +224,7 @@ export interface Model {
   readonly roomSeparators: Readonly<Record<string, RoomSeparator>>;
   readonly slabs: Readonly<Record<string, Slab>>;
   readonly ceilings: Readonly<Record<string, Ceiling>>;
+  readonly floorOpenings: Readonly<Record<string, FloorOpening>>;
 }
 
 export type CollectionName = Exclude<keyof Model, 'project'>;

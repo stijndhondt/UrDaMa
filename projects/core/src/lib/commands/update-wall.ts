@@ -7,6 +7,8 @@ import { refuse, type Command } from './command';
 export interface UpdateWallArgs {
   readonly wall: WallId;
   readonly roomBounding?: boolean;
+  /** Whether its ends connected to nothing are Free ends, on purpose */
+  readonly freeEnds?: boolean;
   /** mm; null = follow the Level's storey height again */
   readonly height?: number | null;
 }
@@ -18,6 +20,11 @@ export const updateWall: Command<UpdateWallArgs> = (model, args) => {
     return refuse(message('commands.updateWall.badHeight'));
   let next: Wall = { ...wall };
   if (args.roomBounding !== undefined) next = { ...next, roomBounding: args.roomBounding };
+  if (args.freeEnds === true) next = { ...next, freeEnds: true };
+  else if (args.freeEnds === false) {
+    const { freeEnds: _removed, ...rest } = next;
+    next = rest;
+  }
   if (args.height === null) {
     const { height: _removed, ...rest } = next;
     next = rest;

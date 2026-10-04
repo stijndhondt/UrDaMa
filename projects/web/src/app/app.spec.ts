@@ -33,7 +33,7 @@ describe('App shell', () => {
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('.brand')?.textContent).toContain('Urdama');
-    expect(el.querySelectorAll('lk-plan-toolbar button').length).toBeGreaterThan(0);
+    expect(el.querySelectorAll('lk-plan-toolbar p-selectbutton').length).toBeGreaterThan(0);
     expect(el.querySelector('.status')).not.toBeNull();
   });
 });

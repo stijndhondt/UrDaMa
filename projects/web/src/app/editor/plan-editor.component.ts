@@ -12,7 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import type { OpeningKind, OpeningTypeId } from '@urdama/core';
+import { OPENING_KINDS, type OpeningKind, type OpeningTypeId } from '@urdama/core';
 import { PlanEditor, type EditorHost, type ToolName } from '@urdama/editor2d';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
@@ -25,6 +25,7 @@ import { SnapService } from './snap.service';
 import { ContextMenuService } from './context-menu.service';
 import { LengthEditService } from './length-edit.service';
 import { WallTurnService } from './wall-turn.service';
+import { FloorOpeningChoiceService } from './floor-opening-choice.service';
 import { LevelVisibilityService } from './level-visibility.service';
 import { LibraryService } from './library.service';
 
@@ -57,6 +58,8 @@ import { LibraryService } from './library.service';
 export class PlanEditorComponent {
   readonly label = input('');
   readonly tool = signal<ToolName | null>(null);
+  /** The Opening type the current Opening tool places (null: its kind's default size) */
+  readonly openingType = signal<OpeningTypeId | null>(null);
   /** Screen px per mm on the plan (0 until the first draw). */
   readonly scale = signal(0);
 
@@ -70,6 +73,7 @@ export class PlanEditorComponent {
   private readonly contextMenus = inject(ContextMenuService);
   private readonly lengthEdits = inject(LengthEditService);
   private readonly turn = inject(WallTurnService);
+  private readonly floorChoice = inject(FloorOpeningChoiceService);
   private readonly visibility = inject(LevelVisibilityService);
   private readonly theme = inject(ThemeService);
   private readonly planColors = inject(PlanColorsService);
@@ -100,6 +104,7 @@ export class PlanEditorComponent {
         wallAnchor: () => this.turn.anchor(),
         setWallAnchor: (anchor) => this.turn.anchor.set(anchor),
         turnMode: () => this.turn.mode(),
+        chooseFloorOpeningDirection: (at) => this.floorChoice.ask(at),
         colors: () => this.planColors.colors(),
       };
       this.editor = new PlanEditor(this.canvas().nativeElement, host);
@@ -108,7 +113,7 @@ export class PlanEditorComponent {
         const debug = (globalThis as unknown as Record<string, object | undefined>)['__urdama'];
         if (debug) Object.assign(debug, { editor: this.editor });
       }
-      this.tool.set(this.editor.toolName);
+      this.syncTool();
     });
     // A different project: abandon what the tool was doing and show the whole plan.
     effect(() => {
@@ -141,10 +146,19 @@ export class PlanEditorComponent {
     inject(DestroyRef).onDestroy(() => this.editor?.destroy());
   }
 
-  /** A tool chosen by its button or key (an Opening tool places its kind's default size). */
+  /** The tool in use and the Opening type it places, for the tool bar. */
+  private syncTool(): void {
+    const name = this.editor?.toolName ?? null;
+    this.tool.set(name);
+    this.openingType.set(
+      name && isOpeningKind(name) ? (this.editor?.openingType(name) ?? null) : null,
+    );
+  }
+
+  /** A tool chosen by its button or key (an Opening tool places the type last chosen for it). */
   setTool(name: ToolName): void {
     this.editor?.chooseTool(name);
-    this.tool.set(this.editor?.toolName ?? null);
+    this.syncTool();
   }
 
   /** An Opening type dragged from the Library panel (ticket 21): shown on the Wall, placed on drop. */
@@ -154,7 +168,7 @@ export class PlanEditorComponent {
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
     this.editor.dragOpeningType(dragged.kind, dragged.type, e, drop);
-    this.tool.set(this.editor.toolName);
+    this.syncTool();
     if (drop) this.library.endDrag();
   }
 
@@ -162,13 +176,13 @@ export class PlanEditorComponent {
   protected dragLeft(): void {
     if (!this.library.dragging()) return;
     this.editor?.endDrag();
-    this.tool.set(this.editor?.toolName ?? null);
+    this.syncTool();
   }
 
-  /** The Opening type flyout: place this type with its kind's tool. */
+  /** The tool bar's type list: place this type with its kind's tool. */
   placeOpeningType(kind: OpeningKind, type: OpeningTypeId): void {
     this.editor?.placeOpeningType(kind, type);
-    this.tool.set(this.editor?.toolName ?? null);
+    this.syncTool();
   }
 
   cancel(): void {
@@ -187,3 +201,6 @@ export class PlanEditorComponent {
     this.editor?.handleKeyUp(e);
   }
 }
+
+const isOpeningKind = (name: ToolName): name is OpeningKind =>
+  (OPENING_KINDS as readonly string[]).includes(name);

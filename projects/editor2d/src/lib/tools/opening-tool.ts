@@ -61,7 +61,12 @@ export class OpeningTool implements Tool {
     this.name = kind;
   }
 
-  /** Place this Opening type (from the flyout), or the kind's default size (null). */
+  /** The Opening type it places; null places the kind's default size. */
+  get chosenType(): OpeningTypeId | null {
+    return this.type;
+  }
+
+  /** Place this Opening type (from the tool bar's type list), or the kind's default size (null). */
   setType(type: OpeningTypeId | null): void {
     this.type = type;
     this.preview();

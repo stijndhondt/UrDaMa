@@ -11,7 +11,7 @@ import {
   type Path64,
 } from 'clipper2-ts';
 import { message, type Message } from './message';
-import { wallNumbers } from './levels';
+import { neighbourLevels, wallNumbers } from './levels';
 import { resolveOpening } from './opening-types';
 import type { LevelId, Model, WallId } from './types';
 import { distance } from '../geometry/vec';
@@ -202,6 +202,12 @@ export function checkInvariants(model: Model, before?: Model): Message | null {
   }
   for (const c of Object.values(model.ceilings))
     if (!has('rooms', c.room)) return missing('room', c.room);
+  for (const f of Object.values(model.floorOpenings)) {
+    if (!model.levels[f.level]) return missing('level', f.level);
+    if (!neighbourLevels(model, f.level).below)
+      return message('invariants.floorOpeningNoLevelBelow', { id: f.id });
+    if (f.outline.length < 3) return message('invariants.floorOpeningOutline', { id: f.id });
+  }
   const changed = before ? changedWalls(before, model) : null;
   for (const level of Object.keys(model.levels)) {
     if (changed && ![...changed].some((id) => model.walls[id]?.level === level)) continue;

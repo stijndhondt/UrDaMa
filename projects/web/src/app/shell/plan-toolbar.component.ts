@@ -1,20 +1,16 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { OPENING_KINDS, type OpeningKind, type OpeningTypeId } from '@urdama/core';
+import {
+  BUILT_IN_FAMILIES,
+  OPENING_KINDS,
+  presetSize,
+  type OpeningKind,
+  type OpeningTypeId,
+} from '@urdama/core';
 import type { ToolName } from '@urdama/editor2d';
-import type { MenuItem } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
-import { Menu, MenuModule } from '@openng/optimus-ui/menu';
+import { SelectModule } from '@openng/optimus-ui/select';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { ToggleButtonModule } from '@openng/optimus-ui/togglebutton';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
@@ -46,6 +42,7 @@ export const TOOL_GROUPS: readonly (readonly ToolButton[])[] = [
     { name: 'window', key: 'N', icon: OPENING_ICONS.window },
     { name: 'wallOpening', key: '', icon: OPENING_ICONS.wallOpening },
     { name: 'garageDoor', key: '', icon: OPENING_ICONS.garageDoor },
+    { name: 'floorOpening', key: '', icon: 'door-stairwell' },
   ],
 ];
 
@@ -59,7 +56,7 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
     FormsModule,
     TranslatePipe,
     ButtonModule,
-    MenuModule,
+    SelectModule,
     SelectButtonModule,
     ToggleButtonModule,
     TooltipModule,
@@ -101,19 +98,22 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
           </ng-template>
         </p-selectbutton>
       }
-      <button
-        pButton
-        type="button"
-        severity="secondary"
-        [text]="true"
-        class="flyout"
-        [attr.aria-label]="'shell.openingTypes' | translate"
-        [pTooltip]="'shell.openingTypes' | translate"
-        tooltipPosition="top"
-        (click)="openTypes($event)"
-      >
-        <lk-icon name="chevron-down" />
-      </button>
+      <!-- The size the Opening tool in use places: its kind's Opening types. -->
+      @if (typeChoices(); as types) {
+        <p-select
+          class="types"
+          size="small"
+          appendTo="body"
+          [options]="types.options"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="types.value"
+          (ngModelChange)="placeType.emit({ kind: types.kind, type: $event })"
+          [ariaLabel]="'shell.openingTypes' | translate"
+          [pTooltip]="'shell.openingTypes' | translate"
+          tooltipPosition="top"
+        />
+      }
       <span class="sep"></span>
       <p-togglebutton
         class="snap"
@@ -132,16 +132,6 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
         </div>
       </ng-template>
     </div>
-    <p-menu #types [model]="typeItems()" [popup]="true" appendTo="body">
-      <ng-template #item let-item>
-        <a class="type">
-          @if (item.state?.icon) {
-            <lk-icon [name]="item.state.icon" />
-          }
-          <span>{{ item.label }}</span>
-        </a>
-      </ng-template>
-    </p-menu>
   `,
   styles: `
     :host {
@@ -171,15 +161,6 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
     lk-icon {
       font-size: 17px;
     }
-    .flyout {
-      flex-shrink: 0;
-      width: 24px;
-      height: 36px;
-      padding: 0;
-    }
-    .flyout lk-icon {
-      font-size: 14px;
-    }
     /* The snap toggle: an Optimus toggle sized like the tool buttons, without its own background
        until it is on. */
     .snap {
@@ -191,16 +172,9 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
       --p-togglebutton-background: transparent;
       --p-togglebutton-border-color: transparent;
     }
-    .type {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-    .type lk-icon {
-      font-size: 15px;
-      color: var(--muted);
+    .types {
+      flex-shrink: 0;
+      margin-left: 4px;
     }
     .sep {
       width: 1px;
@@ -221,7 +195,9 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
 export class PlanToolbarComponent {
   readonly tool = input<ToolName | null>(null);
   readonly choose = output<ToolName>();
-  /** An Opening type chosen in the flyout (ticket 17) */
+  /** The Opening type the Opening tool in use places (null: its kind's Preset size) */
+  readonly type = input<OpeningTypeId | null>(null);
+  /** An Opening type chosen in the type list next to the tools (ticket 17) */
   readonly placeType = output<{ kind: OpeningKind; type: OpeningTypeId }>();
   /** The tool groups as choices, named in the user's language with their shortcut. */
   protected readonly groupChoices = computed(() =>
@@ -237,36 +213,32 @@ export class PlanToolbarComponent {
   protected readonly snap = inject(SnapService);
   private readonly language = inject(LanguageService);
   private readonly format = inject(FormatService);
-  private readonly types = viewChild.required<Menu>('types');
-  private readonly opened = signal(0);
-
-  /** Every Opening type, by kind: "Door 0,93 × 2,12 m". */
-  protected readonly typeItems = computed<MenuItem[]>(() => {
-    this.opened();
+  /**
+   * The Opening types of the tool in use, by size ("0,930 × 2,115 m", or a type's name), and the
+   * one it places: the chosen one, else the type of its kind's Preset size.
+   */
+  protected readonly typeChoices = computed(() => {
+    const tool = this.tool();
+    const kind = OPENING_KINDS.find((k) => k === tool);
+    if (!kind) return null;
     const model = this.project.store.model();
-    return Object.values(model.openingTypes)
-      .flatMap((t) => {
-        const kind = model.openingFamilies[t.family]?.kind;
-        return kind ? [{ t, kind }] : [];
-      })
-      .sort(
-        (a, b) =>
-          OPENING_KINDS.indexOf(a.kind) - OPENING_KINDS.indexOf(b.kind) ||
-          a.t.width - b.t.width ||
-          a.t.height - b.t.height,
-      )
-      .map(({ t, kind }) => {
-        const size = t.name ?? this.format.openingSize(t.width, t.height);
-        return {
-          label: `${this.language.text('panel.opening.' + kind)} ${size}`,
-          state: { icon: OPENING_ICONS[kind] },
-          command: () => this.placeType.emit({ kind, type: t.id }),
-        };
-      });
+    const types = Object.values(model.openingTypes)
+      .filter((t) => model.openingFamilies[t.family]?.kind === kind)
+      .sort((a, b) => a.width - b.width || a.height - b.height);
+    const preset = presetSize(model.project.presets, kind);
+    const value =
+      this.type() ??
+      types.find(
+        (t) =>
+          t.family === BUILT_IN_FAMILIES[kind] &&
+          t.width === preset.width &&
+          t.height === preset.height,
+      )?.id ??
+      null;
+    const options = types.map((t) => {
+      const size = this.format.openingSize(t.width, t.height);
+      return { value: t.id, label: t.name ? `${t.name} · ${size}` : size };
+    });
+    return { kind, value, options };
   });
-
-  protected openTypes(e: Event): void {
-    this.opened.update((n) => n + 1);
-    this.types().toggle(e);
-  }
 }
