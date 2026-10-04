@@ -39,7 +39,16 @@ export class FormatService {
   /** An Opening's size, "0.930 × 2.115 m" */
   openingSize = (width: number, height: number): string =>
     `${this.metres(width / 1000)} × ${this.metres(height / 1000)} m`;
-  /** A length in m with 3 decimals (to the mm), without the unit: as typed back, "2,670". */
+  private readonly plain = computed(
+    () =>
+      new Intl.NumberFormat(LOCALES[this.language.current()], {
+        maximumFractionDigits: 1,
+        useGrouping: false,
+      }),
+  );
+  /** mm as an entry field shows it and the user types it back: "2670", "884,5". */
+  mm = (mm: number): string => this.plain().format(mm);
+  /** A length in m with 3 decimals (to the mm), without the unit, for labels: "2,670". */
   metres = (m: number): string => this.threeDecimals().format(m);
   /** A plain number with 2 decimals in the current language (for CSV). */
   decimal = (value: number): string => this.twoDecimals().format(value);

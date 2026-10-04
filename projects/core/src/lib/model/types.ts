@@ -199,13 +199,15 @@ export interface Ceiling {
 }
 
 /**
- * A hole through the Slab between two Levels, for a stair or a lift. It belongs to the Level whose
- * floor it goes through; it shows in the Ceilings of the Level below.
+ * A hole through the Slabs between two Levels, for a stair or a lift. It goes through the floor of
+ * its upper Level (and of any Level added in between) and shows in the Ceilings of its lower one.
  */
 export interface FloorOpening {
   readonly id: FloorOpeningId;
-  /** The Level whose Slab it goes through; there is always a Level below it */
+  /** The upper Level it connects: the top Slab it goes through */
   readonly level: LevelId;
+  /** The lower Level it connects: it shows in that Level's Ceilings */
+  readonly below: LevelId;
   /** Its outline in plan (mm), at least three points */
   readonly outline: readonly Vec[];
 }

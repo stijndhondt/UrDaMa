@@ -4,7 +4,8 @@
  * the web app shows m, m² and m³ and writes the same tree to CSV.
  */
 import { levelsInOrder, wallNumbers } from '../model/levels';
-import type { LevelId, Model, RoomId, WallId } from '../model/types';
+import { ringArea } from '../geometry/vec';
+import type { FloorOpeningId, LevelId, Model, RoomId, WallId } from '../model/types';
 import type { BuildingValues } from '../values/building-values';
 import {
   faceNetArea,
@@ -49,6 +50,15 @@ export interface QuantityRoom {
   readonly faces: readonly QuantityFace[];
 }
 
+/** A Floor opening through a Level's floor: its area, and the Levels it connects */
+export interface QuantityFloorOpening {
+  readonly floorOpening: FloorOpeningId;
+  /** mm² */
+  readonly area: number;
+  readonly below: string;
+  readonly above: string;
+}
+
 export interface QuantityLevel {
   readonly level: LevelId;
   readonly name: string;
@@ -58,6 +68,8 @@ export interface QuantityLevel {
   /** mm³ */
   readonly volume: number;
   readonly rooms: readonly QuantityRoom[];
+  /** The Floor openings through its floor */
+  readonly floorOpenings: readonly QuantityFloorOpening[];
 }
 
 /** The tree, lowest Level first, Rooms by name. */
@@ -110,6 +122,12 @@ export function quantityTree(
       netFloorArea: lv.netFloorArea(),
       volume: rooms.reduce((sum, r) => sum + (r.volume ?? 0), 0),
       rooms,
+      floorOpenings: lv.slice().floorOpenings.map((f) => ({
+        floorOpening: f.id,
+        area: Math.abs(ringArea(f.outline)),
+        below: model.levels[f.below]?.name ?? '',
+        above: model.levels[f.level]?.name ?? '',
+      })),
     };
   });
 }

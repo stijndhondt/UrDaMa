@@ -1,16 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import {
-  BUILT_IN_FAMILIES,
-  OPENING_KINDS,
-  presetSize,
-  type OpeningKind,
-  type OpeningTypeId,
-} from '@urdama/core';
+import { BUILT_IN_FAMILIES, presetSize, type OpeningKind, type OpeningTypeId } from '@urdama/core';
 import type { ToolName } from '@urdama/editor2d';
 import { ButtonModule } from '@openng/optimus-ui/button';
-import { SelectModule } from '@openng/optimus-ui/select';
+import type { MenuItem } from '@openng/optimus-ui/api';
+import { SplitButtonModule } from '@openng/optimus-ui/splitbutton';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { ToggleButtonModule } from '@openng/optimus-ui/togglebutton';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
@@ -37,16 +32,18 @@ export const TOOL_GROUPS: readonly (readonly ToolButton[])[] = [
     { name: 'wall', key: 'W', icon: 'brick-wall' },
     { name: 'separator', key: 'E', icon: 'square-dashed' },
   ],
-  [
-    { name: 'door', key: 'D', icon: OPENING_ICONS.door },
-    { name: 'window', key: 'N', icon: OPENING_ICONS.window },
-    { name: 'wallOpening', key: '', icon: OPENING_ICONS.wallOpening },
-    { name: 'garageDoor', key: '', icon: OPENING_ICONS.garageDoor },
-    { name: 'floorOpening', key: '', icon: 'door-stairwell' },
-  ],
+  [{ name: 'floorOpening', key: '', icon: 'door-stairwell' }],
 ];
 
-export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
+/** The Opening tools: each a button with a drop-down of its kind's Opening types (ticket 17). */
+export const OPENING_TOOLS: readonly (ToolButton & { readonly name: OpeningKind })[] = [
+  { name: 'door', key: 'D', icon: OPENING_ICONS.door },
+  { name: 'window', key: 'N', icon: OPENING_ICONS.window },
+  { name: 'wallOpening', key: '', icon: OPENING_ICONS.wallOpening },
+  { name: 'garageDoor', key: '', icon: OPENING_ICONS.garageDoor },
+];
+
+export const TOOLS: readonly ToolButton[] = [...TOOL_GROUPS.flat(), ...OPENING_TOOLS];
 
 /** The floating tool bar at the bottom of the Plan panel (ticket 09). */
 @Component({
@@ -56,7 +53,7 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
     FormsModule,
     TranslatePipe,
     ButtonModule,
-    SelectModule,
+    SplitButtonModule,
     SelectButtonModule,
     ToggleButtonModule,
     TooltipModule,
@@ -64,8 +61,45 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
   ],
   template: `
     <div class="bar" role="toolbar" [attr.aria-label]="'app.tools' | translate">
-      @for (group of groupChoices(); track $index; let first = $first) {
+      @for (group of groupChoices(); track $index; let first = $first; let last = $last) {
         @if (!first) {
+          <span class="sep"></span>
+        }
+        <!-- The Opening tools, before the last group: each one a button and a list of its sizes. -->
+        @if (last) {
+          @for (o of openingChoices(); track o.name) {
+            <p-splitbutton
+              class="opening"
+              size="small"
+              severity="secondary"
+              appendTo="body"
+              [text]="tool() !== o.name"
+              [model]="o.types"
+              [expandAriaLabel]="'shell.openingTypes' | translate"
+              (onClick)="choose.emit(o.name)"
+            >
+              <ng-template #content>
+                <lk-icon
+                  [name]="o.icon"
+                  [pTooltip]="openingTip"
+                  tooltipPosition="top"
+                  [tooltipOptions]="{ showDelay: 300 }"
+                />
+                <ng-template #openingTip>
+                  <div class="tip">
+                    <b>{{ 'tools.' + o.name + '.name' | translate }}</b>
+                    @if (o.key) {
+                      <kbd>{{ o.key }}</kbd>
+                    }
+                    <div>{{ o.size }}</div>
+                  </div>
+                </ng-template>
+              </ng-template>
+              <ng-template #dropdownicon
+                ><lk-icon class="chevron" name="chevron-down"
+              /></ng-template>
+            </p-splitbutton>
+          }
           <span class="sep"></span>
         }
         <!-- One choice per group: the tool in use is the chosen one of its group. -->
@@ -97,22 +131,6 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
             </ng-template>
           </ng-template>
         </p-selectbutton>
-      }
-      <!-- The size the Opening tool in use places: its kind's Opening types. -->
-      @if (typeChoices(); as types) {
-        <p-select
-          class="types"
-          size="small"
-          appendTo="body"
-          [options]="types.options"
-          optionLabel="label"
-          optionValue="value"
-          [ngModel]="types.value"
-          (ngModelChange)="placeType.emit({ kind: types.kind, type: $event })"
-          [ariaLabel]="'shell.openingTypes' | translate"
-          [pTooltip]="'shell.openingTypes' | translate"
-          tooltipPosition="top"
-        />
       }
       <span class="sep"></span>
       <p-togglebutton
@@ -172,9 +190,14 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
       --p-togglebutton-background: transparent;
       --p-togglebutton-border-color: transparent;
     }
-    .types {
+    /* An Opening tool: its icon button and its size list's arrow, as compact as the tool buttons. */
+    .opening {
       flex-shrink: 0;
-      margin-left: 4px;
+      --p-button-sm-padding-x: 0.45rem;
+      --p-button-sm-padding-y: 0.3rem;
+    }
+    .opening .chevron {
+      font-size: 12px;
     }
     .sep {
       width: 1px;
@@ -195,8 +218,8 @@ export const TOOLS: readonly ToolButton[] = TOOL_GROUPS.flat();
 export class PlanToolbarComponent {
   readonly tool = input<ToolName | null>(null);
   readonly choose = output<ToolName>();
-  /** The Opening type the Opening tool in use places (null: its kind's Preset size) */
-  readonly type = input<OpeningTypeId | null>(null);
+  /** The Opening type each Opening tool places (absent or null: its kind's Preset size) */
+  readonly types = input<Partial<Record<OpeningKind, OpeningTypeId | null>>>({});
   /** An Opening type chosen in the type list next to the tools (ticket 17) */
   readonly placeType = output<{ kind: OpeningKind; type: OpeningTypeId }>();
   /** The tool groups as choices, named in the user's language with their shortcut. */
@@ -214,31 +237,40 @@ export class PlanToolbarComponent {
   private readonly language = inject(LanguageService);
   private readonly format = inject(FormatService);
   /**
-   * The Opening types of the tool in use, by size ("0,930 × 2,115 m", or a type's name), and the
-   * one it places: the chosen one, else the type of its kind's Preset size.
+   * The Opening tools with their kind's Opening types, by size ("0,930 × 2,115 m", or a type's
+   * name). The one the tool places is marked: the chosen one, else its kind's Preset size.
    */
-  protected readonly typeChoices = computed(() => {
-    const tool = this.tool();
-    const kind = OPENING_KINDS.find((k) => k === tool);
-    if (!kind) return null;
+  protected readonly openingChoices = computed(() => {
     const model = this.project.store.model();
-    const types = Object.values(model.openingTypes)
-      .filter((t) => model.openingFamilies[t.family]?.kind === kind)
-      .sort((a, b) => a.width - b.width || a.height - b.height);
-    const preset = presetSize(model.project.presets, kind);
-    const value =
-      this.type() ??
-      types.find(
-        (t) =>
-          t.family === BUILT_IN_FAMILIES[kind] &&
-          t.width === preset.width &&
-          t.height === preset.height,
-      )?.id ??
-      null;
-    const options = types.map((t) => {
-      const size = this.format.openingSize(t.width, t.height);
-      return { value: t.id, label: t.name ? `${t.name} · ${size}` : size };
+    const chosen = this.types();
+    return OPENING_TOOLS.map((t) => {
+      const kind = t.name;
+      const types = Object.values(model.openingTypes)
+        .filter((x) => model.openingFamilies[x.family]?.kind === kind)
+        .sort((a, b) => a.width - b.width || a.height - b.height);
+      const preset = presetSize(model.project.presets, kind);
+      const current =
+        chosen[kind] ??
+        types.find(
+          (x) =>
+            x.family === BUILT_IN_FAMILIES[kind] &&
+            x.width === preset.width &&
+            x.height === preset.height,
+        )?.id;
+      const label = (x: (typeof types)[number]) => {
+        const size = this.format.openingSize(x.width, x.height);
+        return x.name ? `${x.name} · ${size}` : size;
+      };
+      const placed = types.find((x) => x.id === current);
+      return {
+        ...t,
+        size: placed ? label(placed) : '',
+        types: types.map((x): MenuItem => ({
+          label: label(x),
+          styleClass: x.id === current ? 'current' : undefined,
+          command: () => this.placeType.emit({ kind, type: x.id }),
+        })),
+      };
     });
-    return { kind, value, options };
   });
 }

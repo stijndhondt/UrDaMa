@@ -45,7 +45,15 @@ const COLUMNS: readonly { readonly key: Column; readonly unit: 'm' | 'm²' | 'm�
 interface Row {
   readonly key: string;
   readonly kind:
-    'level' | 'room' | SurfaceKind | 'face' | 'exterior' | 'facade' | 'facadePart' | 'facadeLevel';
+    | 'level'
+    | 'room'
+    | SurfaceKind
+    | 'face'
+    | 'floorOpening'
+    | 'exterior'
+    | 'facade'
+    | 'facadePart'
+    | 'facadeLevel';
   readonly name: string;
   /** For the CSV: its Level, and its Room or Façade */
   readonly level: string;
@@ -248,6 +256,22 @@ export class QuantitiesPanelComponent {
         ].map(leaf),
       })),
     }));
+    // The Floor openings through each Level's floor, after its Rooms.
+    for (const [i, level] of this.tree().entries()) {
+      const holes = level.floorOpenings.map((f): Branch =>
+        leaf({
+          key: f.floorOpening,
+          kind: 'floorOpening',
+          name: t('quantities.tree.floorOpening', { below: f.below, above: f.above }),
+          level: level.name,
+          room: '',
+          levelId: level.level,
+          select: [{ kind: 'floorOpening', id: f.floorOpening }],
+          figures: { openings: f.area },
+        }),
+      );
+      if (holes.length) levels[i] = { ...levels[i]!, children: [...levels[i]!.children, ...holes] };
+    }
     const facades = this.exterior();
     if (!facades.length) return levels;
     const all = facades.flatMap((f) => f.parts.flatMap((p) => p.faces));

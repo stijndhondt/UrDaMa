@@ -49,6 +49,11 @@ export interface RotateWallArgs {
   readonly anchor: WallAnchor;
   /** 'wall': neighbours tilt, this Wall keeps its length; 'slide': its ends slide along the neighbours. */
   readonly mode: 'wall' | 'slide';
+  /**
+   * Measure `angle` from the Wall connected at this end (as `angleAtEnd` gives it) instead of
+   * from the plan's x axis. Exact with 'slide', where that Wall keeps its direction.
+   */
+  readonly relativeTo?: WallEnd;
 }
 
 /**
@@ -76,6 +81,57 @@ export function wallAnchors(model: Model, wall: Wall): Record<WallAnchor, Vec> {
   };
 }
 
+/** A direction turned anticlockwise on screen (y points down) by some degrees. */
+function turned(v: Vec, degrees: number): Vec {
+  const rad = (degrees * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return { x: v.x * cos + v.y * sin, y: -v.x * sin + v.y * cos };
+}
+
+/** The direction along a Wall away from one of its ends. */
+const awayFrom = (w: Wall, end: WallEnd): Vec =>
+  normalize(end === 'start' ? sub(w.end, w.start) : sub(w.start, w.end));
+
+/**
+ * The Wall connected at one end of a Wall, and the angle between the two there in degrees
+ * (0–180): at a corner, how far the corner opens; against a T's host, the angle to the host's
+ * Baseline as drawn (start to end). Null when nothing is connected at that end.
+ */
+export function angleAtEnd(
+  model: Model,
+  wall: Wall,
+  end: WallEnd,
+): {
+  readonly other: Wall;
+  readonly angle: number;
+  /** The other Wall's direction the angle is measured from */
+  readonly from: Vec;
+} | null {
+  const c = connectedAt(model, wall.id, end);
+  const other = c && model.walls[c.wall === wall.id ? c.to : c.wall];
+  if (!c || !other) return null;
+  const theirs =
+    c.kind === 'corner'
+      ? awayFrom(other, c.wall === wall.id ? c.toEnd : c.end)
+      : wallDirection(other);
+  const cos = Math.max(-1, Math.min(1, dot(awayFrom(wall, end), theirs)));
+  return { other, angle: (Math.acos(cos) * 180) / Math.PI, from: theirs };
+}
+
+/**
+ * The angle on the plan (as `wallAngle` gives it) at which a Wall makes `angle` with the Wall
+ * connected at one end: of the two ways to turn, the one nearest to where it is now.
+ */
+function planAngleFrom(model: Model, wall: Wall, end: WallEnd, angle: number): number | null {
+  const at = angleAtEnd(model, wall, end);
+  if (!at) return null;
+  const mine = awayFrom(wall, end);
+  const [a, b] = [turned(at.from, angle), turned(at.from, -angle)];
+  const best = dot(a, mine) >= dot(b, mine) ? a : b;
+  return wallAngle({ ...wall, start: { x: 0, y: 0 }, end: best });
+}
+
 /** The connection at one end of a Wall: a corner either way round, or a T of this Wall's own end. */
 export function connectedAt(model: Model, id: WallId, end: WallEnd): WallConnection | undefined {
   return Object.values(model.wallConnections).find(
@@ -87,8 +143,12 @@ export function connectedAt(model: Model, id: WallId, end: WallEnd): WallConnect
 export const rotateWall: Command<RotateWallArgs> = (model, args) => {
   const wall = model.walls[args.wall];
   if (!wall) return refuse(message('invariants.missingReference', { what: 'wall', id: args.wall }));
+  const target = args.relativeTo
+    ? planAngleFrom(model, wall, args.relativeTo, args.angle)
+    : args.angle;
+  if (target === null) return refuse(message('commands.rotateWall.nothingConnected'));
   // The smallest turn to the new angle: a Wall's line looks the same turned by 180°.
-  let turn = (((args.angle - wallAngle(wall)) % 180) + 180) % 180;
+  let turn = (((target - wallAngle(wall)) % 180) + 180) % 180;
   if (turn > 90) turn -= 180;
   if (Math.abs(turn) < 1e-9) return refuse(message('commands.rotateWall.same'));
 

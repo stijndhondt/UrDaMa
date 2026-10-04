@@ -7,17 +7,21 @@ import {
   inject,
   input,
   output,
+  signal,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
+  angleAtEnd,
   rotateWall,
   WALL_ANCHORS,
   wallAngle,
+  wallNumbers,
   type RotateWallArgs,
   type Wall,
   type WallAnchor,
+  type WallEnd,
 } from '@urdama/core';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
@@ -71,6 +75,19 @@ const ANCHOR_DOTS: Record<WallAnchor, { readonly x: number; readonly y: number }
         />
         <span class="unit">°</span>
       </label>
+      <div class="toggles">
+        <p-selectbutton
+          size="small"
+          [options]="fromChoices()"
+          optionLabel="label"
+          optionValue="value"
+          optionDisabled="disabled"
+          [allowEmpty]="false"
+          [ngModel]="from()"
+          (ngModelChange)="from.set($event)"
+          [ariaLabel]="'panel.wall.angleFrom' | translate"
+        />
+      </div>
       <div class="toggles">
         <p-selectbutton
           size="small"
@@ -186,8 +203,37 @@ export class AngleEditorComponent {
   protected readonly turn = inject(WallTurnService);
   private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
 
+  /** Where the angle is measured from: the plan's x axis, or the Wall connected at an end */
+  protected readonly from = signal<'plan' | WallEnd>('plan');
   /** The angle as the user types it back, with 2 decimals in their language ("88,50"). */
-  protected readonly shown = computed(() => this.format.decimal(wallAngle(this.wall())));
+  protected readonly shown = computed(() => {
+    const from = this.from();
+    const angle =
+      from === 'plan'
+        ? wallAngle(this.wall())
+        : (angleAtEnd(this.project.store.model(), this.wall(), from)?.angle ?? 0);
+    return this.format.decimal(angle);
+  });
+  /** The plan, and the Walls connected at each end by their number ("Wall 3") */
+  protected readonly fromChoices = computed(() => {
+    const model = this.project.store.model();
+    const numbers = wallNumbers(model, this.wall().level);
+    const at = (end: WallEnd) => {
+      const other = angleAtEnd(model, this.wall(), end)?.other;
+      return {
+        value: end,
+        disabled: !other,
+        label: other
+          ? this.language.text('panel.wall.angleFromWall', { wall: numbers.get(other.id) ?? 0 })
+          : this.language.text('panel.wall.angleFromNone'),
+      };
+    };
+    return [
+      { value: 'plan', disabled: false, label: this.language.text('panel.wall.angleFromPlan') },
+      at('start'),
+      at('end'),
+    ];
+  });
   private readonly modes: readonly { value: RotateWallArgs['mode']; icon: IconName }[] = [
     { value: 'slide', icon: 'move-diagonal-2' },
     { value: 'wall', icon: 'slash' },
@@ -228,6 +274,7 @@ export class AngleEditorComponent {
       angle,
       anchor: this.turn.anchor(),
       mode: this.turn.mode(),
+      ...(this.from() === 'plan' ? {} : { relativeTo: this.from() as WallEnd }),
     });
     if (!result.ok) this.messages.refused(result.reason);
     else this.closed.emit();

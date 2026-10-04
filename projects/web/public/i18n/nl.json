@@ -17,7 +17,7 @@
       "window": "Beweeg langs een muur om een raam te plaatsen: je ziet de afstand tot beide binnenhoeken. Klik om te plaatsen, of typ de afstand, Tab, breedte, Tab, hoogte, Tab, borstwering, Enter.",
       "wallOpening": "Beweeg over een muur: de muuropening schuift mee met de afstanden tot beide hoeken. Klik om te plaatsen; of typ afstand, breedte, hoogte en borstwering, Enter.",
       "garageDoor": "Beweeg over een muur: de garagepoort schuift mee met de afstanden tot beide hoeken. Klik om te plaatsen; of typ afstand, breedte en hoogte, Enter.",
-      "floorOpening": "Sleep een trapgat of liftschacht (of klik twee tegenoverliggende hoeken). Kies daarna of het naar boven of naar onder gaat: de bouwlaag waarmee het verbindt moet bestaan (voeg het eerst toe in het gebouwpaneel)."
+      "floorOpening": "Sleep een rechthoek, of klik de hoeken een voor een voor elke vorm (een L, een gedraaide rechthoek); klik opnieuw op de eerste hoek, dubbelklik of druk Enter om te sluiten. Kies daarna naar boven of naar onder: de bouwlaag waarmee ze verbindt moet bestaan."
     }
   },
   "tools": {
@@ -60,9 +60,9 @@
   },
   "editor": {
     "typed": {
-      "width": "Breedte",
-      "depth": "Diepte",
-      "length": "Lengte",
+      "width": "Breedte (mm)",
+      "depth": "Diepte (mm)",
+      "length": "Lengte (mm)",
       "angle": "Hoek (°)"
     },
     "room": {
@@ -78,10 +78,10 @@
       }
     },
     "opening": {
-      "distance": "Afstand",
-      "width": "Breedte",
-      "height": "Hoogte",
-      "sill": "Borstwering"
+      "distance": "Afstand (mm)",
+      "width": "Breedte (mm)",
+      "height": "Hoogte (mm)",
+      "sill": "Borstwering (mm)"
     },
     "floorOpening": {
       "which": "Welke richting gaat het uit?",
@@ -97,7 +97,8 @@
     "short": {
       "notEnclosed": "niet afgesloten",
       "sharingArea": "deelt een ruimte"
-    }
+    },
+    "floorOpeningCrossesLevel": "De vloeropening tussen {below} en {above} gaat door deze bouwlaag: teken hier een ruimte die ze omvat."
   },
   "rooms": {
     "defaultName": "Ruimte {n}"
@@ -245,13 +246,15 @@
       "label": "Muur draaien",
       "same": "De muur staat al onder die hoek.",
       "tooShort": "Geweigerd: muur {wall} zou korter worden dan {min} mm of omklappen.",
-      "parallel": "Geweigerd: het uiteinde kan niet langs muur {wall} schuiven, ze zouden evenwijdig lopen. Kies 'Buren kantelen'."
+      "parallel": "Geweigerd: het uiteinde kan niet langs muur {wall} schuiven, ze zouden evenwijdig lopen. Kies 'Buren kantelen'.",
+      "nothingConnected": "Geweigerd: aan dat uiteinde is niets verbonden om de hoek vanaf te meten."
     },
     "floorOpening": {
       "label": "Vloeropening tekenen",
-      "tooSmall": "Geweigerd: een vloeropening is minstens {min} mm in elke richting.",
+      "tooSmall": "Geweigerd: elke zijde van een vloeropening is minstens {min} mm.",
       "noLevelAbove": "Geweigerd: er is geen bouwlaag boven deze bouwlaag. Voeg het eerst toe (gebouwpaneel: Bouwlaag erboven).",
-      "noLevelBelow": "Geweigerd: er is geen bouwlaag onder deze bouwlaag. Voeg het eerst toe (gebouwpaneel: Bouwlaag eronder)."
+      "noLevelBelow": "Geweigerd: er is geen bouwlaag onder deze bouwlaag. Voeg het eerst toe (gebouwpaneel: Bouwlaag eronder).",
+      "crossesItself": "Geweigerd: de omtrek van de vloeropening kruist zichzelf."
     }
   },
   "invariants": {
@@ -378,7 +381,11 @@
         "wall": "Buren kantelen (deze muur houdt zijn lengte)",
         "slide": "Uiteinden schuiven langs de buren (die houden hun richting)"
       },
-      "faceHint": "Bruto {gross}, netto {net} (openingen afgetrokken)"
+      "faceHint": "Bruto {gross}, netto {net} (openingen afgetrokken)",
+      "angleFrom": "Gemeten vanaf",
+      "angleFromPlan": "Plan (0° = horizontaal)",
+      "angleFromWall": "Muur {wall}",
+      "angleFromNone": "—"
     },
     "resetToPreset": "Terug naar standaard",
     "twoRooms": "Twee ruimtes geselecteerd",
@@ -503,7 +510,8 @@
       "exterior": "Buitenkant",
       "part": "Deel {n}",
       "end": "kopse kant",
-      "roomOrFacade": "Ruimte of gevel"
+      "roomOrFacade": "Ruimte of gevel",
+      "floorOpening": "Vloeropening ({below} – {above})"
     },
     "facades": {
       "front": "Voorgevel",
@@ -584,7 +592,8 @@
     "currentShown": "De bouwlaag waarop je tekent is altijd zichtbaar",
     "levelActions": "Acties voor de bouwlaag",
     "rename": "Hernoemen…",
-    "wallLabel": "Muur {n} · {length}"
+    "wallLabel": "Muur {n} · {length}",
+    "floorOpeningLabel": "Vloeropening · {area} (naar {below})"
   },
   "layout": {
     "label": "Indeling",

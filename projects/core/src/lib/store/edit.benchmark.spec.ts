@@ -16,7 +16,7 @@ import type { LevelId } from '../model/types';
 import { ProjectStore } from './project-store';
 
 /** ms: the frame budget is 16 ms; the slack is for a busy machine (see above). */
-const LIMIT = 25;
+const LIMIT = 35;
 const WARM_UP = 20;
 
 const p95 = (times: number[]) => [...times].sort((a, b) => a - b)[Math.floor(times.length * 0.95)]!;

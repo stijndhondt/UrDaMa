@@ -14,8 +14,10 @@ import {
 import { TranslatePipe } from '@ngx-translate/core';
 import {
   deleteLevel,
+  floorOpeningLevels,
   levelsInOrder,
   resolveOpening,
+  ringArea,
   updateLevel,
   wallLength,
   wallNumbers,
@@ -362,6 +364,16 @@ export class BuildingPanelComponent {
             },
           ];
         });
+      const holes = Object.values(model.floorOpenings)
+        .filter((f) => floorOpeningLevels(model, f).includes(level.id))
+        .map((f): ElementRow => ({
+          select: { kind: 'floorOpening', id: f.id },
+          label: t('building.floorOpeningLabel', {
+            area: this.format.area(Math.abs(ringArea(f.outline))),
+            below: model.levels[f.below]?.name ?? '',
+          }),
+          icon: 'door-stairwell',
+        }));
       return {
         id: level.id,
         name: level.name,
@@ -369,7 +381,7 @@ export class BuildingPanelComponent {
         groups: [
           { group: 'rooms', rows: rooms },
           { group: 'walls', rows: walls },
-          { group: 'openings', rows: openings },
+          { group: 'openings', rows: [...openings, ...holes] },
         ],
       };
     });
@@ -423,7 +435,11 @@ export class BuildingPanelComponent {
       const level = this.project.level();
       if (!first) return;
       const group: Group =
-        first.kind === 'room' ? 'rooms' : first.kind === 'opening' ? 'openings' : 'walls';
+        first.kind === 'room'
+          ? 'rooms'
+          : first.kind === 'opening' || first.kind === 'floorOpening'
+            ? 'openings'
+            : 'walls';
       if (first.kind === 'separator') return;
       untracked(() => {
         this.expand(level);

@@ -4,7 +4,7 @@ import type { LevelId, Vec, Wall } from '../model/types';
 import { ProjectStore } from '../store/project-store';
 import { drawRoom } from './draw-room';
 import { drawWall } from './draw-wall';
-import { rotateWall, wallAnchors, wallAngle, type WallAnchor } from './rotate-wall';
+import { angleAtEnd, rotateWall, wallAnchors, wallAngle, type WallAnchor } from './rotate-wall';
 
 /** One Room, 4 × 3 m inside, from (0, 0) to (4000, 3000). */
 function oneRoom() {
@@ -116,6 +116,52 @@ describe('turning a Wall around an anchor', () => {
     const middle = store.model().walls[tee!.wall]!;
     expect(middle.start.y).toBeCloseTo(middle.end.y, 9);
     expect(Object.keys(store.model().rooms)).toHaveLength(2);
+  });
+
+  it('measures the angle from the Wall connected at one end: in a rectangular Room every corner is 90°', () => {
+    const { store, right } = oneRoom();
+    for (const end of ['start', 'end'] as const)
+      expect(angleAtEnd(store.model(), right(), end)!.angle).toBeCloseTo(90, 9);
+  });
+
+  it('turned to 92° from the Wall at one end, the corner between them opens to exactly 92°', () => {
+    const { store, right } = oneRoom();
+    const wall = right();
+    const anchor = outerBottomCorner(store, wall);
+    // The end at the bottom (the anchor's end) keeps its neighbour; measure from that one.
+    const end = anchor.startsWith('start') ? 'start' : 'end';
+    const r = store.run(rotateWall, {
+      wall: wall.id,
+      angle: 92,
+      anchor,
+      mode: 'slide',
+      relativeTo: end,
+    });
+    expect(r.ok).toBe(true);
+    expect(angleAtEnd(store.model(), store.model().walls[wall.id]!, end)!.angle).toBeCloseTo(92, 9);
+  });
+
+  it('measured from an end with nothing connected, it is refused', () => {
+    const ids = counterIds();
+    const store = new ProjectStore(createProject({ name: 'T', levelName: 'G' }, ids), ids);
+    const level = Object.keys(store.model().levels)[0] as LevelId;
+    store.run(drawWall, {
+      level,
+      start: { x: 0, y: 0 },
+      end: { x: 3000, y: 0 },
+      side: 'centre',
+      roomName: (i) => `Room ${i + 1}`,
+    });
+    const wall = Object.values(store.model().walls)[0]!;
+    expect(angleAtEnd(store.model(), wall, 'start')).toBeNull();
+    const r = store.run(rotateWall, {
+      wall: wall.id,
+      angle: 80,
+      anchor: 'centre',
+      mode: 'wall',
+      relativeTo: 'start',
+    });
+    expect(!r.ok && r.reason.key).toBe('commands.rotateWall.nothingConnected');
   });
 
   it('turning to the angle it already has changes nothing', () => {

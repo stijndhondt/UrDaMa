@@ -7,7 +7,6 @@ import {
   insideArea,
   insideRing,
   levelWallOutlines,
-  neighbourLevels,
   type Vec,
 } from '@urdama/core';
 import { faceLabelAt, faceLabels, openingOutline, type FaceLabel } from './draw-plan';
@@ -18,8 +17,8 @@ import type { View } from './view';
 export type PlanTarget = Selection | { readonly kind: 'empty'; readonly seed: Vec };
 
 /**
- * A Room separator (near its line), then an Opening, a Wall's body, a Floor opening (through this
- * Level's floor or the one above), and the Room around the point.
+ * A Room separator (near its line), then an Opening, a Wall's body, a Floor opening through this
+ * Level's floor, and the Room around the point.
  */
 export function elementAt(host: EditorHost, view: View, p: Vec): Selection | null {
   const level = host.level();
@@ -35,10 +34,9 @@ export function elementAt(host: EditorHost, view: View, p: Vec): Selection | nul
     if (ring && insideRing(p, ring)) return { kind: 'opening', id: o.id };
   }
   for (const [id, outline] of outlines) if (insideRing(p, outline)) return { kind: 'wall', id };
-  const above = neighbourLevels(model, level).above;
-  for (const f of Object.values(model.floorOpenings)) {
-    if ((f.level === level || f.level === above) && insideRing(p, f.outline))
-      return { kind: 'floorOpening', id: f.id };
+  // Only those through this Level's floor: one in the Ceiling shows dashed here, but is not ours.
+  for (const f of host.store.values.level(level).slice().floorOpenings) {
+    if (insideRing(p, f.outline)) return { kind: 'floorOpening', id: f.id };
   }
   for (const area of host.store.values.level(level).footprint().areas) {
     if (area.rooms.length && insideArea(p, area.outline, area.islands))

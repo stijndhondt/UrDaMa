@@ -110,6 +110,27 @@ export function interiorPoint(
   return best ?? outline[0]!;
 }
 
+/** Whether a ring's edges cross each other (a bow tie); neighbouring edges share a corner. */
+export function crossesItself(ring: readonly Vec[]): boolean {
+  const n = ring.length;
+  const side = (a: Vec, b: Vec, p: Vec) => (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+  for (let i = 0; i < n; i++) {
+    const a = ring[i]!;
+    const b = ring[(i + 1) % n]!;
+    for (let j = i + 2; j < n; j++) {
+      if ((j + 1) % n === i) continue;
+      const c = ring[j]!;
+      const d = ring[(j + 1) % n]!;
+      const s1 = side(a, b, c);
+      const s2 = side(a, b, d);
+      const s3 = side(c, d, a);
+      const s4 = side(c, d, b);
+      if (s1 * s2 <= 0 && s3 * s4 <= 0 && (s1 !== 0 || s2 !== 0)) return true;
+    }
+  }
+  return false;
+}
+
 /** The parts of one ring inside another (each part a ring), e.g. a hole clipped to an outline. */
 export function intersectionRings(a: readonly Vec[], b: readonly Vec[]): Vec[][] {
   const clipper = new Clipper64();

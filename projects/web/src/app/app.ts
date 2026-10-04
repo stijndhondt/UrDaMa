@@ -278,7 +278,7 @@ const PX_PER_MM = 96 / 25.4;
               <lk-plan-toolbar
                 class="toolbar"
                 [tool]="editor()?.tool() ?? null"
-                [type]="editor()?.openingType() ?? null"
+                [types]="editor()?.openingTypes() ?? {}"
                 (choose)="selectTool($event)"
                 (placeType)="editor()?.placeOpeningType($event.kind, $event.type)"
               />

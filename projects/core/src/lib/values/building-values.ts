@@ -10,10 +10,11 @@ import { openingShapeOf, type PlacedOpeningShape } from '../geometry/opening-geo
 import { wallRuns, type WallRun } from '../geometry/wall-runs';
 import { resolveOpenings, type ResolvedOpening } from '../model/opening-types';
 import { derived, type Derived } from '../reactive';
-import { levelsInOrder } from '../model/levels';
+import { floorOpeningLevels, levelsInOrder } from '../model/levels';
 import { message, type Message } from '../model/message';
 import { footprint, type Footprint, type RoomDetection } from '../geometry/footprint';
 import { intersectionArea } from '../geometry/polygon';
+import { ringArea } from '../geometry/vec';
 import { wallOutlines, type WallOutline } from '../geometry/wall-outlines';
 import {
   heightOverlap,
@@ -324,7 +325,7 @@ export class BuildingValues {
             .filter((c) => m.rooms[c.room]?.level === id)
             .sort(byId),
           floorOpenings: Object.values(m.floorOpenings)
-            .filter((f) => f.level === id)
+            .filter((f) => floorOpeningLevels(m, f).includes(id))
             .sort(byId),
         };
       },
@@ -456,6 +457,23 @@ export class BuildingValues {
           0,
         );
         if (open) out.push(message('warnings.unconnectedEnds', { count: open }));
+        // A Floor opening passing through this Level, which was added between the two it
+        // connects: the stair needs a Room here around it.
+        const rooms = fp().areas.filter((a) => a.rooms.length);
+        for (const f of s.floorOpenings) {
+          if (f.level === id) continue;
+          const area = Math.abs(ringArea(f.outline));
+          const inside = rooms.some((a) => intersectionArea(a, f) >= area - 1);
+          if (!inside) {
+            const m = this.model();
+            out.push(
+              message('warnings.floorOpeningCrossesLevel', {
+                below: m.levels[f.below]?.name ?? '',
+                above: m.levels[f.level]?.name ?? '',
+              }),
+            );
+          }
+        }
         // A Ceiling running into the Slab above: a warning, never a refusal.
         for (const room of s.rooms) {
           const gap = this.room(room.id).ceilingVoid();

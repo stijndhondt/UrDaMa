@@ -17,7 +17,7 @@
       "window": "Move along a Wall to place a window: it shows the distance to both inside corners. Click to place, or type the distance, Tab, width, Tab, height, Tab, sill, Enter.",
       "wallOpening": "Hover a Wall: the wall opening slides along it with its distances to both corners. Click places it; or type the distance, width, height and sill, Enter.",
       "garageDoor": "Hover a Wall: the garage door slides along it with its distances to both corners. Click places it; or type the distance, width and height, Enter.",
-      "floorOpening": "Drag a stairwell or lift shaft (or click two opposite corners). Then choose whether it goes up or down: the Level it connects to must exist (add it in the Building panel first)."
+      "floorOpening": "Drag a rectangle, or click its corners one by one for any shape (an L, a turned rectangle); click the first corner again, double-click or press Enter to close it. Then choose up or down: the Level it connects to must exist."
     }
   },
   "tools": {
@@ -60,9 +60,9 @@
   },
   "editor": {
     "typed": {
-      "width": "Width",
-      "depth": "Depth",
-      "length": "Length",
+      "width": "Width (mm)",
+      "depth": "Depth (mm)",
+      "length": "Length (mm)",
       "angle": "Angle (°)"
     },
     "room": {
@@ -78,10 +78,10 @@
       }
     },
     "opening": {
-      "distance": "Distance",
-      "width": "Width",
-      "height": "Height",
-      "sill": "Sill"
+      "distance": "Distance (mm)",
+      "width": "Width (mm)",
+      "height": "Height (mm)",
+      "sill": "Sill (mm)"
     },
     "floorOpening": {
       "which": "Which way does it go?",
@@ -97,7 +97,8 @@
     "short": {
       "notEnclosed": "not enclosed",
       "sharingArea": "shares an area"
-    }
+    },
+    "floorOpeningCrossesLevel": "The Floor opening between {below} and {above} passes through this Level: draw a Room here that contains it."
   },
   "rooms": {
     "defaultName": "Room {n}"
@@ -245,13 +246,15 @@
       "label": "Turn a Wall",
       "same": "The Wall already has that angle.",
       "tooShort": "Refused: wall {wall} would be shorter than {min} mm or turn back on itself.",
-      "parallel": "Refused: the end cannot slide along wall {wall}, it would run parallel. Use Neighbours tilt instead."
+      "parallel": "Refused: the end cannot slide along wall {wall}, it would run parallel. Use Neighbours tilt instead.",
+      "nothingConnected": "Refused: nothing is connected at that end to measure the angle from."
     },
     "floorOpening": {
       "label": "Draw a Floor opening",
-      "tooSmall": "Refused: a Floor opening is at least {min} mm each way.",
+      "tooSmall": "Refused: each side of a Floor opening is at least {min} mm.",
       "noLevelAbove": "Refused: there is no Level above this one. Add it first (Building panel: Level above).",
-      "noLevelBelow": "Refused: there is no Level below this one. Add it first (Building panel: Level below)."
+      "noLevelBelow": "Refused: there is no Level below this one. Add it first (Building panel: Level below).",
+      "crossesItself": "Refused: the outline of the Floor opening crosses itself."
     }
   },
   "invariants": {
@@ -378,7 +381,11 @@
         "wall": "Neighbours tilt (this Wall keeps its length)",
         "slide": "Ends slide along the neighbours (they keep their direction)"
       },
-      "faceHint": "Gross {gross}, net {net} (Openings subtracted)"
+      "faceHint": "Gross {gross}, net {net} (Openings subtracted)",
+      "angleFrom": "Measured from",
+      "angleFromPlan": "Plan (0° = horizontal)",
+      "angleFromWall": "Wall {wall}",
+      "angleFromNone": "—"
     },
     "resetToPreset": "Reset to Preset",
     "twoRooms": "Two Rooms selected",
@@ -503,7 +510,8 @@
       "exterior": "Exterior",
       "part": "Part {n}",
       "end": "end",
-      "roomOrFacade": "Room or Façade"
+      "roomOrFacade": "Room or Façade",
+      "floorOpening": "Floor opening ({below} – {above})"
     },
     "facades": {
       "front": "Front Façade",
@@ -584,7 +592,8 @@
     "currentShown": "The Level you draw on is always shown",
     "levelActions": "Level actions",
     "rename": "Rename…",
-    "wallLabel": "Wall {n} · {length}"
+    "wallLabel": "Wall {n} · {length}",
+    "floorOpeningLabel": "Floor opening · {area} (to {below})"
   },
   "layout": {
     "label": "Layout",

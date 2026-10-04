@@ -58,8 +58,8 @@ import { LibraryService } from './library.service';
 export class PlanEditorComponent {
   readonly label = input('');
   readonly tool = signal<ToolName | null>(null);
-  /** The Opening type the current Opening tool places (null: its kind's default size) */
-  readonly openingType = signal<OpeningTypeId | null>(null);
+  /** The Opening type each Opening tool places (null: its kind's default size) */
+  readonly openingTypes = signal<Partial<Record<OpeningKind, OpeningTypeId | null>>>({});
   /** Screen px per mm on the plan (0 until the first draw). */
   readonly scale = signal(0);
 
@@ -150,8 +150,8 @@ export class PlanEditorComponent {
   private syncTool(): void {
     const name = this.editor?.toolName ?? null;
     this.tool.set(name);
-    this.openingType.set(
-      name && isOpeningKind(name) ? (this.editor?.openingType(name) ?? null) : null,
+    this.openingTypes.set(
+      Object.fromEntries(OPENING_KINDS.map((k) => [k, this.editor?.openingType(k) ?? null])),
     );
   }
 
@@ -201,6 +201,3 @@ export class PlanEditorComponent {
     this.editor?.handleKeyUp(e);
   }
 }
-
-const isOpeningKind = (name: ToolName): name is OpeningKind =>
-  (OPENING_KINDS as readonly string[]).includes(name);

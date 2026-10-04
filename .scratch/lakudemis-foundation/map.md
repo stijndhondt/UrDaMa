@@ -61,7 +61,8 @@ Everything is checked against the reference house (the user's own home).
 - **Locked dimensions:** storing measured inside dimensions as constraints kept true by a solver, beyond the v1 push command.
 - **Ceiling void contents:** beams (structural elements) and cable/duct runs placed in the Ceiling void.
 - **Floor detail:** several Floor finishes within one Room; finish under door thresholds.
-- **Vertical connections:** stairs, floor openings (voids in Slabs), Walls that span several Levels, the roof slab over the top Level.
+- **Vertical connections:** stairs, Walls that span several Levels, the roof slab over the top Level. Floor openings (holes in Slabs for a stair or a lift) are done.
+- **Stairs as a component:** a stair is one of our parametric components, modelled like an Opening family (one object, every view and quantity derived from it), once custom modelling comes. It stands in a Floor opening and connects the two Levels around it.
 - **Reference house, upper Levels:** capture the first floor, plus exact wall and opening sizes (by tape; Rayon exports are unreliable), once multi-Level work needs a real test case.
 - **Roofs & attics:** sloped roofs, knee walls, area rules under low ceilings.
 - **Desktop app:** Electron (chosen in principle to keep Angular); packaging and local file access.

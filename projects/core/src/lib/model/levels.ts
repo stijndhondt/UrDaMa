@@ -21,6 +21,22 @@ export function neighbourLevels(
 }
 
 /**
+ * The Levels whose floor a Floor opening goes through, lowest first: those above its lower Level
+ * up to its upper one (more than one when a Level was added in between).
+ */
+export function floorOpeningLevels(
+  model: Model,
+  f: { readonly level: LevelId; readonly below: LevelId },
+): LevelId[] {
+  const top = model.levels[f.level];
+  const bottom = model.levels[f.below];
+  if (!top || !bottom) return [];
+  return levelsInOrder(model, top.building)
+    .filter((l) => l.order > bottom.order && l.order <= top.order)
+    .map((l) => l.id);
+}
+
+/**
  * The Walls of a Level numbered 1, 2, 3… in ID order: the "Wall 3" the Building panel and the
  * Quantities tree both show.
  */

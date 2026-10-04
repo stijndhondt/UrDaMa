@@ -14,7 +14,6 @@ import {
   deleteLevel,
   familyTypes,
   hasSill,
-  neighbourLevels,
   netWallArea,
   ringArea,
   openingsOfType,
@@ -145,14 +144,14 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
           <h3>{{ 'panel.room.insideSize' | translate }}</h3>
           <lk-prop
             [label]="'panel.room.width' | translate"
-            [value]="metres(size.width)"
-            unit="m"
+            [value]="mm(size.width)"
+            unit="mm"
             (commit)="resize('x', $event)"
           />
           <lk-prop
             [label]="'panel.room.depth' | translate"
-            [value]="metres(size.depth)"
-            unit="m"
+            [value]="mm(size.depth)"
+            unit="mm"
             (commit)="resize('y', $event)"
           />
           <lk-prop
@@ -777,21 +776,12 @@ export class PropertiesPanelComponent {
     )}`;
   }
 
-  /** Up to one decimal, no thousands separator, in the user's language: "2600", "884,6". */
-  private readonly plain = computed(
-    () =>
-      new Intl.NumberFormat(this.language.current() === 'nl' ? 'nl-BE' : 'en-GB', {
-        maximumFractionDigits: 1,
-        useGrouping: false,
-      }),
-  );
-
-  /** mm as the user types it back. */
+  /** mm as the user types it back: up to one decimal, no thousands separator ("2600", "884,6"). */
   protected mm(value: number): string {
-    return this.plain().format(value);
+    return this.format.mm(value);
   }
 
-  /** m with 3 decimals in the user's language, as typed back ("2,670"). */
+  /** m with 3 decimals in the user's language, for a label ("2,670"). */
   protected metres(value: number): string {
     return this.format.metres(value / 1000);
   }
@@ -813,10 +803,7 @@ export class PropertiesPanelComponent {
     const type = o && this.project.store.model().openingTypes[o.type];
     if (!type) return '';
     // An unnamed type is shown by its sizes in cm, like "93 × 211,5".
-    return (
-      type.name ??
-      `${this.plain().format(type.width / 10)} × ${this.plain().format(type.height / 10)}`
-    );
+    return type.name ?? `${this.format.mm(type.width / 10)} × ${this.format.mm(type.height / 10)}`;
   });
 
   /** The types of the selected Opening's family, by size, named or shown by their sizes. */
@@ -1012,10 +999,9 @@ export class PropertiesPanelComponent {
     if (!f) return null;
     const model = this.project.store.model();
     const { min, max } = boundingBox(f.outline);
-    const below = neighbourLevels(model, f.level).below;
     return {
       above: model.levels[f.level]?.name ?? '',
-      below: (below && model.levels[below]?.name) ?? '',
+      below: model.levels[f.below]?.name ?? '',
       width: this.format.metres((max.x - min.x) / 1000),
       depth: this.format.metres((max.y - min.y) / 1000),
       area: this.format.decimal(Math.abs(ringArea(f.outline)) / 1e6),

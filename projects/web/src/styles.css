@@ -83,3 +83,8 @@ dialog input {
   background: var(--inset);
   color: var(--ink);
 }
+/* An Opening tool's size list (shown in the page body): the size the tool places stands out. */
+.p-tieredmenu-item.current .p-tieredmenu-item-label {
+  font-weight: 600;
+  color: var(--accent);
+}

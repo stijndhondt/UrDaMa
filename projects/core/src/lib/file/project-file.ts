@@ -11,7 +11,7 @@ import { COLLECTIONS } from '../model/patch';
 import type { CollectionName, Model } from '../model/types';
 
 export const FILE_FORMAT = 'urdama';
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 export const FILE_EXTENSION = '.urdama.json';
 /** The app's earlier name: its files are read, never written. */
 export const LEGACY_FILE_FORMATS: readonly string[] = ['lakudemis'];
@@ -27,7 +27,30 @@ export const MIGRATIONS: Readonly<Record<number, (doc: Doc) => Doc>> = {
   1: openingTypesFromSizes,
   2: wallOpeningAndGarageDoorFamilies,
   3: noFloorOpenings,
+  4: floorOpeningsBelow,
 };
+
+/**
+ * Version 4 → 5: a Floor opening keeps both Levels it connects; until now the lower one was the
+ * Level just below its own, in the same Building.
+ */
+function floorOpeningsBelow(doc: Doc): Doc {
+  const levels = (doc['levels'] ?? []) as { id: string; building: string; order: number }[];
+  const below = (id: unknown) => {
+    const l = levels.find((x) => x.id === id);
+    return levels
+      .filter((x) => l && x.building === l.building && x.order < l.order)
+      .sort((a, b) => b.order - a.order)[0]?.id;
+  };
+  return {
+    ...doc,
+    schemaVersion: 5,
+    floorOpenings: ((doc['floorOpenings'] ?? []) as Doc[]).map((f) => ({
+      ...f,
+      below: below(f['level']),
+    })),
+  };
+}
 
 /** Version 3 → 4: Floor openings (for stairs and lifts); a file from before has none. */
 function noFloorOpenings(doc: Doc): Doc {
@@ -136,7 +159,7 @@ const KEY_ORDER: Readonly<
   roomSeparators: ['id', 'level', 'start', 'end', 'startWall', 'endWall'],
   slabs: ['id', 'level', 'thickness'],
   ceilings: ['id', 'room', 'thickness'],
-  floorOpenings: ['id', 'level', 'outline'],
+  floorOpenings: ['id', 'level', 'below', 'outline'],
 };
 
 /** Which nested objects use which key order. */

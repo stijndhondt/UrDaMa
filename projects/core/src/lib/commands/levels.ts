@@ -5,7 +5,7 @@
  */
 import { put, remove } from '../model/edit';
 import { message } from '../model/message';
-import { levelsInOrder, neighbourLevels } from '../model/levels';
+import { levelsInOrder } from '../model/levels';
 import { defaultStoreyHeight } from '../model/new-project';
 import type { Level, LevelId, Slab, SlabId } from '../model/types';
 import { refuse, type Command } from './command';
@@ -153,12 +153,11 @@ export const deleteLevel: Command<DeleteLevelArgs> = (model, args) => {
     'slabs',
     ids(model.slabs, (s) => s.level !== level.id),
   );
-  // A Floor opening connects its Level with the one below: it goes with either.
-  const { above } = neighbourLevels(model, level.id);
+  // A Floor opening goes with either Level it connects; one in between it no longer crosses.
   next = remove(
     next,
     'floorOpenings',
-    ids(model.floorOpenings, (f) => f.level !== level.id && f.level !== above),
+    ids(model.floorOpenings, (f) => f.level !== level.id && f.below !== level.id),
   );
   next = remove(next, 'levels', [level.id]);
   for (const l of stack)

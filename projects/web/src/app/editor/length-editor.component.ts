@@ -65,7 +65,7 @@ const GROW_ICONS: Record<GrowOption['label'], IconName> = {
           [attr.aria-label]="'panel.wall.length' | translate"
           (keydown.enter)="apply(field.value)"
         />
-        <span class="unit">m</span>
+        <span class="unit">mm</span>
       </label>
       <div class="toggles">
         <p-selectbutton
@@ -173,9 +173,9 @@ export class LengthEditorComponent {
   protected readonly grows = computed(() => growOptions(this.wall()));
   /** Grows towards the end of the plan's axis (right / down) unless chosen otherwise. */
   protected readonly growIndex = signal(2);
-  /** The length as the user types it back: m with 3 decimals in their language ("3,300"). */
+  /** The length as the user types it back, in mm ("3300"). */
   private readonly shownMm = computed(() => this.faceLength() ?? wallLength(this.wall()));
-  protected readonly shown = computed(() => this.format.metres(this.shownMm() / 1000));
+  protected readonly shown = computed(() => this.format.mm(this.shownMm()));
   protected readonly modes: readonly { value: SetWallLengthArgs['mode']; icon: IconName }[] = [
     { value: 'room', icon: 'panel-right' },
     { value: 'wall', icon: 'slash' },

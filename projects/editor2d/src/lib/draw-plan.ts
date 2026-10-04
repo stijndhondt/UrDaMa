@@ -3,7 +3,6 @@
  */
 import {
   boundingBox,
-  neighbourLevels,
   boxesOverlap,
   interiorPoint,
   openingRect,
@@ -548,9 +547,8 @@ function drawFloorOpenings(
   box: Box,
 ): void {
   const level = host.level();
-  const above = neighbourLevels(host.store.model(), level).above;
   const here = host.store.values.level(level).slice().floorOpenings;
-  const overhead = above ? host.store.values.level(above).slice().floorOpenings : [];
+  const overhead = Object.values(host.store.model().floorOpenings).filter((f) => f.below === level);
   ctx.save();
   for (const [openings, dashed] of [
     [here, false],
