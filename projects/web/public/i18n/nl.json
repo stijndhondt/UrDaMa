@@ -230,6 +230,12 @@
       "same": "De muur heeft die lengte al.",
       "teeEnd": "Geweigerd: dit uiteinde staat tegen een andere muur. Kies 'Ruimte verschuiven' om die muur mee te verplaatsen.",
       "cannotShift": "Geweigerd: muur {wall} staat schuin en kan niet meeschuiven. Kies 'Alleen deze muur'."
+    },
+    "rotateWall": {
+      "label": "Muur draaien",
+      "same": "De muur staat al onder die hoek.",
+      "tooShort": "Geweigerd: muur {wall} zou korter worden dan {min} mm of omklappen.",
+      "parallel": "Geweigerd: het uiteinde kan niet langs muur {wall} schuiven, ze zouden evenwijdig lopen. Kies 'Buren kantelen'."
     }
   },
   "invariants": {
@@ -337,6 +343,21 @@
         "wall": "Alleen deze muur (de verbonden muur kantelt)"
       },
       "lengthHint": "Klik om de lengte te wijzigen, de richting en wat er beweegt",
+      "angle": "Hoek",
+      "angleHint": "Klik om de muur onder een exacte hoek te draaien rond een hoekpunt of het midden (0° is horizontaal, tegen de klok in)",
+      "anchor": "Draait rond",
+      "anchors": {
+        "start-lo": "hoekpunt aan het begin, ene zijde",
+        "start-hi": "hoekpunt aan het begin, andere zijde",
+        "centre": "het midden",
+        "end-lo": "hoekpunt aan het einde, ene zijde",
+        "end-hi": "hoekpunt aan het einde, andere zijde"
+      },
+      "angleMode": "Als de muur draait",
+      "angleModes": {
+        "wall": "Buren kantelen (deze muur houdt zijn lengte)",
+        "slide": "Uiteinden schuiven langs de buren (die houden hun richting)"
+      },
       "faceHint": "Bruto {gross}, netto {net} (openingen afgetrokken)"
     },
     "resetToPreset": "Terug naar standaard",

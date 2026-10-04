@@ -3,9 +3,11 @@ import type {
   Message,
   OpeningId,
   ProjectStore,
+  RotateWallArgs,
   RoomId,
   RoomSeparatorId,
   Vec,
+  WallAnchor,
   WallId,
 } from '@urdama/core';
 import type { PlanColors } from './draw-plan';
@@ -47,6 +49,14 @@ export interface EditorHost {
    * point (canvas px). `faceLength` is the length the label shows (mm).
    */
   readonly editLength?: (wall: WallId, at: Vec, faceLength: number) => void;
+  /**
+   * The anchor a selected Wall turns around, shared with the app's angle editor; its centre when
+   * absent. Clicking one of the Wall's anchors on the plan chooses it.
+   */
+  readonly wallAnchor?: () => WallAnchor;
+  readonly setWallAnchor?: (anchor: WallAnchor) => void;
+  /** What follows when a Wall turns (see RotateWall); its ends slide when absent. */
+  readonly turnMode?: () => RotateWallArgs['mode'];
   /** The colours to draw with (the app's theme); the light defaults when absent. */
   readonly colors?: () => PlanColors;
   /** Whether snapping is on (ticket 26: the snap toggle); on when absent. Alt inverts it. */

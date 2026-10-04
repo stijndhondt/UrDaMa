@@ -102,7 +102,7 @@ export function moveWallsBy(model: Model, ids: readonly WallId[], v: Vec): Model
  * longer reaches its end, the Wall that now carries it (ticket 35). Updates `connections`; returns
  * why it can't when no Wall carries a T.
  */
-function carryTees(
+export function carryTees(
   model: Model,
   walls: Record<string, Wall>,
   connections: Record<string, WallConnection>,

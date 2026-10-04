@@ -24,6 +24,7 @@ import { PlanColorsService } from './plan-colors.service';
 import { SnapService } from './snap.service';
 import { ContextMenuService } from './context-menu.service';
 import { LengthEditService } from './length-edit.service';
+import { WallTurnService } from './wall-turn.service';
 import { LevelVisibilityService } from './level-visibility.service';
 import { LibraryService } from './library.service';
 
@@ -68,6 +69,7 @@ export class PlanEditorComponent {
   private readonly selection = inject(SelectionService);
   private readonly contextMenus = inject(ContextMenuService);
   private readonly lengthEdits = inject(LengthEditService);
+  private readonly turn = inject(WallTurnService);
   private readonly visibility = inject(LevelVisibilityService);
   private readonly theme = inject(ThemeService);
   private readonly planColors = inject(PlanColorsService);
@@ -95,6 +97,9 @@ export class PlanEditorComponent {
         zoomChanged: (scale) => this.scale.set(scale),
         snapping: () => this.snap.on(),
         editLength: (wall, at, faceLength) => this.lengthEdits.open.set({ wall, at, faceLength }),
+        wallAnchor: () => this.turn.anchor(),
+        setWallAnchor: (anchor) => this.turn.anchor.set(anchor),
+        turnMode: () => this.turn.mode(),
         colors: () => this.planColors.colors(),
       };
       this.editor = new PlanEditor(this.canvas().nativeElement, host);
@@ -129,6 +134,7 @@ export class PlanEditorComponent {
       this.project.level();
       this.visibility.hidden();
       this.snap.on();
+      this.turn.anchor();
       this.language.current();
       this.editor?.invalidate();
     });

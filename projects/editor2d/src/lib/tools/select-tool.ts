@@ -3,12 +3,27 @@
  * Clicking a Wall's body selects the Wall; clicking inside a Room selects the Room. Dragging a
  * Wall moves it along its normal (connected Walls follow, Seed points are carried along), live
  * while dragging; release commits one undo step, Esc cancels. Rooms themselves are not dragged.
+ *
+ * A selected Wall shows its anchors (its four corners and its centre). Clicking one makes it the
+ * point the Wall turns around; dragging another one turns the Wall around it, in steps of 1°
+ * (Shift 15°, Ctrl 0.1°, Alt free).
  */
-import { moveWall, wallNormal, type Vec, type WallId } from '@urdama/core';
+import {
+  moveWall,
+  rotateWall,
+  WALL_ANCHORS,
+  wallAnchors,
+  wallAngle,
+  wallNormal,
+  type Vec,
+  type Wall,
+  type WallAnchor,
+  type WallId,
+} from '@urdama/core';
 import { drawSelected, planColors } from '../draw-plan';
 import { elementAt, lengthLabelAt } from '../hit-test';
 import type { Selection } from '../host';
-import { roundToStep, type PointerInfo, type Tool, type ToolContext } from './tool';
+import { roundToStep, snapping, type PointerInfo, type Tool, type ToolContext } from './tool';
 
 interface Drag {
   readonly wall: WallId;
@@ -16,14 +31,32 @@ interface Drag {
   offset: number;
 }
 
+/** Turning a Wall by dragging one of its anchors around the chosen one. */
+interface Turn {
+  readonly wall: WallId;
+  /** The anchor that was grabbed; a click without dragging makes it the pivot. */
+  readonly grabbed: WallAnchor;
+  readonly pivot: Vec;
+  /** Degrees: the pointer's direction from the pivot when grabbed, and the Wall's angle then */
+  readonly from: number;
+  readonly base: number;
+  /** Degrees, the Wall's new angle; null until the pointer moves */
+  angle: number | null;
+}
+
+/** Screen px: how close the pointer must be to an anchor to grab it */
+const ANCHOR_RADIUS = 7;
+
 export class SelectTool implements Tool {
   readonly name = 'select' as const;
   private hover: Selection | null = null;
   private drag: Drag | null = null;
+  private turn: Turn | null = null;
 
   constructor(private readonly ctx: ToolContext) {}
 
   pointerDown(p: PointerInfo): void {
+    if (!p.shift && this.grabAnchor(p)) return;
     // A Wall's length label selects that Wall (a double click on it edits the length, ticket 23).
     const label = p.shift ? null : lengthLabelAt(this.ctx.host, this.ctx.view, p.screen);
     if (label) {
@@ -45,6 +78,10 @@ export class SelectTool implements Tool {
   }
 
   pointerMove(p: PointerInfo): void {
+    if (this.turn) {
+      this.turnTo(p);
+      return;
+    }
     if (!this.drag) {
       const hover = this.hitTest(p.model);
       if (hover?.id !== this.hover?.id) {
@@ -67,6 +104,10 @@ export class SelectTool implements Tool {
   }
 
   pointerUp(p: PointerInfo): void {
+    if (this.turn) {
+      this.endTurn(p);
+      return;
+    }
     if (!this.drag) return;
     const { wall, offset } = this.drag;
     this.drag = null;
@@ -79,7 +120,7 @@ export class SelectTool implements Tool {
 
   keyDown(e: KeyboardEvent): boolean {
     if (e.key === 'Escape') {
-      if (this.drag) {
+      if (this.drag || this.turn) {
         this.cancel();
         return true;
       }
@@ -93,12 +134,14 @@ export class SelectTool implements Tool {
   }
 
   cancel(): void {
-    if (this.drag) this.ctx.host.store.cancelPreview();
+    if (this.drag || this.turn) this.ctx.host.store.cancelPreview();
     this.drag = null;
+    this.turn = null;
     this.ctx.invalidate();
   }
 
   drawOverlay(ctx: CanvasRenderingContext2D): void {
+    this.drawAnchors(ctx);
     if (this.hover) {
       ctx.save();
       ctx.globalAlpha = 0.45;
@@ -126,7 +169,112 @@ export class SelectTool implements Tool {
     }
   }
 
+  /** The one selected Wall, as it is drawn now (a turn shows its preview). */
+  private selectedWall(): Wall | null {
+    const selection = this.ctx.host.selection();
+    if (selection.length !== 1 || selection[0]!.kind !== 'wall') return null;
+    return this.ctx.host.store.model().walls[selection[0]!.id] ?? null;
+  }
+
+  private pivotAnchor(): WallAnchor {
+    return this.ctx.host.wallAnchor?.() ?? 'centre';
+  }
+
+  /** A press on one of the selected Wall's anchors: starts a turn (or a pivot choice). */
+  private grabAnchor(p: PointerInfo): boolean {
+    const wall = this.selectedWall();
+    if (!wall) return false;
+    const anchors = wallAnchors(this.ctx.host.store.model(), wall);
+    const grabbed = WALL_ANCHORS.find((a) => {
+      const s = this.ctx.view.toScreen(anchors[a]);
+      return Math.hypot(s.x - p.screen.x, s.y - p.screen.y) <= ANCHOR_RADIUS;
+    });
+    if (!grabbed) return false;
+    const pivot = anchors[this.pivotAnchor()];
+    this.turn = {
+      wall: wall.id,
+      grabbed,
+      pivot,
+      from: direction(pivot, p.model),
+      base: wallAngle(wall),
+      angle: null,
+    };
+    return true;
+  }
+
+  private turnTo(p: PointerInfo): void {
+    const turn = this.turn!;
+    // Grabbing the pivot itself turns nothing: releasing it keeps it as the pivot.
+    if (turn.grabbed === this.pivotAnchor()) return;
+    const raw = turn.base + direction(turn.pivot, p.model) - turn.from;
+    const step = p.ctrl ? 0.1 : p.shift ? 15 : 1;
+    const angle = snapping(this.ctx, p) ? Math.round(raw / step) * step : raw;
+    if (angle === turn.angle) return;
+    turn.angle = angle;
+    const args = { wall: turn.wall, angle, anchor: this.pivotAnchor(), mode: this.turnMode() };
+    if (!this.ctx.host.store.preview(rotateWall, args).ok) this.ctx.host.store.cancelPreview();
+    this.ctx.invalidate();
+  }
+
+  private endTurn(p: PointerInfo): void {
+    const turn = this.turn!;
+    this.turn = null;
+    this.ctx.host.store.cancelPreview();
+    if (turn.angle === null) {
+      this.ctx.host.setWallAnchor?.(turn.grabbed);
+    } else {
+      const result = this.ctx.host.store.run(rotateWall, {
+        wall: turn.wall,
+        angle: turn.angle,
+        anchor: this.pivotAnchor(),
+        mode: this.turnMode(),
+      });
+      if (!result.ok && result.reason.key !== 'commands.rotateWall.same')
+        this.ctx.host.refused(result.reason, p.screen);
+    }
+    this.ctx.invalidate();
+  }
+
+  private turnMode() {
+    return this.ctx.host.turnMode?.() ?? 'slide';
+  }
+
+  /** The selected Wall's anchors; the pivot filled, and the angle while turning. */
+  private drawAnchors(ctx: CanvasRenderingContext2D): void {
+    const wall = this.selectedWall();
+    if (!wall) return;
+    const anchors = wallAnchors(this.ctx.host.store.model(), wall);
+    const pivot = this.pivotAnchor();
+    const { accent, paper } = planColors();
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    for (const a of WALL_ANCHORS) {
+      const s = this.ctx.view.toScreen(anchors[a]);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, a === pivot ? 5 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = a === pivot ? accent : paper;
+      ctx.strokeStyle = accent;
+      ctx.fill();
+      ctx.stroke();
+    }
+    if (this.turn?.angle != null) {
+      const s = this.ctx.view.toScreen(anchors[pivot]);
+      ctx.font = '600 12px system-ui, sans-serif';
+      ctx.fillStyle = accent;
+      ctx.textAlign = 'left';
+      ctx.fillText(`${formatAngle(wallAngle(wall))}°`, s.x + 12, s.y - 12);
+    }
+    ctx.restore();
+  }
+
   private hitTest(p: Vec): Selection | null {
     return elementAt(this.ctx.host, this.ctx.view, p);
   }
 }
+
+/** Degrees, anticlockwise on screen: the direction from one plan point to another. */
+const direction = (from: Vec, to: Vec): number =>
+  (Math.atan2(-(to.y - from.y), to.x - from.x) * 180) / Math.PI;
+
+/** Up to two decimals, without trailing zeros: "92", "88.5". */
+const formatAngle = (deg: number): string => String(Math.round(deg * 100) / 100);

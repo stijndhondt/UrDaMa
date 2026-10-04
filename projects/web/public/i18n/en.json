@@ -230,6 +230,12 @@
       "same": "The Wall already has that length.",
       "teeEnd": "Refused: this end sits against another Wall. Use Move Room to move that Wall instead.",
       "cannotShift": "Refused: wall {wall} is at an angle and cannot move along. Use Only this Wall instead."
+    },
+    "rotateWall": {
+      "label": "Turn a Wall",
+      "same": "The Wall already has that angle.",
+      "tooShort": "Refused: wall {wall} would be shorter than {min} mm or turn back on itself.",
+      "parallel": "Refused: the end cannot slide along wall {wall}, it would run parallel. Use Neighbours tilt instead."
     }
   },
   "invariants": {
@@ -337,6 +343,21 @@
         "wall": "Only this Wall (the connected Wall tilts)"
       },
       "lengthHint": "Click to change the length, which way it grows and what moves",
+      "angle": "Angle",
+      "angleHint": "Click to turn the Wall to an exact angle around a corner or its centre (0° is horizontal, anticlockwise)",
+      "anchor": "Turns around",
+      "anchors": {
+        "start-lo": "corner at its start, one face",
+        "start-hi": "corner at its start, other face",
+        "centre": "its centre",
+        "end-lo": "corner at its end, one face",
+        "end-hi": "corner at its end, other face"
+      },
+      "angleMode": "When the Wall turns",
+      "angleModes": {
+        "wall": "Neighbours tilt (this Wall keeps its length)",
+        "slide": "Ends slide along the neighbours (they keep their direction)"
+      },
       "faceHint": "Gross {gross}, net {net} (Openings subtracted)"
     },
     "resetToPreset": "Reset to Preset",

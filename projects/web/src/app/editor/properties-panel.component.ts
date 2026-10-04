@@ -26,6 +26,7 @@ import {
   updateRoom,
   updateSlab,
   updateWall,
+  wallAngle,
   wallLength,
   wallThickness,
   type Command,
@@ -47,6 +48,7 @@ import { OPENING_ICONS } from '../shell/opening-icons';
 import { EditorActionsService } from './editor-actions.service';
 import { FamilyEditService } from './family-edit.service';
 import { FamilyPropertiesComponent } from './family-properties.component';
+import { AngleEditorComponent } from './angle-editor.component';
 import { LengthEditorComponent } from './length-editor.component';
 import { OpeningTypesDialogComponent } from './opening-types-dialog.component';
 import { PropRowComponent, type PropChoice } from './prop-row.component';
@@ -88,6 +90,7 @@ interface Figure {
     SelectModule,
     IconComponent,
     LengthEditorComponent,
+    AngleEditorComponent,
     OpeningTypesDialogComponent,
     PropRowComponent,
     FamilyPropertiesComponent,
@@ -369,6 +372,18 @@ interface Figure {
             (open)="editingLength.set(true)"
           />
         }
+        @if (editingAngle()) {
+          <lk-angle-editor [wall]="wall" (closed)="editingAngle.set(false)" />
+        } @else {
+          <lk-prop
+            [label]="'panel.wall.angle' | translate"
+            [value]="format.decimal(wallAngle(wall))"
+            unit="°"
+            [hint]="'panel.wall.angleHint' | translate"
+            [opens]="true"
+            (open)="editingAngle.set(true)"
+          />
+        }
         <lk-prop
           [label]="'panel.wall.thickness' | translate"
           [value]="mm(thickness(wall))"
@@ -640,7 +655,7 @@ export class PropertiesPanelComponent {
   protected readonly measurement = inject(MeasurementService);
   protected readonly actions = inject(EditorActionsService);
   protected readonly familyEdit = inject(FamilyEditService);
-  private readonly format = inject(FormatService);
+  protected readonly format = inject(FormatService);
   private readonly messages = inject(MessagesService);
   private readonly translate = inject(TranslateService);
   private readonly language = inject(LanguageService);
@@ -669,6 +684,8 @@ export class PropertiesPanelComponent {
 
   protected readonly presets = computed(() => this.project.store.model().project.presets);
   protected readonly editingLength = signal(false);
+  protected readonly editingAngle = signal(false);
+  protected readonly wallAngle = wallAngle;
   protected readonly widthSide = signal<'min' | 'max'>('max');
   protected readonly depthSide = signal<'min' | 'max'>('max');
 
@@ -679,6 +696,7 @@ export class PropertiesPanelComponent {
       this.selection.current();
       untracked(() => {
         this.editingLength.set(false);
+        this.editingAngle.set(false);
         this.pendingSize.set(null);
         this.typesFor.set(null);
       });

@@ -53,4 +53,5 @@ export * from './lib/geometry/outside';
 export * from './lib/geometry/wall-runs';
 export * from './lib/geometry/elevation';
 export * from './lib/commands/set-wall-length';
+export * from './lib/commands/rotate-wall';
 export * from './lib/geometry/visible-faces';
