@@ -33,5 +33,5 @@ export function growOptions(wall: Wall): readonly GrowOption[] {
 
 const other = (end: WallEnd): WallEnd => (end === 'start' ? 'end' : 'start');
 
-/** A length as an edit field shows it: metres with two decimals, which parseLength reads back. */
-export const editableLength = (mm: number): string => (mm / 1000).toFixed(2);
+/** A length as an edit field shows it: metres with three decimals, which parseLength reads back. */
+export const editableLength = (mm: number): string => (mm / 1000).toFixed(3);

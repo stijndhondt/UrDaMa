@@ -459,7 +459,8 @@ export class QuantitiesPanelComponent {
 
   protected cell(row: Row, key: Column): string {
     const v = this.value(row, key);
-    return v === null ? '' : this.format.decimal(v);
+    if (v === null) return '';
+    return key === 'length' || key === 'height' ? this.format.metres(v) : this.format.decimal(v);
   }
 
   protected setOpen(node: TreeNode | undefined, open: boolean): void {
@@ -485,11 +486,17 @@ export class QuantitiesPanelComponent {
       t('quantities.tree.surface'),
       ...COLUMNS.map((c) => `${t('quantities.tree.' + c.key)} (${c.unit})`),
     ];
+    const dutch = this.language.current() === 'nl';
+    // Lengths to the mm (3 decimals); areas and volumes keep the CSV's 2 decimals.
+    const metres = (v: number) => (dutch ? v.toFixed(3).replace('.', ',') : v.toFixed(3));
     const line = (row: Row, surface: string) => [
       row.level,
       row.room,
       surface,
-      ...COLUMNS.map((c) => this.value(row, c.key)),
+      ...COLUMNS.map((c) => {
+        const v = this.value(row, c.key);
+        return v !== null && (c.key === 'length' || c.key === 'height') ? metres(v) : v;
+      }),
     ];
     // Levels, Rooms and Façades name themselves in their own columns; the rest are surfaces.
     const named = new Set<Row['kind']>(['level', 'room', 'exterior', 'facade', 'facadeLevel']);
@@ -498,7 +505,6 @@ export class QuantitiesPanelComponent {
       ...b.children.flatMap(flat),
     ];
     const lines = this.rows().flatMap(flat);
-    const dutch = this.language.current() === 'nl';
     const csv = toCsv(header, lines, { separator: dutch ? ';' : ',', decimalComma: dutch });
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');

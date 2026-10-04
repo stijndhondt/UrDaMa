@@ -173,9 +173,9 @@ export class LengthEditorComponent {
   protected readonly grows = computed(() => growOptions(this.wall()));
   /** Grows towards the end of the plan's axis (right / down) unless chosen otherwise. */
   protected readonly growIndex = signal(2);
-  /** The length as the user types it back: m with 2 decimals in their language ("3,30"). */
+  /** The length as the user types it back: m with 3 decimals in their language ("3,300"). */
   private readonly shownMm = computed(() => this.faceLength() ?? wallLength(this.wall()));
-  protected readonly shown = computed(() => this.format.decimal(this.shownMm() / 1000));
+  protected readonly shown = computed(() => this.format.metres(this.shownMm() / 1000));
   protected readonly modes: readonly { value: SetWallLengthArgs['mode']; icon: IconName }[] = [
     { value: 'room', icon: 'panel-right' },
     { value: 'wall', icon: 'slash' },

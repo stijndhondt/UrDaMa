@@ -106,7 +106,7 @@ export class ElevationComponent {
       this.view = new ElevationView(this.canvas().nativeElement, {
         colors: () => this.planColors.colors(),
         picked: (shape) => this.pick(shape),
-        metres: (mm) => this.format.decimal(mm / 1000),
+        metres: (mm) => this.format.metres(mm / 1000),
         text: (key) => this.language.text(key),
       });
       this.view.set(this.drawing(), this.visibility.hidden());

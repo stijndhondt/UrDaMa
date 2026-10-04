@@ -29,7 +29,7 @@ export interface EditorHost {
   readonly levelBelow?: () => LevelId | null;
   /** Translated text for a key (ngx-translate in the web app). */
   readonly text: (key: string, params?: Readonly<Record<string, string | number>>) => string;
-  /** Locale-aware formatting (m with 2 decimals, m² with 2 decimals, …). */
+  /** Locale-aware formatting (m with 3 decimals, m² with 2 decimals, …). */
   readonly format: {
     readonly length: (mm: number) => string;
     readonly area: (mm2: number) => string;

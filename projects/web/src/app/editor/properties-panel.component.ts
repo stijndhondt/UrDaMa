@@ -739,9 +739,9 @@ export class PropertiesPanelComponent {
     return this.plain().format(value);
   }
 
-  /** m with 2 decimals in the user's language, as typed back ("2,67"). */
+  /** m with 3 decimals in the user's language, as typed back ("2,670"). */
   protected metres(value: number): string {
-    return this.format.decimal(value / 1000);
+    return this.format.metres(value / 1000);
   }
 
   protected resetText(preset: number): string {
@@ -828,8 +828,8 @@ export class PropertiesPanelComponent {
     if (!o) return [];
     const glass = this.project.store.values.opening(o.id).glassArea();
     return [
-      { value: this.format.decimal(o.width / 1000), label: 'panel.summary.width' },
-      { value: this.format.decimal(o.height / 1000), label: 'panel.summary.height' },
+      { value: this.format.metres(o.width / 1000), label: 'panel.summary.width' },
+      { value: this.format.metres(o.height / 1000), label: 'panel.summary.height' },
       {
         value: this.format.decimal((o.width * o.height) / 1e6),
         label: 'panel.summary.openingArea',
@@ -914,7 +914,7 @@ export class PropertiesPanelComponent {
     const faces = wall ? this.project.store.values.wall(wall.id).faces() : undefined;
     if (!wall || !faces) return null;
     return [
-      { value: this.format.decimal(wallLength(wall) / 1000), label: 'panel.summary.length' },
+      { value: this.format.metres(wallLength(wall) / 1000), label: 'panel.summary.length' },
       { value: this.format.decimal(faces.drawn.net / 1e6), label: 'panel.summary.drawnFace' },
       { value: this.format.decimal(faces.other.net / 1e6), label: 'panel.summary.otherFace' },
     ];
