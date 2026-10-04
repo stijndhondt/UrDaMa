@@ -1,4 +1,4 @@
-name: Deploy UrDaMa to GitHub Pages
+name: Deploy Urdama to GitHub Pages
 
 on:
   push:
@@ -21,17 +21,20 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: 24
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build Angular app
-        run: npm run build -- --base-href /urdama/
+        run: pnpm run build --base-href /UrDaMa/
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
