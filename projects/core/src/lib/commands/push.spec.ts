@@ -91,6 +91,8 @@ describe('thickness, Presets and push (ticket 09)', () => {
       side: 'max',
     });
     expect(result.ok).toBe(true);
+    // The push works here, so it isn't the fallback of ticket 36.
+    expect(result.ok && result.patch.label.key).toBe('commands.resizeRoom.label');
     const after = areas();
     expect(after['Keuken']).toBe(10.07);
     for (const name of Object.keys(before))

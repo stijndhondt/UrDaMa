@@ -139,7 +139,8 @@
     },
     "moveWall": {
       "label": "Move wall",
-      "nothing": "The wall did not move."
+      "nothing": "The wall did not move.",
+      "noHost": "Refused: the end of wall {wall} would leave wall {host} with no wall to carry it."
     },
     "delete": {
       "label": "{count, plural, one {Delete # element} other {Delete # elements}}",
@@ -172,7 +173,9 @@
       "notEnclosed": "Only an enclosed Room can be resized.",
       "notRectangular": "Only a rectangular Room can be resized by typing its size; drag its Walls instead.",
       "sameSize": "The Room already has this size.",
-      "noWall": "No Wall bounds the Room on that side."
+      "noWall": "No Wall bounds the Room on that side.",
+      "sharedWall": "Resize room ({name}) by moving its shared wall",
+      "neither": "Refused: can't keep the other rooms' sizes ({push, select, skewed {wall {pushA} would have to stretch at an angle} noHost {the end of wall {pushA} would leave wall {pushB} with no wall to carry it} overlap {walls {pushA} and {pushB} would overlap} other {the plan would no longer hold together}}), and can't move the shared wall either ({move, select, skewed {wall {moveA} would have to stretch at an angle} noHost {the end of wall {moveA} would leave wall {moveB} with no wall to carry it} overlap {walls {moveA} and {moveB} would overlap} other {the plan would no longer hold together}})."
     },
     "separator": {
       "label": "Draw room separator",

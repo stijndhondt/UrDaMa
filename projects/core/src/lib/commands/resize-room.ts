@@ -2,12 +2,19 @@
  * ResizeRoom: re-typing a Room's measured inside width or depth (Slice 1 spec, "Resizing a Room").
  * The Wall(s) on the chosen side move by the difference and push what is in front of them, so
  * every other Room keeps its size. Only rectangular, axis-aligned Rooms can be resized this way.
+ *
+ * When the push can't work (a grid of Rooms, where pushing one row would bend the Walls it shares
+ * with the next), the Walls on that side move instead, as a Wall is moved: the neighbour gets
+ * smaller (ticket 36). When neither works, one message gives both reasons.
  */
 import { levelGeometry, wallFaces } from '../geometry/level-geometry';
 import { distanceToSegment } from '../geometry/polygon';
-import { message } from '../model/message';
+import { scale } from '../geometry/vec';
+import { checkInvariants } from '../model/invariants';
+import { message, type Message } from '../model/message';
 import type { RoomId, Vec, WallId } from '../model/types';
 import { refuse, type Command } from './command';
+import { moveWallsBy } from './move-wall';
 import { faceToward, push } from './push';
 import { reseatSeeds } from './seeds';
 
@@ -79,13 +86,49 @@ export const resizeRoom: Command<ResizeRoomArgs> = (model, args) => {
     from: bounding[0]!,
     rigid: bounding,
   });
-  if (!result.ok) return result;
-  return {
-    ok: true,
-    model: reseatSeeds(model, result.model, room.level),
-    label: message('commands.resizeRoom.label', { name: room.name }),
-  };
+  const pushRefused = result.ok ? checkInvariants(result.model, model) : result.reason;
+  if (result.ok && !pushRefused)
+    return {
+      ok: true,
+      model: reseatSeeds(model, result.model, room.level),
+      label: message('commands.resizeRoom.label', { name: room.name }),
+    };
+
+  // The push can't keep the other Rooms' sizes: move the Walls on that side instead.
+  const moved = moveWallsBy(model, bounding, scale(direction, delta));
+  const moveRefused = 'key' in moved ? moved : checkInvariants(moved, model);
+  if (!('key' in moved) && !moveRefused)
+    return {
+      ok: true,
+      model: reseatSeeds(model, moved, room.level),
+      label: message('commands.resizeRoom.sharedWall', { name: room.name }),
+    };
+  return refuse(neither(pushRefused!, moveRefused!));
 };
+
+/** A refusal as the combined message names it: what failed, and the Walls (by number). */
+function reasonOf(m: Message): { kind: string; a: number; b: number } | null {
+  const p = m.params ?? {};
+  const n = (k: string) => (typeof p[k] === 'number' ? (p[k] as number) : 0);
+  if (m.key === 'commands.push.skewed') return { kind: 'skewed', a: n('wall'), b: 0 };
+  if (m.key === 'invariants.overlap') return { kind: 'overlap', a: n('a'), b: n('b') };
+  if (m.key === 'commands.moveWall.noHost') return { kind: 'noHost', a: n('wall'), b: n('host') };
+  return null;
+}
+
+/** Both reasons in one message; a refusal without Walls to name reads as "the plan would break". */
+function neither(pushRefused: Message, moveRefused: Message): Message {
+  const pushed = reasonOf(pushRefused) ?? { kind: 'other', a: 0, b: 0 };
+  const moved = reasonOf(moveRefused) ?? { kind: 'other', a: 0, b: 0 };
+  return message('commands.resizeRoom.neither', {
+    push: pushed.kind,
+    pushA: pushed.a,
+    pushB: pushed.b,
+    move: moved.kind,
+    moveA: moved.a,
+    moveB: moved.b,
+  });
+}
 
 /** The bounding box of an axis-aligned rectangular outline, or null when it isn't one. */
 function rectangle(outline: readonly Vec[], islands: number): { min: Vec; max: Vec } | null {

@@ -8,6 +8,7 @@
  * failing on a busy machine.
  */
 import { drawRoom } from '../commands/draw-room';
+import { visibleStretches } from '../geometry/visible-faces';
 import { moveWall } from '../commands/move-wall';
 import { counterIds } from '../model/ids';
 import { createProject } from '../model/new-project';
@@ -54,6 +55,8 @@ describe('edit speed on a 220-Wall plan', () => {
       const lv = store.values.level(level);
       lv.footprint();
       lv.warnings();
+      // The plan's length labels: the visible stretches of every Wall (ticket 34).
+      visibleStretches(lv.slice().walls, lv.outlines(), lv.slice().separators);
       for (const r of Object.values(store.model().rooms)) store.values.room(r.id).netFloorArea();
     };
     read();

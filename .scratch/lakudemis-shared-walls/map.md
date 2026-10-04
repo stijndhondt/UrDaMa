@@ -31,8 +31,10 @@ Ready-to-build tickets (in `.scratch/lakudemis-slice-2/issues/`) for three fixes
 
 Build tickets written (2026-10-03) in `.scratch/lakudemis-slice-2/issues/`: 34 Length labels show the visible part of a Wall face, 35 Moving a shared Wall carries its T-connections along, 36 A Room's width or depth falls back to moving the shared Wall (blocked by 35).
 
+**Built 2026-10-04** (tickets 34–36 done). Added while building ticket 35: a T no Wall carries stays on its host while within the host's thickness of its end (small drags); recorded in ticket 35 and CONTEXT.md.
+
 ## Not yet specified
 
-- Whether the length editor's "Move Room" mode (tickets 01, 23) and dragging a Wall in the plan hit the same junction problem on a grid, and whether one fix covers them all.
+- The length editor on a grid of Rooms (tickets 01, 23): checked 2026-10-04, both modes are refused when lengthening a Room's own Wall into its neighbour ("Move Room": the Wall that must shift can't follow; "Only this Wall": its end sits against another Wall's face). Dragging a Wall in the plan is covered by ticket 35. Whether the length editor should fall back to moving the shared Wall like a Room's width (ticket 36) is the open question.
 
 ## Out of scope

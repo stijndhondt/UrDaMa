@@ -58,5 +58,9 @@ const EVERYWHERE = { min: { x: -Infinity, y: -Infinity }, max: { x: Infinity, y:
  */
 export function lengthLabelAt(host: EditorHost, view: View, screen: Vec): FaceLabel | null {
   const values = host.store.values.level(host.level());
-  return faceLabelAt(faceLabels(values.slice().walls, values.outlines(), view, EVERYWHERE), screen);
+  const slice = values.slice();
+  return faceLabelAt(
+    faceLabels(slice.walls, values.outlines(), slice.separators, view, EVERYWHERE),
+    screen,
+  );
 }

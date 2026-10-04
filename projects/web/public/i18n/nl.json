@@ -139,7 +139,8 @@
     },
     "moveWall": {
       "label": "Muur verplaatsen",
-      "nothing": "De muur is niet verplaatst."
+      "nothing": "De muur is niet verplaatst.",
+      "noHost": "Geweigerd: het uiteinde van muur {wall} zou muur {host} verlaten zonder muur die het draagt."
     },
     "delete": {
       "label": "{count, plural, one {# element verwijderen} other {# elementen verwijderen}}",
@@ -172,7 +173,9 @@
       "notEnclosed": "Alleen een afgesloten ruimte kan van maat veranderen.",
       "notRectangular": "Alleen een rechthoekige ruimte kan je van maat veranderen door te typen; sleep anders haar muren.",
       "sameSize": "De ruimte heeft al deze maat.",
-      "noWall": "Aan die kant begrenst geen muur de ruimte."
+      "noWall": "Aan die kant begrenst geen muur de ruimte.",
+      "sharedWall": "Ruimte aanpassen ({name}) door haar gedeelde muur te verschuiven",
+      "neither": "Geweigerd: de andere ruimtes kunnen hun maat niet houden ({push, select, skewed {muur {pushA} zou schuin moeten uitrekken} noHost {het uiteinde van muur {pushA} zou muur {pushB} verlaten zonder muur die het draagt} overlap {muren {pushA} en {pushB} zouden overlappen} other {het plan zou niet meer kloppen}}), en de gedeelde muur kan ook niet verschuiven ({move, select, skewed {muur {moveA} zou schuin moeten uitrekken} noHost {het uiteinde van muur {moveA} zou muur {moveB} verlaten zonder muur die het draagt} overlap {muren {moveA} en {moveB} zouden overlappen} other {het plan zou niet meer kloppen}})."
     },
     "separator": {
       "label": "Ruimtescheiding tekenen",

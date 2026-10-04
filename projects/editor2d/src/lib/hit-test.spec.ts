@@ -25,7 +25,13 @@ describe('the length label under the pointer (ticket 23)', () => {
     const { store, level, host, view } = plan();
     const values = store.values.level(level);
     const everywhere = { min: { x: -1e9, y: -1e9 }, max: { x: 1e9, y: 1e9 } };
-    const [label] = faceLabels(values.slice().walls, values.outlines(), view, everywhere);
+    const [label] = faceLabels(
+      values.slice().walls,
+      values.outlines(),
+      values.slice().separators,
+      view,
+      everywhere,
+    );
     const found = lengthLabelAt(host, view, label!.pos);
     expect(found?.wall).toBe(label!.wall);
     expect(found?.length).toBeCloseTo(label!.length);

@@ -7,6 +7,7 @@ import {
   interiorPoint,
   openingRect,
   partRing,
+  visibleStretches,
   placedOpeningShape,
   type OpeningPartKind,
   type Box,
@@ -15,6 +16,7 @@ import {
   type Model,
   type Opening,
   type RoomId,
+  type RoomSeparator,
   type Vec,
   type Wall,
   type WallId,
@@ -308,7 +310,7 @@ export function drawWallDetails(
   ctx.font = '11px system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  for (const label of faceLabels(slice.walls, outlines, view, box)) {
+  for (const label of faceLabels(slice.walls, outlines, slice.separators, view, box)) {
     ctx.save();
     ctx.translate(label.pos.x, label.pos.y);
     ctx.rotate(label.angle);
@@ -419,32 +421,51 @@ export interface FaceLabel {
   readonly angle: number;
 }
 
-/** Labels for both faces of every Wall in view that is long enough on screen to carry one. */
+/** px: a stretch shorter than this on screen carries no length label */
+const MIN_LABEL_PX = 45;
+
+/**
+ * Labels for the visible stretches of every Wall in view that are long enough on screen to carry
+ * one (ticket 34): what a Room or the outside sees of a face, not the part running into a corner
+ * or against another Wall. A long Wall bordering two Rooms on one side gets a label per Room.
+ */
 export function faceLabels(
   walls: readonly Wall[],
   outlines: ReadonlyMap<WallId, WallOutline>,
+  separators: readonly RoomSeparator[],
   view: View,
   box: Box,
 ): FaceLabel[] {
+  // Only Walls in view whose faces are long enough on screen to carry a label.
+  const inView = walls.filter((w) => {
+    const o = outlines.get(w.id);
+    if (!o || !overlaps(o, box)) return false;
+    const longest = Math.max(
+      Math.hypot(o[1].x - o[0].x, o[1].y - o[0].y),
+      Math.hypot(o[2].x - o[3].x, o[2].y - o[3].y),
+    );
+    return longest * view.scale >= MIN_LABEL_PX;
+  });
+  if (!inView.length) return [];
+  const stretches = visibleStretches(walls, outlines, separators, new Set(inView.map((w) => w.id)));
   const labels: FaceLabel[] = [];
-  for (const wall of walls) {
-    const outline = outlines.get(wall.id);
-    if (!outline || !overlaps(outline, box)) continue;
+  for (const wall of inView) {
+    const outline = outlines.get(wall.id)!;
     const centre = {
       x: (outline[0].x + outline[1].x + outline[2].x + outline[3].x) / 4,
       y: (outline[0].y + outline[1].y + outline[2].y + outline[3].y) / 4,
     };
-    for (const [a, b] of [
-      [outline[0], outline[1]],
-      [outline[3], outline[2]],
-    ] as const) {
+    for (const { a, b } of stretches.get(wall.id) ?? []) {
       const length = Math.hypot(b.x - a.x, b.y - a.y);
-      if (length * view.scale < 45) continue;
+      if (length * view.scale < MIN_LABEL_PX) continue;
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-      const out = { x: mid.x - centre.x, y: mid.y - centre.y };
-      const outLength = Math.hypot(out.x, out.y) || 1;
+      // Outward from the Wall's middle line, across the face.
+      const d = { x: (b.x - a.x) / length, y: (b.y - a.y) / length };
+      const toMid = { x: mid.x - centre.x, y: mid.y - centre.y };
+      const side = Math.sign(d.x * toMid.y - d.y * toMid.x) || 1;
+      const out = { x: -d.y * side, y: d.x * side };
       const s = view.toScreen(mid);
-      const pos = { x: s.x + (out.x / outLength) * 10, y: s.y + (out.y / outLength) * 10 };
+      const pos = { x: s.x + out.x * 10, y: s.y + out.y * 10 };
       let angle = Math.atan2(b.y - a.y, b.x - a.x);
       if (angle > Math.PI / 2 || angle < -Math.PI / 2) angle += Math.PI;
       labels.push({ wall: wall.id, length, pos, angle });

@@ -39,7 +39,7 @@ The line a Wall is drawn along, from its start point to its end point. The Wall'
 _Avoid_: Axis, centreline (unless the Wall is centred), location line
 
 **Wall connection**:
-A stored attachment of one Wall's end to another Wall: either to its end (a corner) or to its face at a given distance (a T). Connected Walls move together; unconnected Walls never join, however close they are. A T stays where it is in the plan: when a move leaves its host no longer reaching it, it is carried by the Wall that now does (the same connection, another host), and the move is refused when no Wall does.
+A stored attachment of one Wall's end to another Wall: either to its end (a corner) or to its face at a given distance (a T). Connected Walls move together; unconnected Walls never join, however close they are. A T stays where it is in the plan: when a move leaves its host no longer reaching it, it is carried by the Wall that now does (the same connection, another host). When no Wall does, it stays on its host while it still meets the host's end (within the host's thickness, as a T at a Wall's end always could); beyond that the move is refused.
 _Avoid_: Snap, join (for the stored relationship; "join" is the computed geometry)
 
 **Opening**:

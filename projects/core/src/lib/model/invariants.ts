@@ -11,6 +11,7 @@ import {
   type Path64,
 } from 'clipper2-ts';
 import { message, type Message } from './message';
+import { wallNumbers } from './levels';
 import { resolveOpening } from './opening-types';
 import type { LevelId, Model, WallId } from './types';
 import { distance } from '../geometry/vec';
@@ -205,7 +206,14 @@ export function checkInvariants(model: Model, before?: Model): Message | null {
   for (const level of Object.keys(model.levels)) {
     if (changed && ![...changed].some((id) => model.walls[id]?.level === level)) continue;
     const pair = overlappingWalls(model, level as LevelId, changed ?? undefined);
-    if (pair) return message('invariants.overlap', { a: pair[0], b: pair[1] });
+    if (pair) {
+      // Named as the Building panel numbers them, as every refusal names Walls.
+      const numbers = wallNumbers(model, level as LevelId);
+      return message('invariants.overlap', {
+        a: numbers.get(pair[0]) ?? 0,
+        b: numbers.get(pair[1]) ?? 0,
+      });
+    }
   }
   return null;
 }

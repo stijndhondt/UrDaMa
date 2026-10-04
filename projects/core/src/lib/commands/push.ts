@@ -11,6 +11,7 @@ import { openingWidth } from '../model/opening-types';
 import { faceOffsets, wallDirection, wallNormal } from '../geometry/wall-outlines';
 import { add, cross, dot, perp, scale, sub } from '../geometry/vec';
 import { levelGeometry } from '../geometry/level-geometry';
+import { wallNumbers } from '../model/levels';
 import { message, type Message } from '../model/message';
 import type {
   LevelId,
@@ -141,7 +142,8 @@ export function push(model: Model, spec: PushSpec): PushResult {
   for (const [id, m] of moved) {
     const wall = model.walls[id as WallId]!;
     if (!(m.start && m.end) && Math.abs(cross(wallDirection(wall), u)) > 1e-6) {
-      return { ok: false, reason: message('commands.push.skewed', { wall: id }) };
+      const number = wallNumbers(model, wall.level).get(wall.id) ?? 0;
+      return { ok: false, reason: message('commands.push.skewed', { wall: number }) };
     }
     nextWalls[id] = {
       ...wall,
