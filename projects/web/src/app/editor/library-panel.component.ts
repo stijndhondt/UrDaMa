@@ -1,11 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import {
-  familyTypes,
-  type OpeningFamily,
-  type OpeningKind,
-  type OpeningType,
-} from '@lakudemis/core';
+import { familyTypes, type OpeningFamily, type OpeningKind, type OpeningType } from '@urdama/core';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { FormatService } from '../format.service';

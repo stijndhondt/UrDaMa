@@ -33,8 +33,8 @@ import {
   type OpeningId,
   type OpeningTypeId,
   type Presets,
-} from '@lakudemis/core';
-import { parseLength } from '@lakudemis/editor2d';
+} from '@urdama/core';
+import { parseLength } from '@urdama/editor2d';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { FormatService } from '../format.service';

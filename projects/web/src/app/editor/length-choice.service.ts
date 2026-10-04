@@ -1,8 +1,8 @@
 import { Injectable, effect, signal } from '@angular/core';
-import type { SetWallLengthArgs } from '@lakudemis/core';
+import type { SetWallLengthArgs } from '@urdama/core';
 import { readSetting, writeSetting } from '../browser-setting';
 
-const STORAGE_KEY = 'lakudemis.lengthMode';
+const STORAGE_KEY = 'urdama.lengthMode';
 const MODES: readonly SetWallLengthArgs['mode'][] = ['room', 'wall'];
 
 /**

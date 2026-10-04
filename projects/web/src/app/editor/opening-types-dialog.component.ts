@@ -11,8 +11,8 @@ import {
   type Command,
   type OpeningFamilyId,
   type OpeningTypeId,
-} from '@lakudemis/core';
-import { parseLength } from '@lakudemis/editor2d';
+} from '@urdama/core';
+import { parseLength } from '@urdama/editor2d';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';

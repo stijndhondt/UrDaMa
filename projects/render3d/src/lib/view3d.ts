@@ -26,7 +26,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import type { LevelId, OpeningPartKind, SolidRef } from '@lakudemis/core';
+import type { LevelId, OpeningPartKind, SolidRef } from '@urdama/core';
 import type { ElementMesh } from './solid-kernel';
 
 /** The element a mesh shows, without its geometry. */

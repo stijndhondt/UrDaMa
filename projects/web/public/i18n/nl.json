@@ -254,9 +254,9 @@
   "file": {
     "saved": "Opgeslagen als {name}.",
     "opened": "{name} geopend.",
-    "notJson": "Dit bestand is geen Lakudemis-project (het is geen JSON).",
-    "notAProject": "Dit bestand is geen Lakudemis-project.",
-    "newerVersion": "Dit project is opgeslagen met een nieuwere versie van Lakudemis (bestandsversie {version}; deze app leest tot {supported}).",
+    "notJson": "Dit bestand is geen Urdama-project (het is geen JSON).",
+    "notAProject": "Dit bestand is geen Urdama-project.",
+    "newerVersion": "Dit project is opgeslagen met een nieuwere versie van Urdama (bestandsversie {version}; deze app leest tot {supported}).",
     "cannotMigrate": "Bestandsversie {version} van dit project kan niet bijgewerkt worden.",
     "broken": "Dit projectbestand is beschadigd en werd niet geopend.",
     "writeFailed": "Het bestand kon niet geschreven worden.",

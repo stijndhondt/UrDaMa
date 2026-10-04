@@ -7,7 +7,7 @@ import {
   ProjectStore,
   type LevelId,
   type Wall,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import Module from 'manifold-3d/manifold';
 import { meshSolids } from './manifold-meshes';
 import type { ElementMesh } from './protocol';

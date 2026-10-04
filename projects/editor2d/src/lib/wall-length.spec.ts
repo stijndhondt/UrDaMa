@@ -1,4 +1,4 @@
-import type { Wall, WallId, LevelId } from '@lakudemis/core';
+import type { Wall, WallId, LevelId } from '@urdama/core';
 import { growOptions } from './wall-length';
 
 const wall = (x0: number, y0: number, x1: number, y1: number): Wall => ({

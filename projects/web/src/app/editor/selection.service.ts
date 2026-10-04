@@ -5,8 +5,8 @@ import {
   type ResolvedOpening,
   type Room,
   type Wall,
-} from '@lakudemis/core';
-import type { Selection } from '@lakudemis/editor2d';
+} from '@urdama/core';
+import type { Selection } from '@urdama/editor2d';
 import { ProjectService } from '../project/project.service';
 
 /** A Façade, Façade part or one Level of it, picked in the Quantities (ticket 15). */

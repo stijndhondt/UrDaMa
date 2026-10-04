@@ -13,7 +13,7 @@ import { definePreset } from '@openng/optimus-ui-themes';
 import Aura from '@openng/optimus-ui-themes/aura';
 
 /** Aura with the app's blue as its primary colour. */
-const LAKUDEMIS_PRESET = definePreset(Aura, {
+const URDAMA_PRESET = definePreset(Aura, {
   semantic: {
     primary: Object.fromEntries(
       [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((n) => [n, `{blue.${n}}`]),
@@ -31,7 +31,7 @@ export const appConfig: ApplicationConfig = {
     provideOptimus({
       ripple: false,
       theme: {
-        preset: LAKUDEMIS_PRESET,
+        preset: URDAMA_PRESET,
         options: { darkModeSelector: '.app-dark', cssLayer: false },
       },
     }),

@@ -1,5 +1,5 @@
-import type { BuildingSolids } from '@lakudemis/core';
-import type { BuildReply, BuildRequest } from '@lakudemis/render3d/worker';
+import type { BuildingSolids } from '@urdama/core';
+import type { BuildReply, BuildRequest } from '@urdama/render3d/worker';
 import type { ElementMesh, SolidKernel } from './solid-kernel';
 
 /**
@@ -7,7 +7,7 @@ import type { ElementMesh, SolidKernel } from './solid-kernel';
  * counts: an older one still in flight resolves as 'superseded'.
  *
  * The app creates the Worker, from a module of its own that calls `serveManifold()` from
- * `@lakudemis/render3d/worker`, so the app's bundler packs it:
+ * `@urdama/render3d/worker`, so the app's bundler packs it:
  *
  * ```ts
  * new ManifoldKernel(new Worker(new URL('./manifold.worker', import.meta.url), { type: 'module' }));

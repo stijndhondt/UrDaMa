@@ -1,4 +1,4 @@
-import type { Vec } from '@lakudemis/core';
+import type { Vec } from '@urdama/core';
 
 /** The plan's camera: millimetres ↔ CSS pixels. */
 export class View {

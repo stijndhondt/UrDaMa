@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import type { ToolName } from '@lakudemis/editor2d';
+import type { ToolName } from '@urdama/editor2d';
 import type { MenuItem } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { Optimus } from '@openng/optimus-ui/config';
@@ -109,7 +109,7 @@ const PX_PER_MM = 96 / 25.4;
   template: `
     <div class="wb">
       <p-menubar class="top" [model]="menus()" breakpoint="560px">
-        <ng-template #start><strong class="brand">Lakudemis</strong></ng-template>
+        <ng-template #start><strong class="brand">Urdama</strong></ng-template>
         <ng-template #item let-item let-root="root">
           <a class="mi" [class.root]="root">
             @if (!root) {
@@ -864,7 +864,7 @@ export class App {
 
   constructor() {
     effect(() => {
-      document.title = `${this.project.unsaved() ? '● ' : ''}${this.project.name()} — Lakudemis`;
+      document.title = `${this.project.unsaved() ? '● ' : ''}${this.project.name()} — Urdama`;
     });
     // Optimus's own texts (aria labels, empty messages, …) follow the app's language.
     effect(() => this.optimus.setTranslation(this.language.current() === 'nl' ? nl : en));

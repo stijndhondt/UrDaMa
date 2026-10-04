@@ -10,7 +10,7 @@ import {
   type Model,
   type NewProjectOptions,
   levelsInOrder,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import { readWorkingCopy, writeWorkingCopy } from './working-copy';
 
 const AUTOSAVE_DELAY_MS = 300;
@@ -72,7 +72,7 @@ export class ProjectService {
     });
     // Development only: lets the browser console (and end-to-end checks) inspect the model.
     if (isDevMode())
-      (globalThis as Record<string, unknown>)['__lakudemis'] = { store: this.store, project: this };
+      (globalThis as Record<string, unknown>)['__urdama'] = { store: this.store, project: this };
   }
 
   /** Restores the working copy from the browser, if there is one. Called before the app starts. */

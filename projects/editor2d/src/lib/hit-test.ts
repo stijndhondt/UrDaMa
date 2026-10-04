@@ -8,7 +8,7 @@ import {
   insideRing,
   levelWallOutlines,
   type Vec,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import { faceLabelAt, faceLabels, openingOutline, type FaceLabel } from './draw-plan';
 import type { EditorHost, Selection } from './host';
 import type { View } from './view';

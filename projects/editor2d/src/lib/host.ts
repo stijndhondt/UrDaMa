@@ -7,7 +7,7 @@ import type {
   RoomSeparatorId,
   Vec,
   WallId,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import type { PlanColors } from './draw-plan';
 import type { PlanTarget } from './hit-test';
 

@@ -58,7 +58,7 @@ describe('project file (ADR 0004)', () => {
     const text = serializeProject(drawnHouse());
     const doc = JSON.parse(text);
     expect(Object.keys(doc).slice(0, 4)).toEqual(['format', 'schemaVersion', 'units', 'project']);
-    expect(doc.format).toBe('lakudemis');
+    expect(doc.format).toBe('urdama');
     expect(doc.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(doc.units).toEqual({ length: 'mm' });
     const ids = doc.walls.map((w: { id: string }) => w.id);
@@ -95,7 +95,17 @@ describe('project file (ADR 0004)', () => {
     expect(text).not.toMatch(/area|outline|footprint/i);
   });
 
-  it('refuses a file from a newer version of Lakudemis', () => {
+  it('opens a file saved before the app was called Urdama, and saves it under the new name', () => {
+    const text = serializeProject(drawnHouse()).replace(
+      '"format": "urdama"',
+      '"format": "lakudemis"',
+    );
+    const opened = parseProject(text);
+    expect(opened.ok).toBe(true);
+    if (opened.ok) expect(JSON.parse(serializeProject(opened.model)).format).toBe('urdama');
+  });
+
+  it('refuses a file from a newer version of Urdama', () => {
     const doc = JSON.parse(serializeProject(drawnHouse()));
     const result = parseProject(
       JSON.stringify({ ...doc, schemaVersion: CURRENT_SCHEMA_VERSION + 1 }),
@@ -103,7 +113,7 @@ describe('project file (ADR 0004)', () => {
     expect(!result.ok && result.reason.key).toBe('file.newerVersion');
   });
 
-  it('refuses files that are not Lakudemis projects', () => {
+  it('refuses files that are not Urdama projects', () => {
     expect(!parseProject('not json').ok && 'refused').toBe('refused');
     const r = parseProject(JSON.stringify({ hello: 'world' }));
     expect(!r.ok && r.reason.key).toBe('file.notAProject');

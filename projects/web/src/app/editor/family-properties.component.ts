@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { DESIGN_LIMITS, type OpeningDesign, type OpeningInfill } from '@lakudemis/core';
-import { parseLength } from '@lakudemis/editor2d';
+import { DESIGN_LIMITS, type OpeningDesign, type OpeningInfill } from '@urdama/core';
+import { parseLength } from '@urdama/editor2d';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { LanguageService } from '../language';
 import { IconComponent } from '../shell/icon.component';

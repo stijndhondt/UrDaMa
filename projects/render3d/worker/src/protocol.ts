@@ -1,4 +1,4 @@
-import type { BuildingSolids, SolidRef } from '@lakudemis/core';
+import type { BuildingSolids, SolidRef } from '@urdama/core';
 
 /** One element's triangle mesh, in plan millimetres: x right, y down (plan), z up. */
 export type ElementMesh = SolidRef & {

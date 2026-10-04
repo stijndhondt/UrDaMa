@@ -12,8 +12,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { setWallLength, wallLength, type SetWallLengthArgs, type Wall } from '@lakudemis/core';
-import { growOptions, parseLength, type GrowOption } from '@lakudemis/editor2d';
+import { setWallLength, wallLength, type SetWallLengthArgs, type Wall } from '@urdama/core';
+import { growOptions, parseLength, type GrowOption } from '@urdama/editor2d';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';

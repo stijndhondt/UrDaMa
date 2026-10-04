@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { DEFAULT_PRESETS } from '@lakudemis/core';
+import { DEFAULT_PRESETS } from '@urdama/core';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputNumberModule } from '@openng/optimus-ui/inputnumber';

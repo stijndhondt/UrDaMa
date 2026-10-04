@@ -11,7 +11,7 @@ import {
   type DrawWallArgs,
   type Vec,
   type WallSide,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import {
   alignOrRound,
   alignToCorners,

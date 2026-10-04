@@ -1,7 +1,7 @@
 import { Injectable, effect, signal } from '@angular/core';
 import { readSetting, writeSetting } from '../browser-setting';
 
-const KEY = 'lakudemis.snap';
+const KEY = 'urdama.snap';
 
 /**
  * The snap toggle (ticket 26): all snapping while drawing (Wall corners and faces, alignment

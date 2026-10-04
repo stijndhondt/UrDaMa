@@ -6,13 +6,13 @@ import {
   type OpeningFamilyId,
   type OpeningKind,
   type OpeningTypeId,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import { readJson, writeJson } from '../browser-setting';
 import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 
-const KEY = 'lakudemis.library';
+const KEY = 'urdama.library';
 
 /** An Opening type on its way from the Library panel to a Wall. */
 export interface DraggedType {

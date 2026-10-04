@@ -8,7 +8,7 @@ import {
   ProjectStore,
   type LevelId,
   type Wall,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import { ProjectService } from '../project/project.service';
 import { LevelVisibilityService } from './level-visibility.service';
 

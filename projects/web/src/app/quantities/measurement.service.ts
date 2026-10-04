@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { MEASUREMENT_RULES, type MeasurementRule } from '@lakudemis/core';
+import { MEASUREMENT_RULES, type MeasurementRule } from '@urdama/core';
 import { LanguageService } from '../language';
 
 /**

@@ -11,14 +11,14 @@ import {
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
-import { buildingSolids, type SolidRef } from '@lakudemis/core';
+import { buildingSolids, type SolidRef } from '@urdama/core';
 import {
   CAMERA_PRESETS,
   ManifoldKernel,
   View3D,
   type CameraPreset,
   type Picked,
-} from '@lakudemis/render3d';
+} from '@urdama/render3d';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { LevelVisibilityService } from './level-visibility.service';

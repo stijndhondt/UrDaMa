@@ -5,11 +5,21 @@
  */
 export function readSetting<T extends string>(key: string, allowed: readonly T[]): T | null {
   try {
-    const v = localStorage.getItem(key);
+    const v = stored(key);
     return (allowed as readonly string[]).includes(v ?? '') ? (v as T) : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * A stored value, or the one kept under the app's earlier name ("lakudemis.…") when there is none
+ * yet: settings and the Opening library carry over; writing keeps the new name.
+ */
+function stored(key: string): string | null {
+  const v = localStorage.getItem(key);
+  if (v !== null || !key.startsWith('urdama.')) return v;
+  return localStorage.getItem('lakudemis.' + key.slice('urdama.'.length));
 }
 
 export function writeSetting(key: string, value: string): void {
@@ -23,7 +33,7 @@ export function writeSetting(key: string, value: string): void {
 /** A remembered JSON value, or null when there is none or it can't be read. */
 export function readJson(key: string): unknown {
   try {
-    return JSON.parse(localStorage.getItem(key) ?? 'null') as unknown;
+    return JSON.parse(stored(key) ?? 'null') as unknown;
   } catch {
     return null;
   }

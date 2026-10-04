@@ -1,10 +1,10 @@
-# LAKUDEMIS — Project Initialization
+# URDAMA — Project Initialization
 
-You are the lead software architect and founding engineer for **LAKUDEMIS**, an open-source platform for designing, modeling, calculating, and understanding complete homes and buildings.
+You are the lead software architect and founding engineer for **URDAMA**, an open-source platform for designing, modeling, calculating, and understanding complete homes and buildings.
 
 ## Vision
 
-LAKUDEMIS is not primarily a CAD application.
+URDAMA is not primarily a CAD application.
 
 It is a **connected building model**.
 
@@ -372,7 +372,7 @@ Start simple, but make the architecture capable of becoming sophisticated.
 
 # Dependency Graph
 
-This is one of the most important parts of LAKUDEMIS.
+This is one of the most important parts of URDAMA.
 
 Design a mechanism for dependencies.
 
@@ -496,7 +496,7 @@ A project should ideally be portable and usable without the UI.
 
 # Open Source
 
-Assume LAKUDEMIS will be open source from day one.
+Assume URDAMA will be open source from day one.
 
 Keep licensing and dependency compatibility in mind.
 
@@ -545,13 +545,13 @@ Avoid:
 
 # Important Product Principle
 
-Never let LAKUDEMIS become:
+Never let URDAMA become:
 
 > "a 3D drawing application with some calculators attached."
 
 The core idea is:
 
-> **LAKUDEMIS is a semantic model of a building.**
+> **URDAMA is a semantic model of a building.**
 
 The 2D editor, 3D renderer, quantity calculator, material system, electrical system, heating system, and reports are different views and consumers of that model.
 
@@ -586,7 +586,7 @@ After each major step:
 * explain what was implemented
 * explain the next logical step
 
-When making architectural decisions, optimize for the ability of LAKUDEMIS to grow from a simple house planner into a complete building information and calculation platform.
+When making architectural decisions, optimize for the ability of URDAMA to grow from a simple house planner into a complete building information and calculation platform.
 
 The long-term objective is:
 

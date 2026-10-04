@@ -1,6 +1,6 @@
 # Technology stack and workspace
 
-Lakudemis is a browser-first TypeScript app built as an **Angular CLI monorepo**: everything sits under `projects/` and pnpm is the package manager. The workspace has four projects:
+Urdama is a browser-first TypeScript app built as an **Angular CLI monorepo**: everything sits under `projects/` and pnpm is the package manager. The workspace has four projects:
 
 - `core`: an Angular library, but with no DOM or UI
 - `editor2d`: an Angular library

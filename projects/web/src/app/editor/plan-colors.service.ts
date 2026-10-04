@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { DEFAULT_PLAN_COLORS, type PlanColors } from '@lakudemis/editor2d';
+import { DEFAULT_PLAN_COLORS, type PlanColors } from '@urdama/editor2d';
 import { ThemeService } from '../shell/theme.service';
 
 /**

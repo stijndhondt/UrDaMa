@@ -8,7 +8,7 @@ import {
   ProjectStore,
   type LevelId,
   type Wall,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import type { TreeNode } from '@openng/optimus-ui/api';
 import { ProjectService } from '../project/project.service';
 import { BuildingPanelComponent } from './building-panel.component';

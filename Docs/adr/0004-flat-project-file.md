@@ -1,6 +1,6 @@
 # The project file is flat, sorted collections with ID references
 
-A `.lakudemis.json` file stores Source data only, as one flat list per element kind (`buildings`, `levels`, `walls`, `wallConnections`, `openings`, `rooms`, `roomSeparators`, `slabs`, `ceilings`, `furnishings`). The lists refer to each other by ID, and each list is sorted by ID. There is no Building → Level → Wall tree, even though `Docs/idea.md` sketches the model that way. We chose flat collections because the model is a set of related elements, not a hierarchy. For example, a Wall connection belongs to two Walls, and Fixtures will later be hosted by Walls, Ceilings or Rooms. Flat, sorted lists also give clean git diffs and simple migrations.
+A `.urdama.json` file stores Source data only, as one flat list per element kind (`buildings`, `levels`, `walls`, `wallConnections`, `openings`, `rooms`, `roomSeparators`, `slabs`, `ceilings`, `furnishings`). The lists refer to each other by ID, and each list is sorted by ID. There is no Building → Level → Wall tree, even though `Docs/idea.md` sketches the model that way. We chose flat collections because the model is a set of related elements, not a hierarchy. For example, a Wall connection belongs to two Walls, and Fixtures will later be hosted by Walls, Ceilings or Rooms. Flat, sorted lists also give clean git diffs and simple migrations.
 
 ## Considered Options
 

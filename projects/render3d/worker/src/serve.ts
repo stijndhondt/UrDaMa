@@ -17,7 +17,7 @@ export interface WorkerScope {
  * app's bundler packs the worker:
  *
  * ```ts
- * import { serveManifold } from '@lakudemis/render3d/worker';
+ * import { serveManifold } from '@urdama/render3d/worker';
  * serveManifold();
  * ```
  */

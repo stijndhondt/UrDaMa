@@ -1,5 +1,11 @@
 import { Injectable, inject } from '@angular/core';
-import { FILE_EXTENSION, message, parseProject, type Message } from '@lakudemis/core';
+import {
+  FILE_EXTENSION,
+  LEGACY_FILE_EXTENSIONS,
+  message,
+  parseProject,
+  type Message,
+} from '@urdama/core';
 import { ProjectService } from './project.service';
 
 /** The File System Access API (Chromium): not yet in TypeScript's DOM types. */
@@ -21,7 +27,10 @@ type WritableHandle = FileSystemFileHandle & {
 };
 
 const PICKER_TYPES = [
-  { description: 'Lakudemis project', accept: { 'application/json': [FILE_EXTENSION] } },
+  {
+    description: 'Urdama project',
+    accept: { 'application/json': [FILE_EXTENSION, ...LEGACY_FILE_EXTENSIONS] },
+  },
 ];
 
 export type FileResult =
@@ -29,7 +38,7 @@ export type FileResult =
   | { readonly ok: false; readonly reason: Message | null };
 
 /**
- * Saving and opening `.lakudemis.json` files (ticket 11 decisions): Save writes back to the same
+ * Saving and opening `.urdama.json` files (ticket 11 decisions): Save writes back to the same
  * file where the browser allows it, otherwise it downloads; Open imports a file into the app.
  */
 @Injectable({ providedIn: 'root' })
@@ -123,7 +132,7 @@ function pickWithInput(): Promise<File> {
   return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = `${FILE_EXTENSION},application/json`;
+    input.accept = [FILE_EXTENSION, ...LEGACY_FILE_EXTENSIONS, 'application/json'].join(',');
     input.onchange = () =>
       input.files?.[0] ? resolve(input.files[0]) : reject(new DOMException('', 'AbortError'));
     input.click();

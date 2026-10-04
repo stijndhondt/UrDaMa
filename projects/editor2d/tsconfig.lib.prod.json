@@ -6,7 +6,7 @@
     "declarationMap": false,
     // A library build compiles against the built core (ng build core first), not its sources.
     "paths": {
-      "@lakudemis/core": ["../../dist/core"]
+      "@urdama/core": ["../../dist/core"]
     }
   },
   "angularCompilerOptions": {

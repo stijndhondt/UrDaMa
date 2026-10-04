@@ -1,4 +1,4 @@
-import type { OpeningKind } from '@lakudemis/core';
+import type { OpeningKind } from '@urdama/core';
 import type { IconName } from './icons.generated';
 
 /** The icon of each Opening kind, wherever Openings are listed or shown (ticket 17). */

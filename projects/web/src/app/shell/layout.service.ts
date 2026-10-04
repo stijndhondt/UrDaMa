@@ -1,5 +1,5 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
-import { FACADE_SIDES, type FacadeSide } from '@lakudemis/core';
+import { FACADE_SIDES, type FacadeSide } from '@urdama/core';
 import { readJson, readSetting, writeSetting } from '../browser-setting';
 import {
   fittingLayout,
@@ -17,9 +17,9 @@ import {
 export type ElevationSide = FacadeSide;
 export const ELEVATION_SIDES: readonly ElevationSide[] = FACADE_SIDES;
 
-const LAYOUT_KEY = 'lakudemis.layout';
-const SPLIT_KEY = 'lakudemis.layoutSplit';
-const SIDES_KEY = 'lakudemis.elevationSides';
+const LAYOUT_KEY = 'urdama.layout';
+const SPLIT_KEY = 'urdama.layoutSplit';
+const SIDES_KEY = 'urdama.elevationSides';
 
 const DEFAULT_SPLIT: LayoutSplit = { col: 60, row: 50 };
 const DEFAULT_SIDES: Readonly<Record<ElevationPanelId, ElevationSide>> = {

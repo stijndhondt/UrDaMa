@@ -32,7 +32,7 @@ describe('App shell', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('.brand')?.textContent).toContain('Lakudemis');
+    expect(el.querySelector('.brand')?.textContent).toContain('Urdama');
     expect(el.querySelectorAll('lk-plan-toolbar button').length).toBeGreaterThan(0);
     expect(el.querySelector('.status')).not.toBeNull();
   });

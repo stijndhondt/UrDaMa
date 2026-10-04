@@ -4,7 +4,7 @@ import { readSetting, writeSetting } from '../browser-setting';
 export type ThemeChoice = 'system' | 'light' | 'dark';
 export const THEME_CHOICES: readonly ThemeChoice[] = ['system', 'light', 'dark'];
 
-const STORAGE_KEY = 'lakudemis.theme';
+const STORAGE_KEY = 'urdama.theme';
 
 /**
  * Light or dark (ticket 09): follows the operating system unless the user picks one; the choice

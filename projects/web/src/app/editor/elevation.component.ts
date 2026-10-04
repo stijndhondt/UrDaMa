@@ -18,8 +18,8 @@ import {
   type FacadeSide,
   type OpeningId,
   type WallId,
-} from '@lakudemis/core';
-import { ElevationView } from '@lakudemis/editor2d';
+} from '@urdama/core';
+import { ElevationView } from '@urdama/editor2d';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { ProjectService } from '../project/project.service';

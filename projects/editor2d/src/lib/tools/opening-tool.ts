@@ -19,8 +19,8 @@ import {
   type Wall,
   type WallId,
   type WallOutline,
-} from '@lakudemis/core';
-import { distanceToSegment, hasSill } from '@lakudemis/core';
+} from '@urdama/core';
+import { distanceToSegment, hasSill } from '@urdama/core';
 import { parseLength } from '../units';
 import { roundToStep, type PointerInfo, type Tool, type ToolContext } from './tool';
 import { planColors } from '../draw-plan';

@@ -254,9 +254,9 @@
   "file": {
     "saved": "Saved as {name}.",
     "opened": "Opened {name}.",
-    "notJson": "This file is not a Lakudemis project (it is not JSON).",
-    "notAProject": "This file is not a Lakudemis project.",
-    "newerVersion": "This project was saved by a newer version of Lakudemis (file version {version}; this app reads up to {supported}).",
+    "notJson": "This file is not a Urdama project (it is not JSON).",
+    "notAProject": "This file is not a Urdama project.",
+    "newerVersion": "This project was saved by a newer version of Urdama (file version {version}; this app reads up to {supported}).",
     "cannotMigrate": "This project's file version {version} cannot be upgraded.",
     "broken": "This project file is damaged and was not opened.",
     "writeFailed": "The file could not be written.",

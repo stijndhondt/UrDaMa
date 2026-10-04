@@ -4,7 +4,7 @@
  * Wall moves it along its normal (connected Walls follow, Seed points are carried along), live
  * while dragging; release commits one undo step, Esc cancels. Rooms themselves are not dragged.
  */
-import { moveWall, wallNormal, type Vec, type WallId } from '@lakudemis/core';
+import { moveWall, wallNormal, type Vec, type WallId } from '@urdama/core';
 import { drawSelected, planColors } from '../draw-plan';
 import { elementAt, lengthLabelAt } from '../hit-test';
 import type { Selection } from '../host';

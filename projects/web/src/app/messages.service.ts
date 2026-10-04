@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import type { Message } from '@lakudemis/core';
+import type { Message } from '@urdama/core';
 
 export interface ShownMessage {
   readonly message: Message;

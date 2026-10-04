@@ -1,5 +1,5 @@
 import { computed, type Signal } from '@angular/core';
-import type { ProjectStore } from '@lakudemis/core';
+import type { ProjectStore } from '@urdama/core';
 
 /**
  * A value worked out from the model that holds still while a drag is under way, and follows once

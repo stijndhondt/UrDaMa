@@ -1,6 +1,6 @@
-# Lakudemis
+# Urdama
 
-**Every part. One model.** Lakudemis is an open-source, browser-based tool for drawing a house at the sizes you measured with a tape. It turns that drawing into one connected building model: 2D plans, a 3D view and surface calculations all come from the same model.
+**Every part. One model.** Urdama is an open-source, browser-based tool for drawing a house at the sizes you measured with a tape. It turns that drawing into one connected building model: 2D plans, a 3D view and surface calculations all come from the same model.
 
 Status: in development. See [Slice 1](.scratch/lakudemis-slice-1/spec.md) for what is being built now.
 
@@ -37,4 +37,4 @@ An Angular CLI monorepo; everything lives under `projects/`:
 
 ## Licence
 
-[AGPL-3.0-or-later](LICENSE) (ADR 0006). If you run a modified Lakudemis for others over a network, you must share its source.
+[AGPL-3.0-or-later](LICENSE) (ADR 0006). If you run a modified Urdama for others over a network, you must share its source.

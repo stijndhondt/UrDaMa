@@ -1,5 +1,5 @@
 /*
- * Public API of @lakudemis/editor2d: the Canvas2D plan editor.
+ * Public API of @urdama/editor2d: the Canvas2D plan editor.
  */
 export * from './lib/units';
 export * from './lib/view';

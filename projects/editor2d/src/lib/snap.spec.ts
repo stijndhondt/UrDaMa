@@ -1,4 +1,4 @@
-import type { WallOutline } from '@lakudemis/core';
+import type { WallOutline } from '@urdama/core';
 import { snapToWalls } from './snap';
 
 // A horizontal Wall, outer face at y = -140 from x = -140 to 2810, inner face at y = 0.

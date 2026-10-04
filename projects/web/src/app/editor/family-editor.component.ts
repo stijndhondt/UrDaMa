@@ -13,9 +13,9 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { openingFamilySolids, openingShape } from '@lakudemis/core';
-import { FAMILY_SIDES, FamilyView, type FamilySide } from '@lakudemis/editor2d';
-import { ManifoldKernel, View3D } from '@lakudemis/render3d';
+import { openingFamilySolids, openingShape } from '@urdama/core';
+import { FAMILY_SIDES, FamilyView, type FamilySide } from '@urdama/editor2d';
+import { ManifoldKernel, View3D } from '@urdama/render3d';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { SelectModule } from '@openng/optimus-ui/select';
 import { FormatService } from '../format.service';

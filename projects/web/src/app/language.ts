@@ -6,7 +6,7 @@ import { readSetting, writeSetting } from './browser-setting';
 export const LANGUAGES = ['en', 'nl'] as const;
 export type Language = (typeof LANGUAGES)[number];
 
-const STORAGE_KEY = 'lakudemis.language';
+const STORAGE_KEY = 'urdama.language';
 
 /** The UI language, remembered per browser (a convenience, never project data). */
 @Injectable({ providedIn: 'root' })

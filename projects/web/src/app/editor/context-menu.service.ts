@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
-import type { Vec } from '@lakudemis/core';
-import type { PlanTarget } from '@lakudemis/editor2d';
+import type { Vec } from '@urdama/core';
+import type { PlanTarget } from '@urdama/editor2d';
 
 /** The open right-click menu: where it is (in the plan's coordinates) and what it acts on. */
 @Injectable({ providedIn: 'root' })

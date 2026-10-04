@@ -1,5 +1,5 @@
 import { Injectable, computed, inject } from '@angular/core';
-import { resolveOpening } from '@lakudemis/core';
+import { resolveOpening } from '@urdama/core';
 import { ProjectService } from '../project/project.service';
 import { ContextMenuService } from './context-menu.service';
 import { EditorActionsService } from './editor-actions.service';

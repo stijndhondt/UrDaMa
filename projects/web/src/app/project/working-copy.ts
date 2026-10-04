@@ -14,13 +14,15 @@ export interface WorkingCopy {
   readonly fileHandle: FileSystemFileHandle | null;
 }
 
-const DB_NAME = 'lakudemis';
+const DB_NAME = 'urdama';
+/** Where the working copy was kept before the app was called Urdama: read once, never written. */
+const LEGACY_DB_NAME = 'lakudemis';
 const STORE = 'working-copy';
 const KEY = 'current';
 
-function open(): Promise<IDBDatabase> {
+function open(name = DB_NAME): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(name, 1);
     request.onupgradeneeded = () => request.result.createObjectStore(STORE);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -29,14 +31,24 @@ function open(): Promise<IDBDatabase> {
 
 export async function readWorkingCopy(): Promise<WorkingCopy | null> {
   try {
-    const db = await open();
+    // None under the new name yet: the one kept under the app's earlier name carries over (the
+    // next save writes it under the new name).
+    return (await readFrom(DB_NAME)) ?? (await readFrom(LEGACY_DB_NAME));
+  } catch {
+    return null; // storage unavailable (private window, blocked site data): start fresh
+  }
+}
+
+async function readFrom(name: string): Promise<WorkingCopy | null> {
+  const db = await open(name);
+  try {
     return await new Promise((resolve, reject) => {
       const request = db.transaction(STORE, 'readonly').objectStore(STORE).get(KEY);
       request.onsuccess = () => resolve((request.result as WorkingCopy | undefined) ?? null);
       request.onerror = () => reject(request.error);
     });
-  } catch {
-    return null; // storage unavailable (private window, blocked site data): start fresh
+  } finally {
+    db.close();
   }
 }
 
@@ -56,6 +68,8 @@ export async function writeWorkingCopy(copy: WorkingCopy): Promise<void> {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
+    // Closed after each write, so nothing holds the database open.
+    db.close();
   } catch {
     // storage unavailable: the working copy just isn't kept
   }

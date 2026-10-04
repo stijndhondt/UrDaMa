@@ -1,5 +1,5 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import type { LevelId } from '@lakudemis/core';
+import type { LevelId } from '@urdama/core';
 import { readList, writeSetting } from '../browser-setting';
 import { ProjectService } from '../project/project.service';
 
@@ -13,7 +13,7 @@ export class LevelVisibilityService {
   private readonly project = inject(ProjectService);
   private readonly stored = signal<ReadonlySet<string>>(new Set());
   private readonly key = computed(
-    () => `lakudemis.hiddenLevels.${this.project.store.committedModel().project.id}`,
+    () => `urdama.hiddenLevels.${this.project.store.committedModel().project.id}`,
   );
 
   /**

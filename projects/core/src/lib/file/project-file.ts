@@ -1,17 +1,21 @@
 /**
- * The project file `.lakudemis.json` (ADR 0004): Source data only, as flat collections sorted by
+ * The project file `.urdama.json` (ADR 0004): Source data only, as flat collections sorted by
  * ID, keys in a fixed order, lengths rounded to 0.001 mm, nothing written for values that follow a
  * Preset, 2-space indentation and a trailing newline. Saving the same model twice gives
- * byte-identical files. Older files are migrated on open; newer ones are refused.
+ * byte-identical files. Older files are migrated on open; newer ones are refused. Files saved
+ * before the app was called Urdama (`.lakudemis.json`, format "lakudemis") still open.
  */
 import { checkInvariants } from '../model/invariants';
 import { message, type Message } from '../model/message';
 import { COLLECTIONS } from '../model/patch';
 import type { CollectionName, Model } from '../model/types';
 
-export const FILE_FORMAT = 'lakudemis';
+export const FILE_FORMAT = 'urdama';
 export const CURRENT_SCHEMA_VERSION = 3;
-export const FILE_EXTENSION = '.lakudemis.json';
+export const FILE_EXTENSION = '.urdama.json';
+/** The app's earlier name: its files are read, never written. */
+export const LEGACY_FILE_FORMATS: readonly string[] = ['lakudemis'];
+export const LEGACY_FILE_EXTENSIONS: readonly string[] = ['.lakudemis.json'];
 
 type Doc = Record<string, unknown>;
 
@@ -189,7 +193,7 @@ export function parseProject(text: string): ParseResult {
   if (
     !doc ||
     typeof doc !== 'object' ||
-    doc['format'] !== FILE_FORMAT ||
+    (doc['format'] !== FILE_FORMAT && !LEGACY_FILE_FORMATS.includes(doc['format'] as string)) ||
     typeof doc['schemaVersion'] !== 'number'
   ) {
     return { ok: false, reason: message('file.notAProject') };

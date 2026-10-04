@@ -1,4 +1,4 @@
-import { counterIds, createProject, drawRoom, ProjectStore, type LevelId } from '@lakudemis/core';
+import { counterIds, createProject, drawRoom, ProjectStore, type LevelId } from '@urdama/core';
 import { faceLabels } from './draw-plan';
 import type { EditorHost } from './host';
 import { lengthLabelAt } from './hit-test';

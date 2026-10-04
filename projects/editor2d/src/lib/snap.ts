@@ -1,4 +1,4 @@
-import { insideRing, type Vec, type WallOutline } from '@lakudemis/core';
+import { insideRing, type Vec, type WallOutline } from '@urdama/core';
 import { planColors } from './draw-plan';
 
 /** Drag increments (Slice 1 spec): 10 mm; Shift = coarse (100 mm); Ctrl = fine (1 mm). */

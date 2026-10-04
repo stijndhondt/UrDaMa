@@ -6,8 +6,8 @@ import {
   type OpeningDesign,
   type OpeningFamilyId,
   type OpeningTypeId,
-} from '@lakudemis/core';
-import type { FamilyPreview } from '@lakudemis/editor2d';
+} from '@urdama/core';
+import type { FamilyPreview } from '@urdama/editor2d';
 import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';

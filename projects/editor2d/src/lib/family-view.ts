@@ -11,7 +11,7 @@ import {
   type OpeningPart,
   type OpeningPartKind,
   type OpeningPlacement,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import {
   DEFAULT_PLAN_COLORS,
   partFill,

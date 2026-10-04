@@ -6,7 +6,7 @@ import {
   ProjectStore,
   type LevelId,
   type Vec,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import { alignToCorners, outerCornerStart } from './snap';
 
 /** Room 1: 5.00 × 4.00 m inside at the origin, 140 mm Walls (outside -140..5140, -140..4140). */

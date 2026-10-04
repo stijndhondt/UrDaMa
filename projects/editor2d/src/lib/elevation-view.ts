@@ -13,7 +13,7 @@ import {
   type OpeningId,
   type WallFaceName,
   type WallId,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import {
   DEFAULT_PLAN_COLORS,
   partFill,

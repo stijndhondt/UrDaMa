@@ -5,7 +5,7 @@
  * started on an existing Wall's far face shares that Wall. Clicking inside an enclosed area that
  * has no Room turns it into a Room. The Room and its area show live while dragging.
  */
-import { addRoom, drawRoom, insideArea, type DrawRoomArgs, type Vec } from '@lakudemis/core';
+import { addRoom, drawRoom, insideArea, type DrawRoomArgs, type Vec } from '@urdama/core';
 import { drawGuides, drawSnap, outerCornerStart, type AlignGuide, type WallSnap } from '../snap';
 import { parseLength } from '../units';
 import {

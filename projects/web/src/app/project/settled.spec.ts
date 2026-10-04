@@ -7,7 +7,7 @@ import {
   ProjectStore,
   type LevelId,
   type Wall,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import { settled } from './settled';
 
 describe('settled values (ticket 33)', () => {

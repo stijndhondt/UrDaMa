@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import { addLevel, defaultStoreyHeight, type LevelId } from '@lakudemis/core';
+import { addLevel, defaultStoreyHeight, type LevelId } from '@urdama/core';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { DialogModule } from '@openng/optimus-ui/dialog';
 import { InputNumberModule } from '@openng/optimus-ui/inputnumber';

@@ -10,8 +10,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { OPENING_KINDS, type OpeningKind, type OpeningTypeId } from '@lakudemis/core';
-import type { ToolName } from '@lakudemis/editor2d';
+import { OPENING_KINDS, type OpeningKind, type OpeningTypeId } from '@urdama/core';
+import type { ToolName } from '@urdama/editor2d';
 import type { MenuItem } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { Menu, MenuModule } from '@openng/optimus-ui/menu';

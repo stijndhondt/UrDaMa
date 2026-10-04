@@ -1,4 +1,4 @@
-import { levelWallOutlines, type WallOutline } from '@lakudemis/core';
+import { levelWallOutlines, type WallOutline } from '@urdama/core';
 import {
   alignOrRound,
   increment,
@@ -7,7 +7,7 @@ import {
   type AlignGuide,
   type WallSnap,
 } from '../snap';
-import type { OpeningKind, Vec } from '@lakudemis/core';
+import type { OpeningKind, Vec } from '@urdama/core';
 import type { EditorHost } from '../host';
 import type { TypedInput } from '../typed-input';
 import type { View } from '../view';

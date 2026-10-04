@@ -1,5 +1,5 @@
-import type { BuildingSolids } from '@lakudemis/core';
-import type { ElementMesh } from '@lakudemis/render3d/worker';
+import type { BuildingSolids } from '@urdama/core';
+import type { ElementMesh } from '@urdama/render3d/worker';
 
 export type { ElementMesh };
 

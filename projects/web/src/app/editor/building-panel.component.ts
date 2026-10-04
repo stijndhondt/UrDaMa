@@ -20,8 +20,8 @@ import {
   wallLength,
   wallNumbers,
   type LevelId,
-} from '@lakudemis/core';
-import type { Selection } from '@lakudemis/editor2d';
+} from '@urdama/core';
+import type { Selection } from '@urdama/editor2d';
 import { SharedModule, type MenuItem, type TreeNode } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';

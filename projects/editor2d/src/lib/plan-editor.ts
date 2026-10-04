@@ -2,13 +2,7 @@
  * The plan editor (ADR 0005): a framework-free Canvas2D editor for one Level.
  * The app around it supplies an EditorHost and calls `invalidate()` when the model changes.
  */
-import {
-  addRoom,
-  type OpeningKind,
-  type OpeningTypeId,
-  type RoomId,
-  type Vec,
-} from '@lakudemis/core';
+import { addRoom, type OpeningKind, type OpeningTypeId, type RoomId, type Vec } from '@urdama/core';
 import {
   DEFAULT_PLAN_COLORS,
   drawPlan,

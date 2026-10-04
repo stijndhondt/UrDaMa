@@ -1,10 +1,10 @@
 {
-  "name": "@lakudemis/editor2d",
+  "name": "@urdama/editor2d",
   "version": "0.0.1",
   "peerDependencies": {
     "@angular/common": "^22.2.0",
     "@angular/core": "^22.2.0",
-    "@lakudemis/core": "0.0.1"
+    "@urdama/core": "0.0.1"
   },
   "dependencies": {
     "tslib": "^2.3.0"

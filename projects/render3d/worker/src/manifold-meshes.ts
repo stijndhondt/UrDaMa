@@ -3,7 +3,7 @@
  * Openings are subtracted from it, so holes are clean and every result is a closed (manifold)
  * solid. Runs wherever the WASM module was loaded: in the Web Worker, or in Node for tests.
  */
-import { solidRef, type BuildingSolids, type Prism } from '@lakudemis/core';
+import { solidRef, type BuildingSolids, type Prism } from '@urdama/core';
 import type { Manifold, ManifoldToplevel } from 'manifold-3d/manifold';
 import type { ElementMesh } from './protocol';
 

@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import type { Vec, WallId } from '@lakudemis/core';
+import type { Vec, WallId } from '@urdama/core';
 
 /** The length editor open on the plan (ticket 23): which Wall, where, and the face length shown. */
 export interface PlanLengthEdit {

@@ -10,7 +10,7 @@ import {
   type RoomId,
   type Vec,
   type WallId,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import { MessagesService } from '../messages.service';
 import { ProjectService } from '../project/project.service';
 import { SelectionService } from './selection.service';

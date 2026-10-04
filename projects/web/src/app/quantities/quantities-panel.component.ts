@@ -14,8 +14,8 @@ import {
   type QuantityLevel,
   type QuantityRoom,
   type WallFaceName,
-} from '@lakudemis/core';
-import { wallFaceKey, type Selection } from '@lakudemis/editor2d';
+} from '@urdama/core';
+import { wallFaceKey, type Selection } from '@urdama/editor2d';
 import type { TreeNode } from '@openng/optimus-ui/api';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { SelectModule } from '@openng/optimus-ui/select';

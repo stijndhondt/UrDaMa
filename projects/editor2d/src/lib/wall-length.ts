@@ -3,7 +3,7 @@
  * plan terms (left / right for a horizontal Wall, up / down for a vertical one, start / end for a
  * diagonal one) and maps to the Baseline end that moves.
  */
-import type { Wall, WallEnd } from '@lakudemis/core';
+import type { Wall, WallEnd } from '@urdama/core';
 
 export interface GrowOption {
   /** How the choice is shown: `panel.wall.grow.<label>` */

@@ -2,7 +2,7 @@
  * The Room separator tool (E): a line with no physical form between two Wall faces, e.g. between
  * Living and Eetkamer in one open space. Drag from one Wall face to another, or click both ends.
  */
-import { drawRoomSeparator, type Vec } from '@lakudemis/core';
+import { drawRoomSeparator, type Vec } from '@urdama/core';
 import { drawGuides, drawSnap, type AlignGuide, type WallSnap } from '../snap';
 import { snapFreePoint, type PointerInfo, type Tool, type ToolContext } from './tool';
 import { planColors } from '../draw-plan';

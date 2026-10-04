@@ -1,4 +1,4 @@
-import { DEFAULT_DESIGNS, openingShape } from '@lakudemis/core';
+import { DEFAULT_DESIGNS, openingShape } from '@urdama/core';
 import { familyHandles, projectParts, type FamilyPreview } from './family-view';
 
 const door: FamilyPreview = {

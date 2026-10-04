@@ -1,6 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import type { RoomChange } from '@lakudemis/core';
+import type { RoomChange } from '@urdama/core';
 import { FormatService } from '../format.service';
 import { ProjectService } from '../project/project.service';
 

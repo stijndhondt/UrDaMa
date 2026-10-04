@@ -22,7 +22,7 @@ import {
   type WallId,
   type WallOutline,
   type WallRun,
-} from '@lakudemis/core';
+} from '@urdama/core';
 import type { EditorHost, Selection } from './host';
 import type { View } from './view';
 

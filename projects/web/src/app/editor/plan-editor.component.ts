@@ -12,8 +12,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import type { OpeningKind, OpeningTypeId } from '@lakudemis/core';
-import { PlanEditor, type EditorHost, type ToolName } from '@lakudemis/editor2d';
+import type { OpeningKind, OpeningTypeId } from '@urdama/core';
+import { PlanEditor, type EditorHost, type ToolName } from '@urdama/editor2d';
 import { FormatService } from '../format.service';
 import { LanguageService } from '../language';
 import { MessagesService } from '../messages.service';
@@ -100,7 +100,7 @@ export class PlanEditorComponent {
       this.editor = new PlanEditor(this.canvas().nativeElement, host);
       // Development only: lets end-to-end checks convert between mm and screen positions.
       if (isDevMode()) {
-        const debug = (globalThis as unknown as Record<string, object | undefined>)['__lakudemis'];
+        const debug = (globalThis as unknown as Record<string, object | undefined>)['__urdama'];
         if (debug) Object.assign(debug, { editor: this.editor });
       }
       this.tool.set(this.editor.toolName);

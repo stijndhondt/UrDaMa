@@ -1,4 +1,4 @@
-# Lakudemis
+# Urdama
 
 A connected, semantic model of a home: every part of the building is one entity in one model, and 2D plans, 3D views and calculations are views and consumers of that model.
 
