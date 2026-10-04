@@ -34,7 +34,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Angular app
-        run: npm run build -- --base-href /urdama/
+        run: pnpm run build --base-href /UrDaMa/
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
