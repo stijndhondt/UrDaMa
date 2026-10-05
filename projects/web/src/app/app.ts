@@ -284,6 +284,7 @@ const PX_PER_MM = 96 / 25.4;
           />
           <div class="body">
             <div
+              #stage
               class="stage"
               (pointerdown)="messages.clear(); lengthEdits.open.set(null)"
               (contextmenu)="contextMenu().openAt($event)"
@@ -300,7 +301,10 @@ const PX_PER_MM = 96 / 25.4;
                 <lk-length-editor
                   class="plan-length"
                   [style.left]="'min(' + (edit.edit.at.x + 12) + 'px, calc(100% - 288px))'"
-                  [style.top]="'min(' + (edit.edit.at.y + 12) + 'px, calc(100% - 150px))'"
+                  [style.top]="edit.above ? null : edit.edit.at.y + 12 + 'px'"
+                  [style.bottom]="
+                    edit.above ? 'calc(100% - ' + (edit.edit.at.y - 12) + 'px)' : null
+                  "
                   [wall]="edit.wall"
                   [faceLength]="edit.edit.faceLength"
                   (pointerdown)="$event.stopPropagation()"
@@ -779,14 +783,20 @@ export class App {
   protected readonly contextMenu = viewChild.required(ContextMenuComponent);
   private readonly newDialog = viewChild.required(NewProjectDialogComponent);
   private readonly centre = viewChild<ElementRef<HTMLElement>>('centre');
+  private readonly stage = viewChild<ElementRef<HTMLElement>>('stage');
   protected readonly store = this.project.store;
   protected readonly lengthEdits = inject(LengthEditService);
   protected readonly floorChoice = inject(FloorOpeningChoiceService);
-  /** The length editor on the plan, with its Wall (closed when the Wall is gone). */
+  /**
+   * The length editor on the plan, with its Wall (closed when the Wall is gone). Below its label
+   * in the plan's upper half, above it in the lower half: it grows away from the edge, so a reason
+   * shown under the field (ticket 28) is never cut off.
+   */
   protected readonly planLengthEdit = computed(() => {
     const edit = this.lengthEdits.open();
     const wall = edit && this.store.model().walls[edit.wall];
-    return edit && wall ? { edit, wall } : null;
+    const height = this.stage()?.nativeElement.clientHeight ?? 0;
+    return edit && wall ? { edit, wall, above: edit.at.y > height / 2 } : null;
   });
 
   /** The left panel shown, if any: the Building panel or the Library panel (ticket 21). */
