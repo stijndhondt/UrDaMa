@@ -8,12 +8,14 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] Opening sizes read the same in the title, the Type list, the Building panel and the flyout.
-- [ ] The visibility tooltip names the Elevations, in English and Dutch.
-- [ ] Every dialog's close button has a translated accessible name.
+- [x] Opening sizes read the same in the title, the Type list, the Building panel and the flyout.
+- [x] The visibility tooltip names the Elevations, in English and Dutch.
+- [x] Every dialog's close button has a translated accessible name.
 
 ## Comments
 
 **2026-10-03:** found in the Slice 2 acceptance run (ticket 22, stories 23, 38, 39, 67).
+
+**2026-10-05:** done. An unnamed type's title uses the same size text as the Type list, the Building panel and the flyout (metres). The visibility tooltips name the Elevations. All four dialogs (add Level, delete Level, new project, Opening types) give their close button the translated "Close".

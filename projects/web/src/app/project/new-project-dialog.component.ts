@@ -33,6 +33,7 @@ import { ProjectService } from './project.service';
       (onHide)="closed.emit()"
       [modal]="true"
       [draggable]="false"
+      [closeAriaLabel]="'common.close' | translate"
       [resizable]="false"
       [style]="{ width: '360px' }"
     >

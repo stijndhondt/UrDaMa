@@ -6,6 +6,11 @@ export class View {
   scale = 0.1;
   /** Screen position (CSS px) of the plan origin */
   offset: Vec = { x: 80, y: 80 };
+  /**
+   * Whether the view keeps fitting the plan when its panel changes size (ticket 30): from the
+   * start and after every fit, until the user zooms or pans.
+   */
+  fitted = true;
 
   toScreen(p: Vec): Vec {
     return { x: p.x * this.scale + this.offset.x, y: p.y * this.scale + this.offset.y };
@@ -23,10 +28,12 @@ export class View {
       y: screen.y - ((screen.y - this.offset.y) * next) / this.scale,
     };
     this.scale = next;
+    this.fitted = false;
   }
 
   panBy(dx: number, dy: number): void {
     this.offset = { x: this.offset.x + dx, y: this.offset.y + dy };
+    this.fitted = false;
   }
 
   /** Fits a model rectangle into a viewport of the given CSS size, with a margin. */
@@ -41,6 +48,7 @@ export class View {
       x: (width - w * this.scale) / 2 - min.x * this.scale,
       y: (height - h * this.scale) / 2 - min.y * this.scale,
     };
+    this.fitted = true;
   }
 
   /** The model rectangle visible in a viewport of the given CSS size. */

@@ -8,10 +8,9 @@ import {
   untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TranslatePipe, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import {
   boundingBox,
-  deleteLevel,
   familyTypes,
   hasSill,
   netWallArea,
@@ -51,8 +50,10 @@ import { EditorActionsService } from './editor-actions.service';
 import { FamilyEditService } from './family-edit.service';
 import { FamilyPropertiesComponent } from './family-properties.component';
 import { AngleEditorComponent } from './angle-editor.component';
+import { DeleteLevelService } from './delete-level.service';
 import { LengthEditorComponent } from './length-editor.component';
 import { OpeningTypesDialogComponent } from './opening-types-dialog.component';
+import { PanelSectionComponent } from './panel-section.component';
 import { PropRowComponent, type PropChoice } from './prop-row.component';
 import { SelectionService } from './selection.service';
 
@@ -103,6 +104,7 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
     LengthEditorComponent,
     AngleEditorComponent,
     OpeningTypesDialogComponent,
+    PanelSectionComponent,
     PropRowComponent,
     FamilyPropertiesComponent,
   ],
@@ -125,8 +127,7 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
           </div>
         }
       </div>
-      <section>
-        <h3>{{ 'panel.room.title' | translate }}</h3>
+      <lk-panel-section key="panel.room.title" [heading]="'panel.room.title' | translate">
         <lk-prop
           [label]="'panel.room.name' | translate"
           [value]="room.name"
@@ -138,10 +139,12 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
           [hint]="'panel.room.floorFinishPlaceholder' | translate"
           (commit)="run(updateRoom, { room: room.id, floorFinish: $event.trim() || null })"
         />
-      </section>
+      </lk-panel-section>
       @if (roomSize(); as size) {
-        <section>
-          <h3>{{ 'panel.room.insideSize' | translate }}</h3>
+        <lk-panel-section
+          key="panel.room.insideSize"
+          [heading]="'panel.room.insideSize' | translate"
+        >
           <lk-prop
             [label]="'panel.room.width' | translate"
             [value]="mm(size.width)"
@@ -161,10 +164,9 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
             [choice]="widthSide() + depthSide()"
             (commit)="setSides($event)"
           />
-        </section>
+        </lk-panel-section>
       }
-      <section>
-        <h3>{{ 'panel.heights' | translate }}</h3>
+      <lk-panel-section key="panel.heights" [heading]="'panel.heights' | translate">
         <lk-prop
           [label]="'panel.room.height' | translate"
           [value]="mm(room.height ?? presets().roomHeight)"
@@ -201,13 +203,12 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
             [class.bad]="v.clash"
           />
         }
-      </section>
-      <section>
-        <h3>{{ 'panel.surfaces' | translate }}</h3>
+      </lk-panel-section>
+      <lk-panel-section key="panel.surfaces" [heading]="'panel.surfaces' | translate">
         @for (f of roomFigures(); track f.label) {
           <lk-prop [label]="f.label | translate" [value]="f.value" [editable]="false" />
         }
-      </section>
+      </lk-panel-section>
     } @else if (selection.opening(); as opening) {
       <header>
         <span class="badge">
@@ -226,8 +227,7 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
           </div>
         }
       </div>
-      <section>
-        <h3>{{ 'panel.placement' | translate }}</h3>
+      <lk-panel-section key="panel.placement" [heading]="'panel.placement' | translate">
         <lk-prop
           [label]="'panel.opening.offset' | translate"
           [value]="mm(opening.offset)"
@@ -262,9 +262,11 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
             />
           </div>
         }
-      </section>
-      <section>
-        <h3>{{ 'panel.opening.typeSection' | translate }}</h3>
+      </lk-panel-section>
+      <lk-panel-section
+        key="panel.opening.typeSection"
+        [heading]="'panel.opening.typeSection' | translate"
+      >
         <div class="type-row">
           <p-select
             size="small"
@@ -344,7 +346,7 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
             </div>
           </div>
         }
-      </section>
+      </lk-panel-section>
       <!-- Loaded on first use: its table is a large part of the UI library (ADR 0008 budget). -->
       @defer (when typesFor() !== null) {
         <lk-opening-types-dialog [(family)]="typesFor" />
@@ -369,8 +371,7 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
           }
         </div>
       }
-      <section>
-        <h3>{{ 'panel.sizes' | translate }}</h3>
+      <lk-panel-section key="panel.sizes" [heading]="'panel.sizes' | translate">
         @if (editingLength()) {
           <lk-length-editor [wall]="wall" (closed)="editingLength.set(false)" />
         } @else {
@@ -428,10 +429,9 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
           [choice]="wall.freeEnds ? 'yes' : 'no'"
           (commit)="run(updateWall, { wall: wall.id, freeEnds: $event === 'yes' })"
         />
-      </section>
+      </lk-panel-section>
       @if (wallFaces(); as faces) {
-        <section>
-          <h3>{{ 'panel.wall.faces' | translate }}</h3>
+        <lk-panel-section key="panel.wall.faces" [heading]="'panel.wall.faces' | translate">
           @for (f of faces; track f.label) {
             <lk-prop
               [label]="f.label | translate"
@@ -440,7 +440,7 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
               [editable]="false"
             />
           }
-        </section>
+        </lk-panel-section>
       }
     } @else if (floorOpeningFigures(); as f) {
       <header>
@@ -452,8 +452,7 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
           }}</span>
         </div>
       </header>
-      <section>
-        <h3>{{ 'panel.sizes' | translate }}</h3>
+      <lk-panel-section key="panel.sizes" [heading]="'panel.sizes' | translate">
         <lk-prop
           [label]="'panel.floorOpening.width' | translate"
           [value]="f.width"
@@ -473,7 +472,7 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
           [hint]="'panel.floorOpening.areaHint' | translate"
           [editable]="false"
         />
-      </section>
+      </lk-panel-section>
     } @else if (selection.rooms().length === 2) {
       <header>
         <span class="badge"><lk-icon name="merge" /></span>
@@ -514,8 +513,10 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
             ><span>{{ 'panel.level.countShort' | translate }}</span>
           </div>
         </div>
-        <section>
-          <h3>{{ 'panel.level.title' | translate }} · {{ l.level.name }}</h3>
+        <lk-panel-section
+          key="panel.level.title"
+          [heading]="('panel.level.title' | translate) + ' · ' + l.level.name"
+        >
           <lk-prop
             [label]="'panel.level.name' | translate"
             [value]="l.level.name"
@@ -559,10 +560,9 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
               />
             </div>
           }
-        </section>
+        </lk-panel-section>
       }
-      <section>
-        <h3>{{ 'presets.title' | translate }}</h3>
+      <lk-panel-section key="presets.title" [heading]="'presets.title' | translate">
         <p class="note">{{ 'presets.hint' | translate }}</p>
         @for (f of presetFields; track f) {
           <lk-prop
@@ -572,9 +572,8 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
             (commit)="commitMm($event, setPresets, {}, f)"
           />
         }
-      </section>
-      <section>
-        <h3>{{ 'quantities.rule' | translate }}</h3>
+      </lk-panel-section>
+      <lk-panel-section key="quantities.rule" [heading]="'quantities.rule' | translate">
         <lk-prop
           [label]="'quantities.rule' | translate"
           [value]="'quantities.rules.' + measurement.rule() | translate"
@@ -582,7 +581,7 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
           [choice]="measurement.rule()"
           (commit)="measurement.rule.set($any($event))"
         />
-      </section>
+      </lk-panel-section>
     }
   `,
   styles: `
@@ -648,18 +647,6 @@ const ZERO_ALLOWED: ReadonlySet<string> = new Set([
       font-size: 11px;
       color: var(--muted);
     }
-    section {
-      padding: 4px 0 8px;
-      border-top: 1px solid var(--line);
-    }
-    h3 {
-      margin: 8px 14px 4px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
     .note {
       margin: 0 14px 6px;
       font-size: 11px;
@@ -708,8 +695,8 @@ export class PropertiesPanelComponent {
   protected readonly familyEdit = inject(FamilyEditService);
   protected readonly format = inject(FormatService);
   private readonly messages = inject(MessagesService);
-  private readonly translate = inject(TranslateService);
   private readonly language = inject(LanguageService);
+  private readonly deleting = inject(DeleteLevelService);
 
   protected readonly updateRoom = updateRoom;
   protected readonly hasSill = hasSill;
@@ -802,8 +789,8 @@ export class PropertiesPanelComponent {
     const o = this.selection.opening();
     const type = o && this.project.store.model().openingTypes[o.type];
     if (!type) return '';
-    // An unnamed type is shown by its sizes in cm, like "93 × 211,5".
-    return type.name ?? `${this.format.mm(type.width / 10)} × ${this.format.mm(type.height / 10)}`;
+    // An unnamed type is shown by its sizes, as in the Type list, the Building panel and the flyout.
+    return type.name ?? this.format.openingSize(type.width, type.height);
   });
 
   /** The types of the selected Opening's family, by size, named or shown by their sizes. */
@@ -1034,9 +1021,7 @@ export class PropertiesPanelComponent {
   protected removeLevel(): void {
     const l = this.level();
     if (!l) return;
-    const text = this.translate.instant('panel.level.confirmDelete', { name: l.level.name });
-    if (!window.confirm(text)) return;
-    this.run(deleteLevel, { level: l.level.id });
+    this.deleting.asking.set(l.level.id);
   }
 
   protected run<A>(command: Command<A>, args: A): void {

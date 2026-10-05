@@ -18,8 +18,14 @@ describe('App shell', () => {
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
     }) as unknown as MediaQueryList;
+  // jsdom has no ResizeObserver either (Optimus's tab list measures itself).
+  globalThis.ResizeObserver ??= class {
+    observe = () => undefined;
+    unobserve = () => undefined;
+    disconnect = () => undefined;
+  } as unknown as typeof ResizeObserver;
 
-  it('shows the brand, the Room tool and the status bar', async () => {
+  async function render() {
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [provideTranslateService({ lang: 'en' })],
@@ -31,9 +37,28 @@ describe('App shell', () => {
       .compileComponents();
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
-    const el = fixture.nativeElement as HTMLElement;
+    return { fixture, el: fixture.nativeElement as HTMLElement };
+  }
+
+  it('shows the brand, the Room tool and the status bar', async () => {
+    const { el } = await render();
     expect(el.querySelector('.brand')?.textContent).toContain('Urdama');
     expect(el.querySelectorAll('lk-plan-toolbar p-selectbutton').length).toBeGreaterThan(0);
     expect(el.querySelector('.status')).not.toBeNull();
+  });
+
+  it('shows the Quantities instead of the drawing, and the drawing again', async () => {
+    const { fixture, el } = await render();
+    expect(el.querySelector('.quantities-page')).toBeNull();
+    const tab = (text: string) =>
+      [...el.querySelectorAll<HTMLElement>('.pages p-tab')].find((t) =>
+        t.textContent?.includes(text),
+      )!;
+    tab('quantities.title').click();
+    await fixture.whenStable();
+    expect(el.querySelector('.quantities-page')).not.toBeNull();
+    tab('shell.drawing').click();
+    await fixture.whenStable();
+    expect(el.querySelector('.quantities-page')).toBeNull();
   });
 });

@@ -5,7 +5,8 @@ import { recordRecalculations } from '../reactive';
 import { ProjectStore } from '../store/project-store';
 import { drawRoom } from './draw-room';
 import { drawWall } from './draw-wall';
-import { addLevel, deleteLevel, updateLevel, updateSlab } from './levels';
+import { drawFloorOpening } from './floor-openings';
+import { addLevel, deleteLevel, levelContents, updateLevel, updateSlab } from './levels';
 import { updateRoom } from './update-room';
 
 function setup() {
@@ -198,5 +199,38 @@ describe('Levels, Slab, Floor build-up and Ceiling (ticket 13)', () => {
     expect(Object.keys(store.model().walls)).toHaveLength(0);
     const last = store.run(deleteLevel, { level: ground });
     expect(!last.ok && last.reason.key).toBe('commands.level.lastLevel');
+  });
+
+  it('tells what goes with a Level: its Rooms, Walls, Openings and the Floor openings it connects', () => {
+    const { store, ground, levels } = setup();
+    store.run(addLevel, { relativeTo: ground, position: 'above', name: 'First floor' });
+    const first = levels()[1]!.id;
+    store.run(drawRoom, {
+      level: first,
+      from: { x: 0, y: 0 },
+      to: { x: 4000, y: 3000 },
+      size: 'inside',
+      name: 'Bedroom',
+    });
+    const stairwell = store.run(drawFloorOpening, {
+      level: first,
+      outline: [
+        { x: 500, y: 500 },
+        { x: 1500, y: 500 },
+        { x: 1500, y: 2500 },
+        { x: 500, y: 2500 },
+      ],
+      direction: 'down',
+    });
+    expect(stairwell.ok).toBe(true);
+    const contents = levelContents(store.model(), first);
+    expect(contents.rooms.size).toBe(1);
+    expect(contents.walls.size).toBe(Object.keys(store.model().walls).length);
+    expect(contents.openings.size).toBe(0);
+    expect(contents.floorOpenings.size).toBe(1);
+    // The stairwell also connects the ground floor, so it goes with that Level too.
+    expect(levelContents(store.model(), ground).floorOpenings.size).toBe(1);
+    expect(store.run(deleteLevel, { level: first }).ok).toBe(true);
+    expect(Object.keys(store.model().floorOpenings)).toHaveLength(0);
   });
 });

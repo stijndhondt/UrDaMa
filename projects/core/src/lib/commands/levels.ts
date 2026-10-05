@@ -7,7 +7,7 @@ import { put, remove } from '../model/edit';
 import { message } from '../model/message';
 import { levelsInOrder } from '../model/levels';
 import { defaultStoreyHeight } from '../model/new-project';
-import type { Level, LevelId, Slab, SlabId } from '../model/types';
+import type { Level, LevelId, Model, Slab, SlabId } from '../model/types';
 import { refuse, type Command } from './command';
 
 export interface AddLevelArgs {
@@ -105,6 +105,32 @@ export interface DeleteLevelArgs {
   readonly level: LevelId;
 }
 
+/** What goes with a Level when it is deleted (ticket 32), by ID. */
+export interface LevelContents {
+  readonly walls: ReadonlySet<string>;
+  readonly rooms: ReadonlySet<string>;
+  /** The Openings in its Walls */
+  readonly openings: ReadonlySet<string>;
+  /** The Floor openings drawn on it or reaching down to it: either Level they connect */
+  readonly floorOpenings: ReadonlySet<string>;
+}
+
+export function levelContents(model: Model, level: LevelId): LevelContents {
+  const ids = <T extends { id: string }>(items: Record<string, T>, on: (x: T) => boolean) =>
+    new Set<string>(
+      Object.values(items)
+        .filter(on)
+        .map((x) => x.id),
+    );
+  const walls = ids(model.walls, (w) => w.level === level);
+  return {
+    walls,
+    rooms: ids(model.rooms, (r) => r.level === level),
+    openings: ids(model.openings, (o) => walls.has(o.wall)),
+    floorOpenings: ids(model.floorOpenings, (f) => f.level === level || f.below === level),
+  };
+}
+
 /** DeleteLevel: the Level and everything on it; the Levels above move down. Never the last one. */
 export const deleteLevel: Command<DeleteLevelArgs> = (model, args) => {
   const level = model.levels[args.level];
@@ -112,16 +138,7 @@ export const deleteLevel: Command<DeleteLevelArgs> = (model, args) => {
     return refuse(message('invariants.missingReference', { what: 'level', id: args.level }));
   const stack = levelsInOrder(model, level.building);
   if (stack.length === 1) return refuse(message('commands.level.lastLevel'));
-  const walls = new Set<string>(
-    Object.values(model.walls)
-      .filter((w) => w.level === level.id)
-      .map((w) => w.id),
-  );
-  const rooms = new Set<string>(
-    Object.values(model.rooms)
-      .filter((r) => r.level === level.id)
-      .map((r) => r.id),
-  );
+  const { walls, rooms, openings, floorOpenings } = levelContents(model, level.id);
   const ids = <T extends { id: string }>(items: Record<string, T>, keep: (x: T) => boolean) =>
     Object.values(items)
       .filter((x) => !keep(x))
@@ -132,11 +149,7 @@ export const deleteLevel: Command<DeleteLevelArgs> = (model, args) => {
     'wallConnections',
     ids(model.wallConnections, (c) => !walls.has(c.wall) && !walls.has(c.to)),
   );
-  next = remove(
-    next,
-    'openings',
-    ids(model.openings, (o) => !walls.has(o.wall)),
-  );
+  next = remove(next, 'openings', [...openings]);
   next = remove(
     next,
     'roomSeparators',
@@ -154,11 +167,7 @@ export const deleteLevel: Command<DeleteLevelArgs> = (model, args) => {
     ids(model.slabs, (s) => s.level !== level.id),
   );
   // A Floor opening goes with either Level it connects; one in between it no longer crosses.
-  next = remove(
-    next,
-    'floorOpenings',
-    ids(model.floorOpenings, (f) => f.level !== level.id && f.below !== level.id),
-  );
+  next = remove(next, 'floorOpenings', [...floorOpenings]);
   next = remove(next, 'levels', [level.id]);
   for (const l of stack)
     if (l.order > level.order) next = put(next, 'levels', { ...l, order: l.order - 1 });

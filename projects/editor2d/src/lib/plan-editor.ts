@@ -203,7 +203,11 @@ export class PlanEditor {
         maxX = Math.max(maxX, p.x);
         maxY = Math.max(maxY, p.y);
       }
-    if (minX === Infinity) return;
+    // Nothing drawn yet: the view fits the first thing drawn once its panel changes size.
+    if (minX === Infinity) {
+      this.view.fitted = true;
+      return;
+    }
     this.view.fit({ x: minX, y: minY }, { x: maxX, y: maxY }, this.width, this.height);
     this.invalidate();
   }
@@ -253,6 +257,9 @@ export class PlanEditor {
     this.height = this.canvas.clientHeight;
     this.canvas.width = Math.round(this.width * dpr);
     this.canvas.height = Math.round(this.height * dpr);
+    // A new panel size (another layout, a dragged divider) keeps a fitted plan fitted; a hidden
+    // plan (no size) keeps its view until it is shown again.
+    if (this.view.fitted && this.width > 0 && this.height > 0) this.fit();
     this.invalidate();
   }
 

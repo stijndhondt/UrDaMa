@@ -138,13 +138,23 @@ export interface PropChoice {
     .read:disabled {
       opacity: 1;
     }
+    /* A value too long for the row wraps under its label instead of running over it. */
+    .read {
+      flex-wrap: wrap;
+      row-gap: 0;
+      white-space: normal;
+    }
     .label {
-      flex: 1;
-      min-width: 0;
+      flex: 1 0 auto;
+      max-width: 100%;
       color: var(--muted);
     }
     .value {
+      flex: 0 1 auto;
+      min-width: 0;
+      margin-left: auto;
       text-align: right;
+      overflow-wrap: anywhere;
     }
     .value.num {
       font-family: var(--mono);

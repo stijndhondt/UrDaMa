@@ -4,11 +4,13 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] Every section of the properties panel folds and unfolds, with an Optimus control, and stays as it was after a reload.
-- [ ] No value overlaps its label in English or Dutch, at the panel's normal width.
+- [x] Every section of the properties panel folds and unfolds, with an Optimus control, and stays as it was after a reload.
+- [x] No value overlaps its label in English or Dutch, at the panel's normal width.
 
 ## Comments
 
 **2026-10-03:** found in the Slice 2 acceptance run (ticket 22, story 32 and the Quantities stories).
+
+**2026-10-05:** done. Every section heading is an Optimus text button inside the heading (`lk-panel-section`); folded sections are kept per browser under `urdama.panel.collapsed`, by the heading's translation key, so "Sizes" folds for a Wall and a Floor opening alike. A value too long for its row wraps under its label, right-aligned.

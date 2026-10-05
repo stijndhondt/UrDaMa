@@ -47,6 +47,7 @@ const ICONS = [
   'move-vertical',
   'panel-right',
   'pencil',
+  'pencil-ruler',
   'plus',
   'rectangle-vertical',
   'redo-2',
