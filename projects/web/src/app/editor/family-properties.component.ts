@@ -7,6 +7,7 @@ import { LanguageService } from '../language';
 import { IconComponent } from '../shell/icon.component';
 import { OPENING_ICONS } from '../shell/opening-icons';
 import { FamilyEditService } from './family-edit.service';
+import { PanelSectionComponent } from './panel-section.component';
 import { PropRowComponent, type PropChoice } from './prop-row.component';
 
 /**
@@ -16,7 +17,7 @@ import { PropRowComponent, type PropChoice } from './prop-row.component';
 @Component({
   selector: 'lk-family-properties',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslatePipe, ButtonModule, IconComponent, PropRowComponent],
+  imports: [TranslatePipe, ButtonModule, IconComponent, PanelSectionComponent, PropRowComponent],
   template: `
     @if (edit.family(); as family) {
       @if (edit.preview(); as preview) {
@@ -30,16 +31,15 @@ import { PropRowComponent, type PropChoice } from './prop-row.component';
             >
           </div>
         </header>
-        <section>
+        <lk-panel-section key="family.title" [heading]="'family.title' | translate">
           <lk-prop
             [label]="'family.name' | translate"
             [value]="family.name ?? ''"
             (commit)="edit.rename($event)"
           />
-        </section>
+        </lk-panel-section>
         @if (preview.design.frame; as frame) {
-          <section>
-            <h3>{{ 'family.frame' | translate }}</h3>
+          <lk-panel-section key="family.frame" [heading]="'family.frame' | translate">
             <lk-prop
               [label]="'family.frameWidth' | translate"
               [value]="'' + frame.width"
@@ -61,12 +61,14 @@ import { PropRowComponent, type PropChoice } from './prop-row.component';
               [choice]="preview.design.bottomRail ? 'yes' : 'no'"
               (commit)="change({ ...preview.design, bottomRail: $event === 'yes' })"
             />
-          </section>
+          </lk-panel-section>
         }
         @if (preview.design.infill; as infill) {
           @if (infill.kind !== 'none') {
-            <section>
-              <h3>{{ 'family.infill.' + infill.kind | translate }}</h3>
+            <lk-panel-section
+              [key]="'family.infill.' + infill.kind"
+              [heading]="'family.infill.' + infill.kind | translate"
+            >
               @switch (infill.kind) {
                 @case ('leaves') {
                   <lk-prop
@@ -126,7 +128,7 @@ import { PropRowComponent, type PropChoice } from './prop-row.component';
                 [hint]="range(limits.thickness)"
                 (commit)="setThickness(preview.design, $event)"
               />
-            </section>
+            </lk-panel-section>
           }
         }
         <p class="note">{{ 'family.reach' | translate }}</p>
@@ -161,18 +163,6 @@ import { PropRowComponent, type PropChoice } from './prop-row.component';
     }
     .kind {
       font-size: 11px;
-      color: var(--muted);
-    }
-    section {
-      padding: 4px 0 8px;
-      border-top: 1px solid var(--line);
-    }
-    h3 {
-      margin: 8px 14px 4px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
       color: var(--muted);
     }
     .note {
