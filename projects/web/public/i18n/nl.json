@@ -558,6 +558,7 @@
   "shell": {
     "panels": "Panelen",
     "building": "Gebouw",
+    "drawing": "Tekening",
     "plan": "Plattegrond",
     "hideBottom": "Onderste paneel verbergen",
     "noWarnings": "Geen waarschuwingen op deze bouwlaag",

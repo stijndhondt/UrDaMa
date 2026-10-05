@@ -558,6 +558,7 @@
   "shell": {
     "panels": "Panels",
     "building": "Building",
+    "drawing": "Drawing",
     "plan": "Plan",
     "hideBottom": "Hide the bottom panel",
     "noWarnings": "No warnings on this Level",

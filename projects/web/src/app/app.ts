@@ -61,7 +61,7 @@ import { PanelHeaderComponent } from './shell/panel-header.component';
 import { PlanToolbarComponent, TOOLS } from './shell/plan-toolbar.component';
 import { THEME_CHOICES, ThemeService } from './shell/theme.service';
 
-type BottomTab = 'quantities' | 'warnings';
+type Page = 'drawing' | 'quantities';
 
 const LAYOUT_ICONS: Record<LayoutId, IconName> = {
   plan: 'square',
@@ -226,8 +226,8 @@ const PX_PER_MM = 96 / 25.4;
           <ng-template #content><lk-icon name="box" /></ng-template>
         </p-togglebutton>
         <p-togglebutton
-          [ngModel]="bottomOpen() && bottomTab() === 'quantities'"
-          (onChange)="showBottom('quantities')"
+          [ngModel]="page() === 'quantities'"
+          (onChange)="toggleQuantities()"
           [ariaLabel]="'quantities.title' | translate"
           [pTooltip]="('quantities.title' | translate) + ' (Q)'"
           tooltipPosition="right"
@@ -235,8 +235,8 @@ const PX_PER_MM = 96 / 25.4;
           <ng-template #content><lk-icon name="sheet" /></ng-template>
         </p-togglebutton>
         <p-togglebutton
-          [ngModel]="bottomOpen() && bottomTab() === 'warnings'"
-          (onChange)="showBottom('warnings')"
+          [ngModel]="bottomOpen()"
+          (onChange)="toggleWarnings()"
           [ariaLabel]="'panel.warnings' | translate"
           [pTooltip]="'panel.warnings' | translate"
           tooltipPosition="right"
@@ -256,6 +256,18 @@ const PX_PER_MM = 96 / 25.4;
           <lk-library-panel />
         </aside>
       }
+
+      <!-- The centre shows the drawing or the Quantities, each at full size. -->
+      <p-tabs class="pages" [value]="page()" (valueChange)="page.set($any($event))">
+        <p-tablist>
+          <p-tab value="drawing">
+            <lk-icon name="pencil-ruler" /> {{ 'shell.drawing' | translate }}
+          </p-tab>
+          <p-tab value="quantities">
+            <lk-icon name="sheet" /> {{ 'quantities.title' | translate }}
+          </p-tab>
+        </p-tablist>
+      </p-tabs>
 
       <main
         #centre
@@ -364,6 +376,17 @@ const PX_PER_MM = 96 / 25.4;
         }
       </main>
 
+      <!-- Over the drawing, which stays mounted at its size: its tool and view are kept. -->
+      @if (page() === 'quantities') {
+        <section class="quantities-page" [attr.aria-label]="'quantities.title' | translate">
+          <!-- Loaded on first use: its tree table is a large part of the UI library (ADR 0008
+               budget). "on immediate": a plain @defer waits for idle, which a background tab never is. -->
+          @defer (on immediate) {
+            <lk-quantities-panel />
+          }
+        </section>
+      }
+
       <aside class="props" [attr.aria-label]="'panel.label' | translate">
         <lk-properties-panel />
       </aside>
@@ -371,18 +394,11 @@ const PX_PER_MM = 96 / 25.4;
       @if (bottomOpen()) {
         <section class="bottom">
           <div class="bottom-head">
-            <p-tabs [value]="bottomTab()" (valueChange)="bottomTab.set($any($event))">
-              <p-tablist>
-                <p-tab value="quantities">
-                  <lk-icon name="sheet" /> {{ 'quantities.title' | translate }}
-                </p-tab>
-                <p-tab value="warnings">
-                  <lk-icon name="triangle-alert" /> {{ 'panel.warnings' | translate }} ({{
-                    warnings().length
-                  }})
-                </p-tab>
-              </p-tablist>
-            </p-tabs>
+            <h2>
+              <lk-icon name="triangle-alert" /> {{ 'panel.warnings' | translate }} ({{
+                warnings().length
+              }})
+            </h2>
             <span class="spacer"></span>
             <p-button
               size="small"
@@ -396,21 +412,13 @@ const PX_PER_MM = 96 / 25.4;
             </p-button>
           </div>
           <div class="bottom-body">
-            @if (bottomTab() === 'quantities') {
-              <!-- Loaded on first use: its tree table is a large part of the UI library (ADR 0008
-                   budget). "on immediate": a plain @defer waits for idle, which a background tab never is. -->
-              @defer (on immediate) {
-                <lk-quantities-panel />
+            <ul class="warnings">
+              @for (w of warnings(); track $index) {
+                <li>{{ w.key | translate: w.params }}</li>
+              } @empty {
+                <li class="none">{{ 'shell.noWarnings' | translate }}</li>
               }
-            } @else {
-              <ul class="warnings">
-                @for (w of warnings(); track $index) {
-                  <li>{{ w.key | translate: w.params }}</li>
-                } @empty {
-                  <li class="none">{{ 'shell.noWarnings' | translate }}</li>
-                }
-              </ul>
-            }
+            </ul>
           </div>
         </section>
       }
@@ -433,7 +441,7 @@ const PX_PER_MM = 96 / 25.4;
           severity="secondary"
           [text]="true"
           [ariaLabel]="'panel.warnings' | translate"
-          (onClick)="showBottom('warnings')"
+          (onClick)="toggleWarnings()"
         >
           <lk-icon name="triangle-alert" /> {{ warnings().length }}
         </p-button>
@@ -457,6 +465,7 @@ const PX_PER_MM = 96 / 25.4;
       display: grid;
       grid-template:
         'top top top top' auto
+        'icons side pages props' auto
         'icons side centre props' minmax(0, 1fr)
         'icons side bottom props' auto
         'status status status status' auto / 44px auto minmax(0, 1fr) 300px;
@@ -529,7 +538,7 @@ const PX_PER_MM = 96 / 25.4;
     }
     .icons {
       grid-area: icons;
-      grid-row: 2 / 4;
+      grid-row: 2 / 5;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -554,7 +563,7 @@ const PX_PER_MM = 96 / 25.4;
     }
     .side {
       grid-area: side;
-      grid-row: 2 / 4;
+      grid-row: 2 / 5;
       width: 250px;
       display: flex;
       flex-direction: column;
@@ -585,6 +594,23 @@ const PX_PER_MM = 96 / 25.4;
       padding: 4px;
       min-width: 0;
       min-height: 0;
+    }
+    .pages {
+      grid-area: pages;
+      min-width: 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .pages lk-icon {
+      font-size: 14px;
+    }
+    /* The same grid cell as the drawing, over it. */
+    .quantities-page {
+      grid-area: centre;
+      z-index: 6;
+      min-width: 0;
+      min-height: 0;
+      overflow: auto;
+      background: var(--panel);
     }
     .family-editor {
       position: absolute;
@@ -665,14 +691,14 @@ const PX_PER_MM = 96 / 25.4;
     }
     .props {
       grid-area: props;
-      grid-row: 2 / 4;
+      grid-row: 2 / 5;
       overflow: auto;
       border-left: 1px solid var(--line);
       background: var(--panel);
     }
     .bottom {
       grid-area: bottom;
-      height: 280px;
+      height: 180px;
       display: flex;
       flex-direction: column;
       border-top: 1px solid var(--line);
@@ -683,8 +709,13 @@ const PX_PER_MM = 96 / 25.4;
       align-items: center;
       padding-right: 6px;
     }
-    .bottom-head p-tabs {
-      min-width: 0;
+    .bottom-head h2 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
     }
     .bottom-body {
       flex: 1;
@@ -787,8 +818,10 @@ export class App {
       };
     }),
   );
+  /** What the centre shows: the drawing (plan and views) or the Quantities, each at full size. */
+  protected readonly page = signal<Page>('drawing');
+  /** The Warnings panel under the centre */
   protected readonly bottomOpen = signal(false);
-  protected readonly bottomTab = signal<BottomTab>('quantities');
 
   protected readonly hasChange = computed(() => (this.store.lastChange()?.rooms.length ?? 0) > 0);
   protected readonly warnings = computed(() =>
@@ -868,9 +901,9 @@ export class App {
         {
           label: this.t('quantities.title'),
           shortcut: 'Q',
-          command: () => this.showBottom('quantities'),
+          command: () => this.toggleQuantities(),
         },
-        { label: this.t('panel.warnings'), command: () => this.showBottom('warnings') },
+        { label: this.t('panel.warnings'), command: () => this.toggleWarnings() },
         { separator: true },
         {
           label: this.t('shell.theme.label'),
@@ -961,15 +994,17 @@ export class App {
       ?.focus({ preventScroll: true });
   }
 
-  protected showBottom(tab: BottomTab): void {
-    if (this.bottomOpen() && this.bottomTab() === tab) this.bottomOpen.set(false);
-    else {
-      this.bottomTab.set(tab);
-      this.bottomOpen.set(true);
-    }
+  protected toggleQuantities(): void {
+    this.page.set(this.page() === 'quantities' ? 'drawing' : 'quantities');
+  }
+
+  protected toggleWarnings(): void {
+    this.bottomOpen.set(!this.bottomOpen());
   }
 
   protected selectTool(name: ToolName): void {
+    // A drawing tool brings the drawing back.
+    this.page.set('drawing');
     this.messages.clear();
     this.editor()?.setTool(name);
   }
@@ -1072,7 +1107,7 @@ export class App {
     }
     if (e.key === 'q' || e.key === 'Q') {
       e.preventDefault();
-      this.showBottom('quantities');
+      this.toggleQuantities();
       return;
     }
     if (e.key === 'm' || e.key === 'M') {
