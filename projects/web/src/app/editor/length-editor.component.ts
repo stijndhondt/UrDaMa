@@ -12,10 +12,18 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { setWallLength, wallLength, type SetWallLengthArgs, type Wall } from '@urdama/core';
+import {
+  message,
+  setWallLength,
+  wallLength,
+  type Message,
+  type SetWallLengthArgs,
+  type Wall,
+} from '@urdama/core';
 import { growOptions, parseLength, type GrowOption } from '@urdama/editor2d';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import { InputTextModule } from '@openng/optimus-ui/inputtext';
+import { MessageModule } from '@openng/optimus-ui/message';
 import { SelectButtonModule } from '@openng/optimus-ui/selectbutton';
 import { TooltipModule } from '@openng/optimus-ui/tooltip';
 import { FormatService } from '../format.service';
@@ -49,6 +57,7 @@ const GROW_ICONS: Record<GrowOption['label'], IconName> = {
     TranslatePipe,
     ButtonModule,
     InputTextModule,
+    MessageModule,
     SelectButtonModule,
     TooltipModule,
     IconComponent,
@@ -63,10 +72,17 @@ const GROW_ICONS: Record<GrowOption['label'], IconName> = {
           pSize="small"
           [value]="shown()"
           [attr.aria-label]="'panel.wall.length' | translate"
+          [attr.aria-invalid]="reason() ? true : null"
+          (input)="reason.set(null)"
           (keydown.enter)="apply(field.value)"
         />
         <span class="unit">mm</span>
       </label>
+      @if (reason(); as r) {
+        <p-message severity="error" size="small" variant="outlined">{{
+          r.key | translate: r.params
+        }}</p-message>
+      }
       <div class="toggles">
         <p-selectbutton
           size="small"
@@ -154,8 +170,6 @@ const GROW_ICONS: Record<GrowOption['label'], IconName> = {
 })
 export class LengthEditorComponent {
   readonly wall = input.required<Wall>();
-  /** Where a refusal is shown (canvas px), when the editor sits on the plan. */
-  readonly at = input<{ x: number; y: number } | null>(null);
   /**
    * On the plan: the length (mm) of the face whose label was double-clicked. The editor shows and
    * takes that length; the Baseline changes by the same amount. Without it, the Baseline length.
@@ -170,6 +184,8 @@ export class LengthEditorComponent {
   private readonly language = inject(LanguageService);
   private readonly field = viewChild.required<ElementRef<HTMLInputElement>>('field');
 
+  /** Why the typed length was not taken, shown under the field until the next keystroke. */
+  protected readonly reason = signal<Message | null>(null);
   protected readonly grows = computed(() => growOptions(this.wall()));
   /** Grows towards the end of the plan's axis (right / down) unless chosen otherwise. */
   protected readonly growIndex = signal(2);
@@ -215,21 +231,31 @@ export class LengthEditorComponent {
 
   protected apply(text: string): void {
     const choice = this.grows()[this.growIndex()];
+    this.reason.set(null);
     // The field shows the length rounded: Enter without typing changes nothing.
     if (text.trim() === this.shown() || !choice) {
       this.closed.emit();
       return;
     }
     const typed = parseLength(text);
-    if (typed === null) return;
+    if (typed === null) {
+      this.refuse(message('panel.wall.notALength'));
+      return;
+    }
     const result = this.project.store.run(setWallLength, {
       wall: this.wall().id,
       length: wallLength(this.wall()) + (typed - this.shownMm()),
       end: choice.end,
       mode: this.choice.mode(),
     });
-    if (!result.ok) this.messages.refused(result.reason, this.at());
+    if (!result.ok) this.refuse(result.reason);
     else this.closed.emit();
+  }
+
+  /** Next to the editor, and in the status bar as every refusal. */
+  private refuse(reason: Message): void {
+    this.reason.set(reason);
+    this.messages.refused(reason);
   }
 
   protected close(e: Event): void {

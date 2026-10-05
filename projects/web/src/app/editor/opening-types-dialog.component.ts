@@ -57,6 +57,7 @@ import { IconComponent } from '../shell/icon.component';
       (visibleChange)="$event || family.set(null)"
       [modal]="true"
       [draggable]="false"
+      [closeAriaLabel]="'common.close' | translate"
       [resizable]="false"
       [style]="{ width: '520px' }"
     >

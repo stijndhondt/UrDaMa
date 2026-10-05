@@ -13,7 +13,6 @@ import {
 } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import {
-  deleteLevel,
   floorOpeningLevels,
   levelsInOrder,
   resolveOpening,
@@ -38,6 +37,7 @@ import { IconComponent } from '../shell/icon.component';
 import { OPENING_ICONS } from '../shell/opening-icons';
 import type { IconName } from '../shell/icons.generated';
 import { AddLevelDialogComponent } from './add-level-dialog.component';
+import { DeleteLevelService } from './delete-level.service';
 import { LevelVisibilityService } from './level-visibility.service';
 import { SelectionService } from './selection.service';
 
@@ -90,6 +90,8 @@ interface LevelNode {
         size="small"
         severity="secondary"
         [text]="true"
+        [pTooltip]="'levels.addAboveTitle' | translate"
+        tooltipPosition="bottom"
         (onClick)="addDialog().open('above')"
       >
         <lk-icon name="plus" /> {{ 'levels.addAbove' | translate }}
@@ -98,6 +100,8 @@ interface LevelNode {
         size="small"
         severity="secondary"
         [text]="true"
+        [pTooltip]="'levels.addBelowTitle' | translate"
+        tooltipPosition="bottom"
         (onClick)="addDialog().open('below')"
       >
         <lk-icon name="plus" /> {{ 'levels.addBelow' | translate }}
@@ -209,20 +213,27 @@ interface LevelNode {
     <lk-add-level-dialog />
   `,
   styles: `
+    /* Only the tree scrolls: its scrollbar never narrows the Level buttons above it (ticket 30). */
     :host {
-      display: block;
+      display: flex;
+      flex-direction: column;
       font-size: 13px;
     }
     .actions {
       display: flex;
       gap: 2px;
       padding: 0 6px 6px;
+      white-space: nowrap;
     }
     .actions lk-icon {
       font-size: 12px;
     }
     p-tree {
-      --p-tree-padding: 0 4px;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      scrollbar-width: thin;
+      --p-tree-padding: 0 0 0 4px;
       --p-tree-node-padding: 1px 4px;
       --p-tree-gap: 1px;
       --p-tree-node-toggle-button-size: 1.375rem;
@@ -239,7 +250,7 @@ interface LevelNode {
       min-width: 0;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
     /* An Optimus text button that reads as the Level's name. */
     .name {
@@ -308,6 +319,7 @@ export class BuildingPanelComponent {
   private readonly messages = inject(MessagesService);
   private readonly format = inject(FormatService);
   private readonly language = inject(LanguageService);
+  private readonly deleting = inject(DeleteLevelService);
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly addDialog = viewChild.required(AddLevelDialogComponent);
@@ -539,7 +551,6 @@ export class BuildingPanelComponent {
 
   protected openMenu(e: Event, level: LevelId): void {
     const t = (key: string, params?: object) => this.language.text(key, params);
-    const name = this.project.store.model().levels[level]?.name ?? '';
     this.menuItems.set([
       { label: t('building.drawOn'), command: () => this.choose(level) },
       {
@@ -561,15 +572,9 @@ export class BuildingPanelComponent {
       {
         label: t('panel.level.delete'),
         disabled: this.project.levels().length < 2,
-        command: () => this.remove(level, name),
+        command: () => this.deleting.asking.set(level),
       },
     ]);
     this.menu().toggle(e);
-  }
-
-  private remove(level: LevelId, name: string): void {
-    if (!window.confirm(this.language.text('panel.level.confirmDelete', { name }))) return;
-    const result = this.project.store.run(deleteLevel, { level });
-    if (!result.ok) this.messages.refused(result.reason);
   }
 }

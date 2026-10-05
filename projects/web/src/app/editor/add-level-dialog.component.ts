@@ -36,6 +36,7 @@ import { SelectionService } from './selection.service';
       (visibleChange)="isOpen.set($event)"
       [modal]="true"
       [draggable]="false"
+      [closeAriaLabel]="'common.close' | translate"
       [resizable]="false"
       [style]="{ width: '360px' }"
     >

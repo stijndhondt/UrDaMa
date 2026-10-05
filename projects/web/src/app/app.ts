@@ -25,6 +25,7 @@ import { en } from 'primelocale/js/en.js';
 import { nl } from 'primelocale/js/nl.js';
 import { ChangeSummaryComponent } from './editor/change-summary.component';
 import { ContextMenuComponent } from './editor/context-menu.component';
+import { DeleteLevelDialogComponent } from './editor/delete-level-dialog.component';
 import { FloorOpeningChoiceComponent } from './editor/floor-opening-choice.component';
 import { FloorOpeningChoiceService } from './editor/floor-opening-choice.service';
 import { ContextMenuService } from './editor/context-menu.service';
@@ -91,6 +92,7 @@ const PX_PER_MM = 96 / 25.4;
     TooltipModule,
     ChangeSummaryComponent,
     ContextMenuComponent,
+    DeleteLevelDialogComponent,
     FloorOpeningChoiceComponent,
     ElevationComponent,
     FamilyEditorComponent,
@@ -289,7 +291,6 @@ const PX_PER_MM = 96 / 25.4;
                   [style.top]="'min(' + (edit.edit.at.y + 12) + 'px, calc(100% - 150px))'"
                   [wall]="edit.wall"
                   [faceLength]="edit.edit.faceLength"
-                  [at]="edit.edit.at"
                   (pointerdown)="$event.stopPropagation()"
                   (closed)="closeLengthEdit()"
                 />
@@ -445,6 +446,7 @@ const PX_PER_MM = 96 / 25.4;
     </div>
     <lk-context-menu />
     <lk-new-project-dialog />
+    <lk-delete-level-dialog />
   `,
   styles: `
     :host {
@@ -554,9 +556,19 @@ const PX_PER_MM = 96 / 25.4;
       grid-area: side;
       grid-row: 2 / 4;
       width: 250px;
-      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       border-right: 1px solid var(--line);
       background: var(--panel);
+    }
+    /* The panel scrolls below the heading; the Building panel keeps its own buttons in view. */
+    .side > :last-child {
+      flex: 1;
+      min-height: 0;
+    }
+    .side > lk-library-panel {
+      overflow: auto;
     }
     .side h2 {
       margin: 10px 12px 6px;

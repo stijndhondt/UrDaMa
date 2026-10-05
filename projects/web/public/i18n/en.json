@@ -360,6 +360,7 @@
         "end": "at its end",
         "both": "on both sides"
       },
+      "notALength": "Type a length above 0, such as 2700 or 2.70 m",
       "lengthMode": "When the length changes",
       "modes": {
         "room": "Move Room (the Wall at that end moves along)",
@@ -422,7 +423,7 @@
       "grossFloorArea": "Gross floor area",
       "netFloorArea": "Net floor area (total)",
       "delete": "Delete Level",
-      "confirmDelete": "Delete {name} and everything on it?",
+      "confirmDelete": "Delete {name}? Everything on it goes too: {rooms, plural, one {# Room} other {# Rooms}}, {walls, plural, one {# Wall} other {# Walls}}, {openings, plural, one {# Opening} other {# Openings}} and {floorOpenings, plural, one {# Floor opening} other {# Floor openings}}.",
       "grossShort": "m² gross",
       "netShort": "m² net",
       "countShort": "Levels"
@@ -587,8 +588,8 @@
     "expand": "Expand",
     "collapse": "Collapse",
     "drawOn": "Draw on this Level",
-    "show": "Show this Level in the plan and 3D",
-    "hide": "Hide this Level in the plan and 3D",
+    "show": "Show this Level in the plan, the Elevations and 3D",
+    "hide": "Hide this Level in the plan, the Elevations and 3D",
     "currentShown": "The Level you draw on is always shown",
     "levelActions": "Level actions",
     "rename": "Rename…",

@@ -123,8 +123,8 @@
   "levels": {
     "groundFloor": "Gelijkvloers",
     "tabs": "Bouwlagen",
-    "addAbove": "Bouwlaag erboven",
-    "addBelow": "Bouwlaag eronder",
+    "addAbove": "Erboven",
+    "addBelow": "Eronder",
     "addAboveTitle": "Bouwlaag erboven toevoegen",
     "addBelowTitle": "Bouwlaag eronder toevoegen",
     "name": "Naam",
@@ -360,6 +360,7 @@
         "end": "aan het einde",
         "both": "aan beide kanten"
       },
+      "notALength": "Typ een lengte groter dan 0, zoals 2700 of 2,70 m",
       "lengthMode": "Bij een andere lengte",
       "modes": {
         "room": "Ruimte verschuiven (de muur aan dat uiteinde schuift mee)",
@@ -422,7 +423,7 @@
       "grossFloorArea": "Bruto vloeroppervlakte",
       "netFloorArea": "Netto vloeroppervlakte (totaal)",
       "delete": "Bouwlaag verwijderen",
-      "confirmDelete": "{name} en alles erop verwijderen?",
+      "confirmDelete": "{name} verwijderen? Alles erop verdwijnt mee: {rooms, plural, one {# ruimte} other {# ruimtes}}, {walls, plural, one {# muur} other {# muren}}, {openings, plural, one {# opening} other {# openingen}} en {floorOpenings, plural, one {# vloeropening} other {# vloeropeningen}}.",
       "grossShort": "m² bruto",
       "netShort": "m² netto",
       "countShort": "bouwlagen"
@@ -587,8 +588,8 @@
     "expand": "Openklappen",
     "collapse": "Dichtklappen",
     "drawOn": "Op deze bouwlaag tekenen",
-    "show": "Deze bouwlaag tonen in plattegrond en 3D",
-    "hide": "Deze bouwlaag verbergen in plattegrond en 3D",
+    "show": "Deze bouwlaag tonen in plattegrond, gevelaanzichten en 3D",
+    "hide": "Deze bouwlaag verbergen in plattegrond, gevelaanzichten en 3D",
     "currentShown": "De bouwlaag waarop je tekent is altijd zichtbaar",
     "levelActions": "Acties voor de bouwlaag",
     "rename": "Hernoemen…",

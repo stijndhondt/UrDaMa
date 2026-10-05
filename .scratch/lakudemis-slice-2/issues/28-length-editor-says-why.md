@@ -4,11 +4,13 @@
 
 **Blocked by:** none
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] "0", text and negative numbers show a reason near the editor; the model is unchanged.
-- [ ] All new text exists in English and Dutch.
+- [x] "0", text and negative numbers show a reason near the editor; the model is unchanged.
+- [x] All new text exists in English and Dutch.
 
 ## Comments
 
 **2026-10-03:** found in the Slice 2 acceptance run (ticket 22, story 9).
+
+**2026-10-05:** done. The reason shows under the field in the editor (panel and plan) and in the status bar; a refused length command shows there too, instead of as a plan note under the editor. The example reads "2700 or 2.70 m", since a bare number is mm.
