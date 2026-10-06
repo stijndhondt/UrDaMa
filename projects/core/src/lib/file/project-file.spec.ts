@@ -198,5 +198,22 @@ describe('project file (ADR 0004)', () => {
       ]);
       expect(doc.openings.every((o: object) => !('width' in o) && !('kind' in o))).toBe(true);
     });
+
+    it("keeps a type's own sill height, and writes none for a type that follows the Preset", () => {
+      const model = drawnHouse();
+      const window = Object.values(model.openingTypes).find(
+        (t) => t.family === BUILT_IN_FAMILIES.window,
+      )!;
+      const withSill: Model = {
+        ...model,
+        openingTypes: { ...model.openingTypes, [window.id]: { ...window, sill: 1050 } },
+      };
+      const text = serializeProject(withSill);
+      const opened = parseProject(text);
+      expect(opened.ok && opened.model.openingTypes[window.id]!.sill).toBe(1050);
+      expect(opened.ok && serializeProject(opened.model)).toBe(text);
+      const plain = JSON.parse(serializeProject(model));
+      expect(plain.openingTypes.some((t: object) => 'sill' in t)).toBe(false);
+    });
   });
 });

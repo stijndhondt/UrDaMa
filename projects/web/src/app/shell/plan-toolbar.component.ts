@@ -1,7 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { BUILT_IN_FAMILIES, presetSize, type OpeningKind, type OpeningTypeId } from '@urdama/core';
+import {
+  BUILT_IN_FAMILIES,
+  hasSill,
+  presetSize,
+  typeSill,
+  type OpeningKind,
+  type OpeningTypeId,
+} from '@urdama/core';
 import type { ToolName } from '@urdama/editor2d';
 import { ButtonModule } from '@openng/optimus-ui/button';
 import type { MenuItem } from '@openng/optimus-ui/api';
@@ -257,8 +264,12 @@ export class PlanToolbarComponent {
             x.width === preset.width &&
             x.height === preset.height,
         )?.id;
+      // A window's size comes with the sill height it is placed at.
       const label = (x: (typeof types)[number]) => {
-        const size = this.format.openingSize(x.width, x.height);
+        const sized = this.format.openingSize(x.width, x.height);
+        const size = hasSill(kind)
+          ? `${sized} · ${this.language.text('shell.sillAt', { sill: this.format.length(typeSill(model, x)) })}`
+          : sized;
         return x.name ? `${x.name} · ${size}` : size;
       };
       const placed = types.find((x) => x.id === current);

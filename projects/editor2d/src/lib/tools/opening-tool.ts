@@ -9,7 +9,6 @@ import {
   addOpening,
   insideRing,
   levelWallOutlines,
-  fullThicknessSpan,
   wallFrame,
   presetSize,
   type AddOpeningArgs,
@@ -23,7 +22,7 @@ import {
 import { distanceToSegment, hasSill } from '@urdama/core';
 import { parseLength } from '../units';
 import { roundToStep, type PointerInfo, type Tool, type ToolContext } from './tool';
-import { planColors } from '../draw-plan';
+import { drawOpeningDistances, insideCorners, nearerFace, slideOffset } from '../opening-slide';
 
 interface Hover {
   readonly wall: WallId;
@@ -147,48 +146,23 @@ export class OpeningTool implements Tool {
   drawOverlay(ctx: CanvasRenderingContext2D): void {
     const args = this.args();
     if (!args || !this.hover) return;
-    const wall = this.ctx.host.store.committedModel().walls[args.wall];
-    const outline = levelWallOutlines(
-      this.ctx.host.store.committedModel(),
-      this.ctx.host.level(),
-    ).get(args.wall);
+    const model = this.ctx.host.store.committedModel();
+    const level = this.ctx.host.level();
+    const wall = model.walls[args.wall];
+    const outline = levelWallOutlines(model, level).get(args.wall);
     if (!wall || !outline) return;
-    const { first, last } = this.insideCorners(wall, outline, this.hover.face, this.hover.at);
-    const f = wallFrame(wall);
-    const face = f.across(outline[this.hover.face === 'lo' ? 0 : 3]);
-    const out = this.hover.face === 'lo' ? -1 : 1;
-    // A dimension line just outside the face, `extra` mm away from it.
-    const at = (t: number, extra: number): Vec =>
-      this.ctx.view.toScreen(f.point(t, face + out * extra));
-    const width = args.width ?? 0;
-    const pad = 18 / this.ctx.view.scale;
-    const labels: [number, number][] = [
-      [first, args.offset],
-      [args.offset + width, last],
-    ];
-    ctx.save();
-    ctx.font = '600 12px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (const [from, to] of labels) {
-      if (to - from < 1) continue;
-      const a = at(from, pad);
-      const b = at(to, pad);
-      ctx.strokeStyle = planColors().accent;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-      const text = this.ctx.host.format.length(to - from);
-      const w = ctx.measureText(text).width + 8;
-      ctx.fillStyle = planColors().paper;
-      ctx.fillRect(mid.x - w / 2, mid.y - 9, w, 18);
-      ctx.fillStyle = planColors().accent;
-      ctx.fillText(text, mid.x, mid.y);
-    }
-    ctx.restore();
+    const corners = insideCorners(model, level, wall, outline, this.hover.face, this.hover.at);
+    drawOpeningDistances(
+      ctx,
+      this.ctx.view,
+      this.ctx.host.format,
+      corners,
+      wall,
+      outline,
+      this.hover.face,
+      args.offset,
+      args.width ?? 0,
+    );
   }
 
   private get hasSill(): boolean {
@@ -202,38 +176,8 @@ export class OpeningTool implements Tool {
     return {
       width: this.typed.width ?? type?.width ?? preset.width,
       height: this.typed.height ?? type?.height ?? preset.height,
-      sill: this.typed.sill ?? preset.sill,
+      sill: this.typed.sill ?? type?.sill ?? preset.sill,
     };
-  }
-
-  /**
-   * The inside corners around a point on one face, as Baseline positions: where the face ends,
-   * or where another Wall (a corner or a T) meets it, whichever is nearest on each side.
-   */
-  private insideCorners(
-    wall: Wall,
-    outline: WallOutline,
-    face: 'lo' | 'hi',
-    at: number,
-  ): { first: number; last: number } {
-    const f = wallFrame(wall);
-    const t = (p: Vec) => f.along(p);
-    const s = (p: Vec) => f.across(p);
-    const [a, b] = face === 'lo' ? [outline[0], outline[1]] : [outline[3], outline[2]];
-    const onFace = s(a);
-    let first = Math.min(t(a), t(b));
-    let last = Math.max(t(a), t(b));
-    const outlines = levelWallOutlines(this.ctx.host.store.committedModel(), this.ctx.host.level());
-    for (const [id, other] of outlines) {
-      if (id === wall.id) continue;
-      const touching = other.filter((p) => Math.abs(s(p) - onFace) < 0.5).map(t);
-      if (!touching.length) continue;
-      const lo = Math.min(...touching);
-      const hi = Math.max(...touching);
-      if (hi <= at) first = Math.max(first, hi);
-      else if (lo >= at) last = Math.min(last, lo);
-    }
-    return { first, last };
   }
 
   private update(p: PointerInfo): void {
@@ -263,21 +207,20 @@ export class OpeningTool implements Tool {
       return;
     }
     const { wall } = best;
-    const f = wallFrame(wall);
-    const t = f.along(p.model);
-    const side = f.across(p.model);
-    const loOffset = f.across(best.outline[0]);
-    const hiOffset = f.across(best.outline[3]);
-    const face: 'lo' | 'hi' = Math.abs(side - loOffset) <= Math.abs(side - hiOffset) ? 'lo' : 'hi';
+    const t = wallFrame(wall).along(p.model);
+    const face = nearerFace(wall, best.outline, p.model);
     const { width } = this.size();
     // Snap the distance from the inside corner, and stay where the Wall is full thickness.
-    const { first, last } = this.insideCorners(wall, best.outline, face, t);
-    const span = fullThicknessSpan(wall, best.outline);
-    const min = Math.max(first, span.start);
-    const max = Math.min(last, span.end) - width;
-    const offset = Math.max(
-      min,
-      Math.min(max, first + roundToStep(this.ctx, p, t - width / 2 - first)),
+    const offset = slideOffset(
+      model,
+      this.ctx.host.level(),
+      wall,
+      best.outline,
+      face,
+      t,
+      t - width / 2,
+      width,
+      (mm) => roundToStep(this.ctx, p, mm),
     );
     this.hover = { wall: wall.id, offset, face, at: t };
     this.preview();
@@ -295,8 +238,14 @@ export class OpeningTool implements Tool {
       ).get(this.hover.wall);
       if (wall && outline)
         offset =
-          this.insideCorners(wall, outline, this.hover.face, this.hover.at).first +
-          this.typed.distance;
+          insideCorners(
+            this.ctx.host.store.committedModel(),
+            this.ctx.host.level(),
+            wall,
+            outline,
+            this.hover.face,
+            this.hover.at,
+          ).first + this.typed.distance;
     }
     return {
       wall: this.hover.wall,

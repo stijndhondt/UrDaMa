@@ -50,7 +50,7 @@ export const addOpening: Command<AddOpeningArgs> = (model, args, { ids }) => {
   const size = {
     width: args.width ?? chosen?.width ?? preset.width,
     height: args.height ?? chosen?.height ?? preset.height,
-    sill: args.sill ?? preset.sill,
+    sill: args.sill ?? chosen?.sill ?? preset.sill,
   };
   const problem = openingSizeProblem(size);
   if (problem) return refuse(problem);

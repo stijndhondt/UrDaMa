@@ -35,6 +35,8 @@ export interface LibraryType {
   readonly width: number;
   /** mm */
   readonly height: number;
+  /** mm above the floor; absent = the kind's Preset */
+  readonly sill?: number;
 }
 
 /** A project family and its types, for the library under `id`; null when it doesn't exist. */
@@ -54,6 +56,7 @@ export function libraryFamily(
       ...(t.name ? { name: t.name } : {}),
       width: t.width,
       height: t.height,
+      ...(t.sill === undefined ? {} : { sill: t.sill }),
     })),
   };
 }
@@ -67,6 +70,7 @@ function isDamaged(f: LibraryFamily): boolean {
       typeof t.width !== 'number' ||
       typeof t.height !== 'number' ||
       (t.name !== undefined && typeof t.name !== 'string') ||
+      (t.sill !== undefined && !(typeof t.sill === 'number' && t.sill >= 0)) ||
       typeSizeProblem(t.width, t.height) !== null,
   );
 }
@@ -105,6 +109,7 @@ export const importOpeningFamily: Command<ImportOpeningFamilyArgs> = (model, arg
       ...(t.name ? { name: t.name } : {}),
       width: t.width,
       height: t.height,
+      ...(t.sill === undefined ? {} : { sill: t.sill }),
     };
     next = put(next, 'openingTypes', type);
   }

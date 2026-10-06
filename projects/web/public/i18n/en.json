@@ -9,7 +9,7 @@
     "planLabel": "Floor plan",
     "tools": "Tools",
     "hints": {
-      "select": "Click a Wall, Room, door or window to select it. Drag a Wall to move it (Shift: 100 mm, Ctrl: 1 mm). Delete removes it. F / Shift+F flip a selected door. Wheel: zoom, middle button: pan, F: fit.",
+      "select": "Click a Wall, Room, door or window to select it. Drag a Wall to move it, or a door or window to slide it along its Wall (Shift: 100 mm, Ctrl: 1 mm). Delete removes it. F / Shift+F flip a selected door. Wheel: zoom, middle button: pan, F: fit.",
       "room": "Drag a Room at the inside size you measured, or click and type width, Tab, depth, Enter. S: inside / outside size. Start on a Wall's far face to share it.",
       "wall": "Drag a Wall, or click and type a length (then rotate with the mouse), Tab: angle, Enter. S: side of the thickness. Shift: 45°, Ctrl: 1°.",
       "separator": "Drag a Room separator from one Wall face to another (or click both ends). It splits the area; the other part becomes a new Room.",
@@ -578,6 +578,7 @@
     },
     "divider": "Drag to resize the plan and 3D",
     "openingTypes": "Size of the Opening to place",
+    "sillAt": "sill {sill}",
     "snap": "Snapping (G)",
     "snapHint": "Snaps to Wall corners and faces, alignment guides and steps while you draw. Hold Alt to do the opposite for one point."
   },
@@ -630,11 +631,12 @@
     "name": "Name",
     "width": "Width (mm)",
     "height": "Height (mm)",
+    "sill": "Sill (mm)",
     "used": "Used",
     "delete": "Delete this type",
     "newName": "New type (name optional)",
     "add": "Add",
-    "note": "Changing a size here changes every Opening of that type. A type without a name is shown by its sizes."
+    "note": "Changing a size here changes every Opening of that type. The sill height is where new Openings of the type are placed; each placed one keeps its own. A type without a name is shown by its sizes."
   },
   "family": {
     "edit": "Edit family",

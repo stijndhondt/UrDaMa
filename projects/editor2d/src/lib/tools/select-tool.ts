@@ -4,13 +4,21 @@
  * Wall moves it along its normal (connected Walls follow, Seed points are carried along), live
  * while dragging; release commits one undo step, Esc cancels. Rooms themselves are not dragged.
  *
+ * Dragging a door or window slides it along its Wall, showing its distance to both inside corners
+ * as the Opening tools do; release commits one undo step.
+ *
  * A selected Wall shows its anchors (its four corners and its centre). Clicking one makes it the
  * point the Wall turns around; dragging another one turns the Wall around it, in steps of 1°
  * (Shift 15°, Ctrl 0.1°, Alt free).
  */
 import {
+  levelWallOutlines,
   moveWall,
+  resolveOpening,
   rotateWall,
+  updateOpening,
+  wallFrame,
+  type OpeningId,
   WALL_ANCHORS,
   wallAnchors,
   wallAngle,
@@ -22,12 +30,24 @@ import {
 } from '@urdama/core';
 import { drawSelected, planColors } from '../draw-plan';
 import { elementAt, lengthLabelAt } from '../hit-test';
+import { drawOpeningDistances, insideCorners, nearerFace, slideOffset } from '../opening-slide';
 import type { Selection } from '../host';
 import { roundToStep, snapping, type PointerInfo, type Tool, type ToolContext } from './tool';
 
 interface Drag {
   readonly wall: WallId;
   readonly from: Vec;
+  offset: number;
+}
+
+/** Sliding an Opening along its Wall. */
+interface Slide {
+  readonly opening: OpeningId;
+  /** mm along the Baseline: where the pointer was grabbed, and the Opening's offset then */
+  readonly from: number;
+  readonly start: number;
+  /** The face it is measured along (the one nearer the pointer when grabbed) */
+  readonly face: 'lo' | 'hi';
   offset: number;
 }
 
@@ -52,6 +72,7 @@ export class SelectTool implements Tool {
   private hover: Selection | null = null;
   private drag: Drag | null = null;
   private turn: Turn | null = null;
+  private slide: Slide | null = null;
 
   constructor(private readonly ctx: ToolContext) {}
 
@@ -73,6 +94,7 @@ export class SelectTool implements Tool {
     } else {
       this.ctx.host.select(hit ? [hit] : []);
       if (hit?.kind === 'wall') this.drag = { wall: hit.id, from: p.model, offset: 0 };
+      if (hit?.kind === 'opening') this.grabOpening(hit.id, p);
     }
     this.ctx.invalidate();
   }
@@ -80,6 +102,10 @@ export class SelectTool implements Tool {
   pointerMove(p: PointerInfo): void {
     if (this.turn) {
       this.turnTo(p);
+      return;
+    }
+    if (this.slide) {
+      this.slideTo(p);
       return;
     }
     if (!this.drag) {
@@ -108,6 +134,10 @@ export class SelectTool implements Tool {
       this.endTurn(p);
       return;
     }
+    if (this.slide) {
+      this.endSlide(p);
+      return;
+    }
     if (!this.drag) return;
     const { wall, offset } = this.drag;
     this.drag = null;
@@ -120,7 +150,7 @@ export class SelectTool implements Tool {
 
   keyDown(e: KeyboardEvent): boolean {
     if (e.key === 'Escape') {
-      if (this.drag || this.turn) {
+      if (this.drag || this.turn || this.slide) {
         this.cancel();
         return true;
       }
@@ -134,14 +164,16 @@ export class SelectTool implements Tool {
   }
 
   cancel(): void {
-    if (this.drag || this.turn) this.ctx.host.store.cancelPreview();
+    if (this.drag || this.turn || this.slide) this.ctx.host.store.cancelPreview();
     this.drag = null;
     this.turn = null;
+    this.slide = null;
     this.ctx.invalidate();
   }
 
   drawOverlay(ctx: CanvasRenderingContext2D): void {
     this.drawAnchors(ctx);
+    this.drawSlide(ctx);
     if (this.hover) {
       ctx.save();
       ctx.globalAlpha = 0.45;
@@ -265,6 +297,91 @@ export class SelectTool implements Tool {
       ctx.fillText(`${formatAngle(wallAngle(wall))}°`, s.x + 12, s.y - 12);
     }
     ctx.restore();
+  }
+
+  /** The Opening's Wall, outline and width as committed (a slide previews only the Opening). */
+  private openingOnWall(id: OpeningId) {
+    const model = this.ctx.host.store.committedModel();
+    const o = model.openings[id];
+    const resolved = o && resolveOpening(model, o);
+    const wall = o && model.walls[o.wall];
+    const outline = wall && levelWallOutlines(model, this.ctx.host.level()).get(wall.id);
+    return resolved && wall && outline ? { model, opening: resolved, wall, outline } : null;
+  }
+
+  private grabOpening(id: OpeningId, p: PointerInfo): void {
+    const on = this.openingOnWall(id);
+    if (!on) return;
+    this.slide = {
+      opening: id,
+      from: wallFrame(on.wall).along(p.model),
+      start: on.opening.offset,
+      face: nearerFace(on.wall, on.outline, p.model),
+      offset: on.opening.offset,
+    };
+  }
+
+  private slideTo(p: PointerInfo): void {
+    const slide = this.slide!;
+    const on = this.openingOnWall(slide.opening);
+    if (!on) return;
+    const raw = slide.start + wallFrame(on.wall).along(p.model) - slide.from;
+    const offset = slideOffset(
+      on.model,
+      this.ctx.host.level(),
+      on.wall,
+      on.outline,
+      slide.face,
+      raw + on.opening.width / 2,
+      raw,
+      on.opening.width,
+      (mm) => roundToStep(this.ctx, p, mm),
+    );
+    if (offset === slide.offset) return;
+    slide.offset = offset;
+    if (offset === slide.start) this.ctx.host.store.cancelPreview();
+    else if (!this.ctx.host.store.preview(updateOpening, { opening: slide.opening, offset }).ok)
+      this.ctx.host.store.cancelPreview();
+    this.ctx.invalidate();
+  }
+
+  private endSlide(p: PointerInfo): void {
+    const { opening, offset, start } = this.slide!;
+    this.slide = null;
+    this.ctx.host.store.cancelPreview();
+    if (offset !== start) {
+      const result = this.ctx.host.store.run(updateOpening, { opening, offset });
+      if (!result.ok) this.ctx.host.refused(result.reason, p.screen);
+    }
+    this.ctx.invalidate();
+  }
+
+  /** While an Opening slides: its distances to both inside corners. */
+  private drawSlide(ctx: CanvasRenderingContext2D): void {
+    if (!this.slide) return;
+    const on = this.openingOnWall(this.slide.opening);
+    if (!on) return;
+    const { face, offset } = this.slide;
+    const width = on.opening.width;
+    const corners = insideCorners(
+      on.model,
+      this.ctx.host.level(),
+      on.wall,
+      on.outline,
+      face,
+      offset + width / 2,
+    );
+    drawOpeningDistances(
+      ctx,
+      this.ctx.view,
+      this.ctx.host.format,
+      corners,
+      on.wall,
+      on.outline,
+      face,
+      offset,
+      width,
+    );
   }
 
   private hitTest(p: Vec): Selection | null {
