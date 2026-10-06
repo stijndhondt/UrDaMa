@@ -295,11 +295,8 @@ export class PlanEditor {
   }
 
   /**
-   * A double click on a Wall's length label, with any tool (ticket 23): whatever the tool began
-   * is cancelled, the Wall selected and the app asked to open its length editor there.
-   */
-  /**
-   * A double click, with any tool: on a Wall's length label it edits the length (ticket 23); on a
+   * A double click, with any tool: whatever the tool began is cancelled and what was clicked is
+   * selected. On a Wall's length label the app opens its length editor there (ticket 23); on a
    * placed door, window or other Opening it opens that Opening's types, to add or change one.
    */
   private onDoubleClick(e: MouseEvent): void {
