@@ -238,7 +238,7 @@ describe('Floor openings: holes for a stair or a lift through the Slab between t
     doc['schemaVersion'] = 3;
     const old = parseProject(JSON.stringify(doc));
     expect(old.ok && old.model.floorOpenings).toEqual({});
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+    expect(CURRENT_SCHEMA_VERSION).toBeGreaterThan(3);
   });
 
   it('moves as a whole by dragging, as one undo step, still a hole of the same size', () => {

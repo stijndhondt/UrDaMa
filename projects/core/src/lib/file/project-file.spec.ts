@@ -215,5 +215,19 @@ describe('project file (ADR 0004)', () => {
       const plain = JSON.parse(serializeProject(model));
       expect(plain.openingTypes.some((t: object) => 'sill' in t)).toBe(false);
     });
+
+    it('opens a schema 5 file, from before types had a sill, and saves it as schema 6', () => {
+      const doc = JSON.parse(serializeProject(drawnHouse()));
+      doc.schemaVersion = 5;
+      const opened = parseProject(JSON.stringify(doc));
+      expect(opened.ok).toBe(true);
+      if (!opened.ok) return;
+      // Its types have no sill of their own: they place at the Preset, as they did.
+      expect(Object.values(opened.model.openingTypes).every((t) => t.sill === undefined)).toBe(
+        true,
+      );
+      expect(JSON.parse(serializeProject(opened.model)).schemaVersion).toBe(6);
+      expect(CURRENT_SCHEMA_VERSION).toBe(6);
+    });
   });
 });
