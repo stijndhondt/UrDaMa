@@ -120,4 +120,21 @@ describe('Opening library (ticket 21)', () => {
       'Inner door (2)',
     );
   });
+
+  it("carries a window type's sill height to the library and back", () => {
+    const { store } = project();
+    const window = BUILT_IN_FAMILIES.window as OpeningFamilyId;
+    store.run(addOpeningType, {
+      family: window,
+      name: 'High',
+      width: 600,
+      height: 600,
+      sill: 1600,
+    });
+    const saved = libraryFamily(store.model(), window, 'lib-w')!;
+    expect(saved.types).toContainEqual({ name: 'High', width: 600, height: 600, sill: 1600 });
+    store.run(importOpeningFamily, { family: saved });
+    const imported = Object.values(store.model().openingTypes).filter((t) => t.name === 'High');
+    expect(imported.map((t) => t.sill)).toEqual([1600, 1600]);
+  });
 });

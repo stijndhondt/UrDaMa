@@ -6,7 +6,7 @@ import type { FloorOpeningId, LevelId, RoomId } from '../model/types';
 import { ringArea } from '../geometry/vec';
 import { ProjectStore } from '../store/project-store';
 import { deleteElements } from './delete-elements';
-import { drawFloorOpening, floorOpeningDirections } from './floor-openings';
+import { drawFloorOpening, floorOpeningDirections, moveFloorOpening } from './floor-openings';
 import { drawRoom } from './draw-room';
 import { addLevel, deleteLevel } from './levels';
 
@@ -238,6 +238,33 @@ describe('Floor openings: holes for a stair or a lift through the Slab between t
     doc['schemaVersion'] = 3;
     const old = parseProject(JSON.stringify(doc));
     expect(old.ok && old.model.floorOpenings).toEqual({});
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+    expect(CURRENT_SCHEMA_VERSION).toBeGreaterThan(3);
+  });
+
+  it('moves as a whole by dragging, as one undo step, still a hole of the same size', () => {
+    const { store, ground, bedroom } = twoLevels();
+    store.run(drawFloorOpening, { level: ground, ...square, direction: 'up' });
+    const id = Object.keys(store.model().floorOpenings)[0] as FloorOpeningId;
+    const net = store.values.room(bedroom).netFloorArea()!;
+    expect(store.run(moveFloorOpening, { floorOpening: id, by: { x: 1500, y: 500 } }).ok).toBe(
+      true,
+    );
+    expect(store.model().floorOpenings[id]!.outline).toEqual(rect(2500, 1000, 3500, 2000));
+    expect(store.values.room(bedroom).floorFinishArea()).toBeCloseTo(net - 1e6, 0);
+    store.undo();
+    expect(store.model().floorOpenings[id]!.outline).toEqual(square.outline);
+  });
+
+  it('refuses a move of nothing, and of a Floor opening that does not exist', () => {
+    const { store, ground } = twoLevels();
+    store.run(drawFloorOpening, { level: ground, ...square, direction: 'up' });
+    const id = Object.keys(store.model().floorOpenings)[0] as FloorOpeningId;
+    const still = store.run(moveFloorOpening, { floorOpening: id, by: { x: 0, y: 0 } });
+    expect(!still.ok && still.reason.key).toBe('commands.floorOpening.nothing');
+    const gone = store.run(moveFloorOpening, {
+      floorOpening: 'flo_none' as FloorOpeningId,
+      by: { x: 100, y: 0 },
+    });
+    expect(gone.ok).toBe(false);
   });
 });

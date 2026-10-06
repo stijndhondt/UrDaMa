@@ -155,3 +155,79 @@ describe('Opening types (ticket 18)', () => {
     expect(added.ok).toBe(false);
   });
 });
+
+describe("An Opening type's sill height", () => {
+  /** A 6 × 4 m Room and its bottom Wall, with a named window type at a 1100 mm sill. */
+  function withHighWindow() {
+    const ids = counterIds();
+    const store = new ProjectStore(createProject({ name: 'T', levelName: 'Ground' }, ids), ids);
+    const level = Object.keys(store.model().levels)[0] as LevelId;
+    store.run(drawRoom, {
+      level,
+      from: { x: 0, y: 0 },
+      to: { x: 6000, y: 4000 },
+      size: 'inside',
+      name: 'Kitchen',
+    });
+    const wall = Object.values(store.model().walls).find(
+      (w: Wall) => w.start.y === 4000 && w.end.y === 4000,
+    )!;
+    expect(
+      store.run(addOpeningType, {
+        family: BUILT_IN_FAMILIES.window,
+        name: 'Kitchen window',
+        width: 1200,
+        height: 1000,
+        sill: 1100,
+      }).ok,
+    ).toBe(true);
+    const type = Object.values(store.model().openingTypes).find(
+      (t) => t.name === 'Kitchen window',
+    )!;
+    /** Places a window of the type, or with null the window tool's default. */
+    const place = (offset: number, chosen: OpeningTypeId | null = type.id) => {
+      store.run(addOpening, { wall: wall.id, kind: 'window', offset, type: chosen ?? undefined });
+      return Object.values(store.model().openings).find((o) => o.offset === offset)!;
+    };
+    return { store, type, place };
+  }
+
+  it('places its windows at its sill; a type without one at the Preset sill', () => {
+    const { store, place } = withHighWindow();
+    expect(place(500).sill).toBe(1100);
+    expect(place(3000, null).sill).toBe(store.model().project.presets.windowSill);
+  });
+
+  it('changes where new windows go, not the ones already placed', () => {
+    const { store, type, place } = withHighWindow();
+    const placed = place(500);
+    expect(store.run(updateOpeningType, { type: type.id, sill: 1200 }).ok).toBe(true);
+    expect(store.model().openingTypes[type.id]!.sill).toBe(1200);
+    expect(store.model().openings[placed.id]!.sill).toBe(1100);
+    expect(place(3000).sill).toBe(1200);
+  });
+
+  it('lets a placed window keep a sill of its own, in its own type', () => {
+    const { store, type, place } = withHighWindow();
+    const placed = place(500);
+    store.run(updateOpening, { opening: placed.id, sill: 800 });
+    expect(store.model().openings[placed.id]).toMatchObject({ sill: 800, type: type.id });
+  });
+
+  it('keeps the sill when one window is detached into a type of its own', () => {
+    const { store, place } = withHighWindow();
+    const placed = place(500);
+    store.run(updateOpening, { opening: placed.id, width: 1000 });
+    const detached = typeOf(store, store.model().openings[placed.id]!);
+    expect(detached.name).toBe('Kitchen window (2)');
+    expect(detached.sill).toBe(1100);
+  });
+
+  it('refuses a sill below the floor', () => {
+    const { store, type } = withHighWindow();
+    const before = store.model();
+    const refused = store.run(updateOpeningType, { type: type.id, sill: -10 });
+    expect(refused.ok).toBe(false);
+    expect(store.model()).toBe(before);
+  });
+});

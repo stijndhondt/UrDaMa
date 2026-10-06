@@ -14,7 +14,9 @@ import {
   addOpeningType,
   deleteOpeningType,
   familyTypes,
+  hasSill,
   openingsOfType,
+  typeSill,
   renameOpeningType,
   updateOpeningType,
   type Command,
@@ -59,7 +61,7 @@ import { IconComponent } from '../shell/icon.component';
       [draggable]="false"
       [closeAriaLabel]="'common.close' | translate"
       [resizable]="false"
-      [style]="{ width: '520px' }"
+      [style]="{ width: withSill() ? '600px' : '520px' }"
     >
       @if (family(); as f) {
         <p-table [value]="types()" size="small" dataKey="id">
@@ -68,6 +70,9 @@ import { IconComponent } from '../shell/icon.component';
               <th>{{ 'openingTypes.name' | translate }}</th>
               <th class="num">{{ 'openingTypes.width' | translate }}</th>
               <th class="num">{{ 'openingTypes.height' | translate }}</th>
+              @if (withSill()) {
+                <th class="num">{{ 'openingTypes.sill' | translate }}</th>
+              }
               <th class="num">{{ 'openingTypes.used' | translate }}</th>
               <th></th>
             </tr>
@@ -105,6 +110,18 @@ import { IconComponent } from '../shell/icon.component';
                   (change)="resize(t.id, 'height', $any($event.target).value)"
                 />
               </td>
+              @if (withSill()) {
+                <td class="num">
+                  <input
+                    pInputText
+                    pSize="small"
+                    class="mm"
+                    [value]="t.sill"
+                    [attr.aria-label]="'openingTypes.sill' | translate"
+                    (change)="resize(t.id, 'sill', $any($event.target).value)"
+                  />
+                </td>
+              }
               <td class="num">{{ t.used }}</td>
               <td>
                 <!-- A disabled button shows no tooltip, so the reason sits on its wrapper. -->
@@ -157,6 +174,16 @@ import { IconComponent } from '../shell/icon.component';
             (ngModelChange)="newHeight.set($event)"
             [attr.aria-label]="'openingTypes.height' | translate"
           />
+          @if (withSill()) {
+            <input
+              pInputText
+              pSize="small"
+              class="mm"
+              [ngModel]="newSill()"
+              (ngModelChange)="newSill.set($event)"
+              [attr.aria-label]="'openingTypes.sill' | translate"
+            />
+          }
           <p-button
             size="small"
             severity="secondary"
@@ -214,6 +241,13 @@ export class OpeningTypesDialogComponent {
   protected readonly newName = signal('');
   protected readonly newWidth = signal('');
   protected readonly newHeight = signal('');
+  protected readonly newSill = signal('');
+  /** Windows and wall openings: each type has the sill height its Openings are placed at. */
+  protected readonly withSill = computed(() => {
+    const f = this.family();
+    const kind = f ? this.project.store.model().openingFamilies[f]?.kind : undefined;
+    return kind !== undefined && hasSill(kind);
+  });
 
   protected readonly familyName = computed(() => {
     const f = this.family();
@@ -229,6 +263,7 @@ export class OpeningTypesDialogComponent {
     return familyTypes(model, f ?? undefined).map((t) => ({
       ...t,
       sizes: this.format.openingSize(t.width, t.height),
+      sill: typeSill(model, t),
       used: openingsOfType(model, t.id),
     }));
   });
@@ -242,21 +277,29 @@ export class OpeningTypesDialogComponent {
         this.newName.set('');
         this.newWidth.set(first ? String(first.width) : '');
         this.newHeight.set(first ? String(first.height) : '');
+        this.newSill.set(first ? String(first.sill) : '');
       });
     });
   }
 
-  protected resize(type: OpeningTypeId, field: 'width' | 'height', text: string): void {
-    const value = parseLength(text);
+  protected resize(type: OpeningTypeId, field: 'width' | 'height' | 'sill', text: string): void {
+    const value = parseLength(text, { orZero: field === 'sill' });
     if (value !== null) this.run(updateOpeningType, { type, [field]: value });
   }
 
   protected add(family: OpeningFamilyId): void {
     const width = parseLength(this.newWidth());
     const height = parseLength(this.newHeight());
-    if (width === null || height === null) return;
-    if (this.run(addOpeningType, { family, name: this.newName(), width, height }))
-      this.newName.set('');
+    const sill = this.withSill() ? parseLength(this.newSill(), { orZero: true }) : undefined;
+    if (width === null || height === null || sill === null) return;
+    const args = {
+      family,
+      name: this.newName(),
+      width,
+      height,
+      ...(sill === undefined ? {} : { sill }),
+    };
+    if (this.run(addOpeningType, args)) this.newName.set('');
   }
 
   protected run<A>(command: Command<A>, args: A): boolean {

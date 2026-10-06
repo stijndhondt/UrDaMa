@@ -477,7 +477,10 @@ const PX_PER_MM = 96 / 25.4;
       background: var(--bg);
       color: var(--ink);
     }
+    /* Its menus open over everything below the bar, the Quantities page included. */
     .top {
+      position: relative;
+      z-index: 10;
       grid-area: top;
     }
     :host ::ng-deep .top .p-menubar {
@@ -593,6 +596,8 @@ const PX_PER_MM = 96 / 25.4;
     }
     .centre {
       position: relative;
+      /* Keeps the layers inside the drawing (family editor, plan overlays) to itself. */
+      isolation: isolate;
       grid-area: centre;
       display: grid;
       padding: 4px;
@@ -610,7 +615,7 @@ const PX_PER_MM = 96 / 25.4;
     /* The same grid cell as the drawing, over it. */
     .quantities-page {
       grid-area: centre;
-      z-index: 6;
+      z-index: 1;
       min-width: 0;
       min-height: 0;
       overflow: auto;

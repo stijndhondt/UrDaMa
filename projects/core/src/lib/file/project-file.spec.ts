@@ -198,5 +198,36 @@ describe('project file (ADR 0004)', () => {
       ]);
       expect(doc.openings.every((o: object) => !('width' in o) && !('kind' in o))).toBe(true);
     });
+
+    it("keeps a type's own sill height, and writes none for a type that follows the Preset", () => {
+      const model = drawnHouse();
+      const window = Object.values(model.openingTypes).find(
+        (t) => t.family === BUILT_IN_FAMILIES.window,
+      )!;
+      const withSill: Model = {
+        ...model,
+        openingTypes: { ...model.openingTypes, [window.id]: { ...window, sill: 1050 } },
+      };
+      const text = serializeProject(withSill);
+      const opened = parseProject(text);
+      expect(opened.ok && opened.model.openingTypes[window.id]!.sill).toBe(1050);
+      expect(opened.ok && serializeProject(opened.model)).toBe(text);
+      const plain = JSON.parse(serializeProject(model));
+      expect(plain.openingTypes.some((t: object) => 'sill' in t)).toBe(false);
+    });
+
+    it('opens a schema 5 file, from before types had a sill, and saves it as schema 6', () => {
+      const doc = JSON.parse(serializeProject(drawnHouse()));
+      doc.schemaVersion = 5;
+      const opened = parseProject(JSON.stringify(doc));
+      expect(opened.ok).toBe(true);
+      if (!opened.ok) return;
+      // Its types have no sill of their own: they place at the Preset, as they did.
+      expect(Object.values(opened.model.openingTypes).every((t) => t.sill === undefined)).toBe(
+        true,
+      );
+      expect(JSON.parse(serializeProject(opened.model)).schemaVersion).toBe(6);
+      expect(CURRENT_SCHEMA_VERSION).toBe(6);
+    });
   });
 });

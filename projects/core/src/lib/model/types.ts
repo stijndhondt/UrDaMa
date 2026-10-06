@@ -165,6 +165,11 @@ export interface OpeningType {
   readonly width: number;
   /** mm */
   readonly height: number;
+  /**
+   * mm above the finished floor where an Opening of this type is placed; absent = its kind's
+   * Preset (a window's sill height). Each placed Opening keeps a sill of its own.
+   */
+  readonly sill?: number;
 }
 
 /**

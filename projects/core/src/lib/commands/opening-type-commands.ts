@@ -59,11 +59,17 @@ export interface AddOpeningTypeArgs {
   /** mm */
   readonly width: number;
   readonly height: number;
+  /** mm above the floor where its Openings are placed; absent = the kind's Preset */
+  readonly sill?: number;
 }
+
+/** Why a type's sill height is not possible, if it isn't: not below the floor. */
+const sillProblem = (sill: number | undefined) =>
+  sill === undefined || sill >= 0 ? null : message('commands.opening.badSize');
 
 export const addOpeningType: Command<AddOpeningTypeArgs> = (model, args, { ids }) => {
   if (!model.openingFamilies[args.family]) return missing('openingFamily', args.family);
-  const problem = typeSizeProblem(args.width, args.height);
+  const problem = typeSizeProblem(args.width, args.height) ?? sillProblem(args.sill);
   if (problem) return refuse(problem);
   const name = cleanName(args.name);
   if (name && nameTaken(model, args.family, name))
@@ -74,6 +80,7 @@ export const addOpeningType: Command<AddOpeningTypeArgs> = (model, args, { ids }
     ...(name ? { name } : {}),
     width: args.width,
     height: args.height,
+    ...(args.sill === undefined ? {} : { sill: args.sill }),
   };
   return {
     ok: true,
@@ -121,17 +128,23 @@ export interface UpdateOpeningTypeArgs {
   readonly type: OpeningTypeId;
   readonly width?: number;
   readonly height?: number;
+  /** mm: where new Openings of this type are placed; the ones placed keep their own sill */
+  readonly sill?: number;
 }
 
-/** New sizes for a type: every Opening of it follows ("all of this type"). */
+/**
+ * New sizes for a type: every Opening of it follows ("all of this type"). A new sill height is
+ * where Openings of the type are placed from now on.
+ */
 export const updateOpeningType: Command<UpdateOpeningTypeArgs> = (model, args) => {
   const type = model.openingTypes[args.type];
   if (!type) return missing('openingType', args.type);
   const width = args.width ?? type.width;
   const height = args.height ?? type.height;
-  const problem = typeSizeProblem(width, height);
+  const sill = args.sill ?? type.sill;
+  const problem = typeSizeProblem(width, height) ?? sillProblem(sill);
   if (problem) return refuse(problem);
-  const resized: OpeningType = { ...type, width, height };
+  const resized: OpeningType = { ...type, width, height, ...(sill === undefined ? {} : { sill }) };
   return {
     ok: true,
     model: mergeUnnamed(put(model, 'openingTypes', resized), resized),

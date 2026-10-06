@@ -11,7 +11,7 @@ import { COLLECTIONS } from '../model/patch';
 import type { CollectionName, Model } from '../model/types';
 
 export const FILE_FORMAT = 'urdama';
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 export const FILE_EXTENSION = '.urdama.json';
 /** The app's earlier name: its files are read, never written. */
 export const LEGACY_FILE_FORMATS: readonly string[] = ['lakudemis'];
@@ -28,7 +28,17 @@ export const MIGRATIONS: Readonly<Record<number, (doc: Doc) => Doc>> = {
   2: wallOpeningAndGarageDoorFamilies,
   3: noFloorOpenings,
   4: floorOpeningsBelow,
+  5: openingTypeSills,
 };
+
+/**
+ * Version 5 → 6: an Opening type may carry the sill height its Openings are placed at. Older
+ * types have none, so they keep placing at the Preset sill: nothing to change but the version. The
+ * version goes up so that an older app refuses a file with sills rather than dropping them.
+ */
+function openingTypeSills(doc: Doc): Doc {
+  return { ...doc, schemaVersion: 6 };
+}
 
 /**
  * Version 4 → 5: a Floor opening keeps both Levels it connects; until now the lower one was the
@@ -153,7 +163,7 @@ const KEY_ORDER: Readonly<
   design: ['frame', 'bottomRail', 'infill'],
   frame: ['width', 'depth'],
   infill: ['kind', 'count', 'panes', 'thickness', 'operation', 'glazed', 'style'],
-  openingTypes: ['id', 'family', 'name', 'width', 'height'],
+  openingTypes: ['id', 'family', 'name', 'width', 'height', 'sill'],
   openings: ['id', 'wall', 'type', 'offset', 'sill', 'hinge', 'swing'],
   rooms: ['id', 'level', 'name', 'seed', 'height', 'floorBuildUp', 'floorFinish'],
   roomSeparators: ['id', 'level', 'start', 'end', 'startWall', 'endWall'],

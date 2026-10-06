@@ -9,7 +9,7 @@
     "planLabel": "Grondplan",
     "tools": "Gereedschap",
     "hints": {
-      "select": "Klik op een muur, ruimte, deur of raam om te selecteren. Sleep een muur om hem te verplaatsen (Shift: 100 mm, Ctrl: 1 mm). Delete verwijdert. F / Shift+F draait een geselecteerde deur om. Wiel: zoomen, middelste knop: pannen, F: passend maken.",
+      "select": "Klik op een muur, ruimte, deur, raam of vloeropening om te selecteren. Sleep een muur om hem te verplaatsen, een deur of raam om hem langs zijn muur te schuiven, of een vloeropening om ze te verplaatsen (Shift: 100 mm, Ctrl: 1 mm). Delete verwijdert. F / Shift+F draait een geselecteerde deur om. Wiel: zoomen, middelste knop: pannen, F: passend maken.",
       "room": "Sleep een ruimte op de binnenmaat die je gemeten hebt, of klik en typ breedte, Tab, diepte, Enter. S: binnen-/buitenmaat. Begin op de buitenkant van een muur om ze te delen.",
       "wall": "Sleep een muur, of klik en typ een lengte (en draai met de muis), Tab: hoek, Enter. S: kant van de dikte. Shift: 45°, Ctrl: 1°.",
       "separator": "Sleep een ruimtescheiding van het ene muurvlak naar het andere (of klik beide uiteinden). Ze deelt de ruimte; het andere deel wordt een nieuwe ruimte.",
@@ -251,6 +251,8 @@
     },
     "floorOpening": {
       "label": "Vloeropening tekenen",
+      "move": "Vloeropening verplaatsen",
+      "nothing": "De vloeropening is niet verplaatst.",
       "tooSmall": "Geweigerd: elke zijde van een vloeropening is minstens {min} mm.",
       "noLevelAbove": "Geweigerd: er is geen bouwlaag boven deze bouwlaag. Voeg het eerst toe (gebouwpaneel: Bouwlaag erboven).",
       "noLevelBelow": "Geweigerd: er is geen bouwlaag onder deze bouwlaag. Voeg het eerst toe (gebouwpaneel: Bouwlaag eronder).",
@@ -578,6 +580,7 @@
     },
     "divider": "Sleep om plattegrond en 3D te verdelen",
     "openingTypes": "Maat van de opening die je plaatst",
+    "sillAt": "borstwering {sill}",
     "snap": "Kleven (G)",
     "snapHint": "Kleeft tijdens het tekenen aan muurhoeken en -vlakken, uitlijnhulplijnen en stappen. Houd Alt ingedrukt om het voor één punt om te keren."
   },
@@ -630,11 +633,12 @@
     "name": "Naam",
     "width": "Breedte (mm)",
     "height": "Hoogte (mm)",
+    "sill": "Borstwering (mm)",
     "used": "Gebruikt",
     "delete": "Dit type verwijderen",
     "newName": "Nieuw type (naam optioneel)",
     "add": "Toevoegen",
-    "note": "Een maat hier wijzigen wijzigt elke opening van dat type. Een type zonder naam wordt getoond met zijn maten."
+    "note": "Een maat hier wijzigen wijzigt elke opening van dat type. De borstwering is de hoogte waarop nieuwe openingen van het type geplaatst worden; elke geplaatste houdt zijn eigen. Een type zonder naam wordt getoond met zijn maten."
   },
   "family": {
     "edit": "Familie bewerken",

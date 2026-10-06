@@ -63,3 +63,28 @@ export const drawFloorOpening: Command<DrawFloorOpeningArgs> = (model, args, { i
     label: message('commands.floorOpening.label'),
   };
 };
+
+export interface MoveFloorOpeningArgs {
+  readonly floorOpening: FloorOpeningId;
+  /** mm, how far its whole outline moves in plan */
+  readonly by: Vec;
+}
+
+/** MoveFloorOpening: dragging a Floor opening in Select moves its whole outline; one step. */
+export const moveFloorOpening: Command<MoveFloorOpeningArgs> = (model, args) => {
+  const f = model.floorOpenings[args.floorOpening];
+  if (!f)
+    return refuse(
+      message('invariants.missingReference', { what: 'floorOpening', id: args.floorOpening }),
+    );
+  if (args.by.x === 0 && args.by.y === 0) return refuse(message('commands.floorOpening.nothing'));
+  const moved: FloorOpening = {
+    ...f,
+    outline: f.outline.map((p) => ({ x: p.x + args.by.x, y: p.y + args.by.y })),
+  };
+  return {
+    ok: true,
+    model: put(model, 'floorOpenings', moved),
+    label: message('commands.floorOpening.move'),
+  };
+};

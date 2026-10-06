@@ -52,6 +52,12 @@ export function presetSize(p: Presets, kind: OpeningKind) {
   }
 }
 
+/** mm: where an Opening of this type is placed above the floor: its own sill, else its kind's. */
+export function typeSill(model: Model, type: OpeningType): number {
+  const kind = model.openingFamilies[type.family]?.kind ?? 'window';
+  return type.sill ?? presetSize(model.project.presets, kind).sill;
+}
+
 /** The built-in families and their default types (sized from the Presets) for a new project. */
 export function builtInOpenings(
   presets: Presets,
@@ -164,6 +170,7 @@ export function detachedType(
     name: `${base} (${n})`,
     width,
     height,
+    ...(from.sill === undefined ? {} : { sill: from.sill }),
   };
   return { model: put(model, 'openingTypes', type), type: type.id };
 }
