@@ -11,7 +11,7 @@ import {
   usePlanColors,
 } from './draw-plan';
 import type { EditorHost } from './host';
-import { lengthLabelAt, targetAt } from './hit-test';
+import { elementAt, lengthLabelAt, targetAt } from './hit-test';
 import { RoomTool } from './tools/room-tool';
 import { WallTool } from './tools/wall-tool';
 import { SelectTool } from './tools/select-tool';
@@ -295,17 +295,26 @@ export class PlanEditor {
   }
 
   /**
-   * A double click on a Wall's length label, with any tool (ticket 23): whatever the tool began
-   * is cancelled, the Wall selected and the app asked to open its length editor there.
+   * A double click, with any tool: whatever the tool began is cancelled and what was clicked is
+   * selected. On a Wall's length label the app opens its length editor there (ticket 23); on a
+   * placed door, window or other Opening it opens that Opening's types, to add or change one.
    */
   private onDoubleClick(e: MouseEvent): void {
     const p = this.info(e);
     const label = lengthLabelAt(this.host, this.view, p.screen);
-    if (!label || !this.host.editLength) return;
+    if (label && this.host.editLength) {
+      this.tool?.cancel();
+      this.host.select([{ kind: 'wall', id: label.wall }]);
+      this.invalidate();
+      this.host.editLength(label.wall, p.screen, label.length);
+      return;
+    }
+    const hit = elementAt(this.host, this.view, p.model);
+    if (hit?.kind !== 'opening' || !this.host.openOpeningTypes) return;
     this.tool?.cancel();
-    this.host.select([{ kind: 'wall', id: label.wall }]);
+    this.host.select([hit]);
     this.invalidate();
-    this.host.editLength(label.wall, p.screen, label.length);
+    this.host.openOpeningTypes(hit.id);
   }
 
   /** Right-click: select what is under the pointer (unless it is already selected) and ask for the menu. */

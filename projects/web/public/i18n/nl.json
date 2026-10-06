@@ -9,7 +9,7 @@
     "planLabel": "Grondplan",
     "tools": "Gereedschap",
     "hints": {
-      "select": "Klik op een muur, ruimte, deur, raam of vloeropening om te selecteren. Sleep een muur om hem te verplaatsen, een deur of raam om hem langs zijn muur te schuiven, of een vloeropening om ze te verplaatsen (Shift: 100 mm, Ctrl: 1 mm). Delete verwijdert. F / Shift+F draait een geselecteerde deur om. Wiel: zoomen, middelste knop: pannen, F: passend maken.",
+      "select": "Klik op een muur, ruimte, deur, raam of vloeropening om te selecteren. Sleep een muur om hem te verplaatsen, een deur of raam om hem langs zijn muur te schuiven, of een vloeropening om ze te verplaatsen (Shift: 100 mm, Ctrl: 1 mm). Dubbelklik op een deur of raam voor zijn types. Delete verwijdert. F / Shift+F draait een geselecteerde deur om. Wiel: zoomen, middelste knop: pannen, F: passend maken.",
       "room": "Sleep een ruimte op de binnenmaat die je gemeten hebt, of klik en typ breedte, Tab, diepte, Enter. S: binnen-/buitenmaat. Begin op de buitenkant van een muur om ze te delen.",
       "wall": "Sleep een muur, of klik en typ een lengte (en draai met de muis), Tab: hoek, Enter. S: kant van de dikte. Shift: 45°, Ctrl: 1°.",
       "separator": "Sleep een ruimtescheiding van het ene muurvlak naar het andere (of klik beide uiteinden). Ze deelt de ruimte; het andere deel wordt een nieuwe ruimte.",
