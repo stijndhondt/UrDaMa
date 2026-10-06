@@ -20,6 +20,7 @@ import {
   type WallOutline,
 } from '@urdama/core';
 import { distanceToSegment, hasSill } from '@urdama/core';
+import { elementAt } from '../hit-test';
 import { parseLength } from '../units';
 import { roundToStep, type PointerInfo, type Tool, type ToolContext } from './tool';
 import { drawOpeningDistances, insideCorners, nearerFace, slideOffset } from '../opening-slide';
@@ -72,6 +73,9 @@ export class OpeningTool implements Tool {
   }
 
   pointerDown(p: PointerInfo): void {
+    // A click on a placed Opening places nothing: it is half of a double click on it, which opens
+    // its types (and a new Opening there would overlap it anyway).
+    if (elementAt(this.ctx.host, this.ctx.view, p.model)?.kind === 'opening') return;
     this.update(p);
     this.commit(p.screen);
   }

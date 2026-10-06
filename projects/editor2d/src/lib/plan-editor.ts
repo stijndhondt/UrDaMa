@@ -2,7 +2,14 @@
  * The plan editor (ADR 0005): a framework-free Canvas2D editor for one Level.
  * The app around it supplies an EditorHost and calls `invalidate()` when the model changes.
  */
-import { addRoom, type OpeningKind, type OpeningTypeId, type RoomId, type Vec } from '@urdama/core';
+import {
+  addRoom,
+  OPENING_KINDS,
+  type OpeningKind,
+  type OpeningTypeId,
+  type RoomId,
+  type Vec,
+} from '@urdama/core';
 import {
   DEFAULT_PLAN_COLORS,
   drawPlan,
@@ -21,6 +28,15 @@ import { FloorOpeningTool } from './tools/floor-opening-tool';
 import type { PointerInfo, Tool, ToolContext, ToolName } from './tools/tool';
 import { TypedInput } from './typed-input';
 import { View } from './view';
+
+/**
+ * Whether a double click on a placed Opening opens its types with this tool. Its two clicks reach
+ * the tool first: Select only selects, and an Opening tool ignores a click on a placed Opening;
+ * a drawing tool (Room, Wall, …) has already started drawing there, so the double click is its.
+ */
+export function doubleClickOpensTypes(tool: ToolName | null): boolean {
+  return tool === 'select' || (OPENING_KINDS as readonly string[]).includes(tool ?? '');
+}
 
 export class PlanEditor {
   readonly view = new View();
@@ -295,9 +311,10 @@ export class PlanEditor {
   }
 
   /**
-   * A double click, with any tool: whatever the tool began is cancelled and what was clicked is
-   * selected. On a Wall's length label the app opens its length editor there (ticket 23); on a
-   * placed door, window or other Opening it opens that Opening's types, to add or change one.
+   * A double click: whatever the tool began is cancelled and what was clicked is selected. On a
+   * Wall's length label, with any tool, the app opens its length editor there (ticket 23). On a
+   * placed door, window or other Opening it opens that Opening's types, to add or change one,
+   * with the tools whose clicks on an Opening do nothing (see doubleClickOpensTypes).
    */
   private onDoubleClick(e: MouseEvent): void {
     const p = this.info(e);
@@ -309,6 +326,7 @@ export class PlanEditor {
       this.host.editLength(label.wall, p.screen, label.length);
       return;
     }
+    if (!doubleClickOpensTypes(this.tool?.name ?? null)) return;
     const hit = elementAt(this.host, this.view, p.model);
     if (hit?.kind !== 'opening' || !this.host.openOpeningTypes) return;
     this.tool?.cancel();

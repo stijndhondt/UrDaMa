@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import {
   addOpening,
+  BUILT_IN_FAMILIES,
   counterIds,
   createProject,
   drawRoom,
@@ -55,10 +56,15 @@ describe('Opening types from a double click on the plan', () => {
     const { fixture, window } = await setup();
     // What the plan does on a double click: select the Opening, then ask for its types.
     TestBed.inject(SelectionService).current.set([{ kind: 'opening', id: window }]);
-    TestBed.inject(OpeningTypesService).openFor(window);
+    const types = TestBed.inject(OpeningTypesService);
+    types.openFor(window);
+    // The window's own family, not just any types dialog.
+    expect(types.family()).toBe(BUILT_IN_FAMILIES.window);
     await fixture.whenStable();
     await new Promise((r) => setTimeout(r, 50));
     await fixture.whenStable();
+    // Selecting the window didn't close it again.
+    expect(types.family()).toBe(BUILT_IN_FAMILIES.window);
     const dialog = document.querySelector('.p-dialog');
     expect(dialog?.textContent).toContain('openingTypes.title');
     expect(document.activeElement?.getAttribute('aria-label')).toBe('openingTypes.newName');
