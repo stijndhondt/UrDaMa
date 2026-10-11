@@ -114,7 +114,18 @@ const PX_PER_MM = 96 / 25.4;
   template: `
     <div class="wb">
       <p-menubar class="top" [model]="menus()" breakpoint="560px">
-        <ng-template #start><strong class="brand">Urdama</strong></ng-template>
+        <ng-template #start>
+          <strong class="brand">
+            <!-- public/logo.svg, drawn inline so it follows the app's theme rather than the system's -->
+            <svg class="logo" viewBox="44 26 212 212" aria-hidden="true">
+              <rect class="accent" x="217" y="76" width="12" height="138" />
+              <circle class="accent" cx="200" cy="191" r="17" stroke-width="12" />
+              <path d="M80 116 V165 A40 40 0 0 0 160 165 V116" stroke-width="18" />
+              <polyline points="50,124 150,58 250,124" stroke-width="12" />
+            </svg>
+            Urdama
+          </strong>
+        </ng-template>
         <ng-template #item let-item let-root="root">
           <a class="mi" [class.root]="root">
             @if (!root) {
@@ -490,8 +501,24 @@ const PX_PER_MM = 96 / 25.4;
       background: var(--panel);
     }
     .brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       margin-right: 12px;
       font-size: 14px;
+    }
+    .logo {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: var(--ink);
+    }
+    .logo .accent {
+      stroke: var(--accent);
+    }
+    .logo rect.accent {
+      fill: var(--accent);
+      stroke: none;
     }
     .mi {
       display: flex;
