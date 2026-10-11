@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="44 26 212 212">
+  <style>
+    .ink { stroke: #1e293b; }
+    .accent { stroke: #3b82f6; fill: none; }
+    rect.accent { fill: #3b82f6; stroke: none; }
+    @media (prefers-color-scheme: dark) { .ink { stroke: #e2e8f0; } .accent { stroke: #60a5fa; } rect.accent { fill: #60a5fa; } }
+  </style>
+  <rect class="accent" x="217" y="76" width="12" height="138"/>
+  <circle class="accent" cx="200" cy="191" r="17" stroke-width="12"/>
+  <path class="ink" d="M80 116 V165 A40 40 0 0 0 160 165 V116" fill="none" stroke-width="18"/>
+  <polyline class="ink" points="50,124 150,58 250,124" fill="none" stroke-width="12" stroke-linejoin="miter"/>
+</svg>
