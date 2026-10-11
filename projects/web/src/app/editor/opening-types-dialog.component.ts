@@ -1,12 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
   model,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -62,6 +64,8 @@ import { IconComponent } from '../shell/icon.component';
       [closeAriaLabel]="'common.close' | translate"
       [resizable]="false"
       [style]="{ width: withSill() ? '600px' : '520px' }"
+      [focusOnShow]="false"
+      (onShow)="newNameField()?.nativeElement?.focus()"
     >
       @if (family(); as f) {
         <p-table [value]="types()" size="small" dataKey="id">
@@ -150,6 +154,7 @@ import { IconComponent } from '../shell/icon.component';
         </p-table>
         <div class="add">
           <input
+            #newNameInput
             pInputText
             pSize="small"
             class="name"
@@ -239,6 +244,8 @@ export class OpeningTypesDialogComponent {
   protected readonly renameOpeningType = renameOpeningType;
   protected readonly deleteOpeningType = deleteOpeningType;
   protected readonly newName = signal('');
+  /** The new type's name field: it has the focus when the dialog opens, to add a type at once. */
+  protected readonly newNameField = viewChild<ElementRef<HTMLInputElement>>('newNameInput');
   protected readonly newWidth = signal('');
   protected readonly newHeight = signal('');
   protected readonly newSill = signal('');

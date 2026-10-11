@@ -24,6 +24,7 @@ import { PlanColorsService } from './plan-colors.service';
 import { SnapService } from './snap.service';
 import { ContextMenuService } from './context-menu.service';
 import { LengthEditService } from './length-edit.service';
+import { OpeningTypesService } from './opening-types.service';
 import { WallTurnService } from './wall-turn.service';
 import { FloorOpeningChoiceService } from './floor-opening-choice.service';
 import { LevelVisibilityService } from './level-visibility.service';
@@ -71,6 +72,7 @@ export class PlanEditorComponent {
   private readonly messages = inject(MessagesService);
   private readonly selection = inject(SelectionService);
   private readonly contextMenus = inject(ContextMenuService);
+  private readonly typesDialog = inject(OpeningTypesService);
   private readonly lengthEdits = inject(LengthEditService);
   private readonly turn = inject(WallTurnService);
   private readonly floorChoice = inject(FloorOpeningChoiceService);
@@ -101,6 +103,7 @@ export class PlanEditorComponent {
         zoomChanged: (scale) => this.scale.set(scale),
         snapping: () => this.snap.on(),
         editLength: (wall, at, faceLength) => this.lengthEdits.open.set({ wall, at, faceLength }),
+        openOpeningTypes: (opening) => this.typesDialog.openFor(opening),
         wallAnchor: () => this.turn.anchor(),
         setWallAnchor: (anchor) => this.turn.anchor.set(anchor),
         turnMode: () => this.turn.mode(),

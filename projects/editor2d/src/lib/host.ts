@@ -52,6 +52,8 @@ export interface EditorHost {
    * point (canvas px). `faceLength` is the length the label shows (mm).
    */
   readonly editLength?: (wall: WallId, at: Vec, faceLength: number) => void;
+  /** A double click on a placed Opening: the app opens its family's Opening types. */
+  readonly openOpeningTypes?: (opening: OpeningId) => void;
   /**
    * The anchor a selected Wall turns around, shared with the app's angle editor; its centre when
    * absent. Clicking one of the Wall's anchors on the plan chooses it.

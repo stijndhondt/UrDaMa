@@ -31,7 +31,6 @@ import {
   wallLength,
   wallThickness,
   type Command,
-  type OpeningFamilyId,
   type OpeningId,
   type OpeningTypeId,
   type Presets,
@@ -51,6 +50,7 @@ import { FamilyEditService } from './family-edit.service';
 import { FamilyPropertiesComponent } from './family-properties.component';
 import { AngleEditorComponent } from './angle-editor.component';
 import { DeleteLevelService } from './delete-level.service';
+import { OpeningTypesService } from './opening-types.service';
 import { LengthEditorComponent } from './length-editor.component';
 import { OpeningTypesDialogComponent } from './opening-types-dialog.component';
 import { PanelSectionComponent } from './panel-section.component';
@@ -704,7 +704,9 @@ export class PropertiesPanelComponent {
   protected readonly updateOpening = updateOpening;
   protected readonly setOpeningType = setOpeningType;
   /** The family whose types the Types dialog shows, if it is open. */
-  protected readonly typesFor = signal<OpeningFamilyId | null>(null);
+  private readonly openingTypes = inject(OpeningTypesService);
+  /** The family whose Opening types dialog is open (from "Types…" or a double click on the plan) */
+  protected readonly typesFor = this.openingTypes.family;
   /** A type size typed while other Openings share the type: waits for "all" or "only this one" */
   protected readonly pendingSize = signal<{
     readonly opening: OpeningId;
@@ -728,15 +730,18 @@ export class PropertiesPanelComponent {
   protected readonly depthSide = signal<'min' | 'max'>('max');
 
   constructor() {
-    // Another selection closes the length editor and the Types dialog, and drops an unanswered
-    // size question.
+    // Another selection closes the length editor, drops an unanswered size question and closes
+    // the Types dialog, unless it shows the family of the Opening now selected (a double click
+    // on the plan selects the Opening and opens its types at once).
     effect(() => {
       this.selection.current();
+      const opening = this.selection.opening();
       untracked(() => {
         this.editingLength.set(false);
         this.editingAngle.set(false);
         this.pendingSize.set(null);
-        this.typesFor.set(null);
+        const family = opening && this.project.store.model().openingTypes[opening.type]?.family;
+        if (this.typesFor() !== family) this.typesFor.set(null);
       });
     });
   }
@@ -807,8 +812,7 @@ export class PropertiesPanelComponent {
   });
 
   protected openTypes(type: OpeningTypeId): void {
-    const family = this.project.store.model().openingTypes[type]?.family;
-    if (family) this.typesFor.set(family);
+    this.openingTypes.openForType(type);
   }
 
   /** The Opening family editor (ticket 20), shown at this type's size. */
