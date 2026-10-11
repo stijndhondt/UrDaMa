@@ -1,3 +1,5 @@
+<p align="center"><img src="projects/web/public/logo.svg" alt="Urdama logo" width="120"></p>
+
 # Urdama
 
 **Every part. One model.** Urdama is an open-source, browser-based tool for drawing a house at the sizes you measured with a tape. It turns that drawing into one connected building model: 2D plans, a 3D view and surface calculations all come from the same model.
